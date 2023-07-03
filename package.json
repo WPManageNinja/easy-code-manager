@@ -1,0 +1,34 @@
+{
+  "name": "fluent-snippets",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@vue/compiler-sfc": "^3.3.4",
+    "laravel-mix": "^6.0.49",
+    "sass": "^1.63.6",
+    "sass-loader": "^13.3.2",
+    "unplugin-auto-import": "^0.16.4",
+    "unplugin-vue-components": "^0.25.1",
+    "vue-loader": "^16.8.3"
+  },
+  "dependencies": {
+    "@codemirror/lang-css": "^6.2.0",
+    "@codemirror/lang-html": "^6.4.5",
+    "@codemirror/lang-javascript": "^6.1.9",
+    "@codemirror/lang-php": "^6.0.1",
+    "@codemirror/state": "6.x",
+    "@codemirror/theme-one-dark": "^6.1.2",
+    "codemirror": "^6.0.1",
+    "dayjs": "^1.11.9",
+    "element-plus": "^2.3.7",
+    "vue-codemirror": "^6.1.1",
+    "vue-router": "^4.2.2"
+  }
+}

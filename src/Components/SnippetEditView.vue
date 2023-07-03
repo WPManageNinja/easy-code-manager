@@ -1,0 +1,109 @@
+<template>
+    <div class="box_wrapper">
+        <div class="box dashboard_box">
+            <div class="box_header" style="padding: 15px;font-size: 16px;">
+                <div style="padding-top: 5px;" class="box_head">
+                    <el-breadcrumb separator="/">
+                        <el-breadcrumb-item :to="{ name: 'dashboard' }">Code Snippets</el-breadcrumb-item>
+                        <el-breadcrumb-item>
+                            <span v-if="snippet">
+                                {{ snippet.meta.name }}
+                                <el-tag :type="(snippet.meta.status == 'published') ? 'success' : 'danger'" size="small">{{snippet.meta.status}}</el-tag>
+                            </span>
+                            <span v-else>Snippet details</span>
+                        </el-breadcrumb-item>
+                    </el-breadcrumb>
+                </div>
+                <div  v-loading="saving" v-if="snippet" style="display: flex;" class="box_actions">
+                    <el-button @click="saveCode()" :disabled="loading || saving" type="success">
+                        Update Snippet
+                    </el-button>
+                    <el-button @click="toggleStatus()">
+                        <span v-if="snippet.meta.status == 'published'">Deactivate</span>
+                        <span v-else>Activate</span>
+                    </el-button>
+                </div>
+            </div>
+            <div v-if="loading" class="box_body">
+                <el-skeleton :loading="loading" :rows="10"></el-skeleton>
+            </div>
+            <div v-else-if="!snippet" class="box_body">
+                <h2>Sorry Snippet could not be loaded</h2>
+            </div>
+            <div v-else class="box_body">
+                <snippet-form :snippet="snippet"></snippet-form>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script type="text/babel">
+import SnippetForm from './_SnippetForm.vue'
+
+export default {
+    name: 'SnippetEditView',
+    props: ['snippet_name'],
+    components: {
+        SnippetForm
+    },
+    data() {
+        return {
+            loading: false,
+            snippet: null,
+            saving: false
+        }
+    },
+    methods: {
+        fetchSnippet() {
+            this.loading = true;
+            this.$get('snippets/find', {
+                snippet_name: this.snippet_name
+            })
+                .then(response => {
+                    this.snippet = response.snippet
+                })
+                .catch((errors) => {
+                    this.$handleError(errors);
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+        saveCode() {
+            // validate the code
+            if (!this.snippet.code) {
+                this.$notify.error('Please enter some code to save');
+                return;
+            }
+            // check if snippet starts with <?php
+            if (this.snippet.meta.type == 'PHP' && this.snippet.code.trim().startsWith('<?php')) {
+                this.$notify.error('The code should not starts with <?php');
+                return;
+            }
+
+            this.saving = true;
+            this.$post('snippets/update', {
+                fluent_saving_snippet_name: this.snippet_name,
+                code: this.snippet.code,
+                meta: this.snippet.meta
+            })
+                .then(response => {
+                    this.$notify.success('Snippet has been updated successfully');
+                })
+                .catch((errors) => {
+                    this.$handleError(errors);
+                })
+                .finally(() => {
+                    this.saving = false;
+                });
+        },
+        toggleStatus() {
+            this.snippet.meta.status = (this.snippet.meta.status == 'published') ? 'draft' : 'published';
+            this.saveCode();
+        }
+    },
+    created() {
+        this.fetchSnippet();
+    }
+}
+</script>

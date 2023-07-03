@@ -1,0 +1,130 @@
+<template>
+    <div class="box_wrapper">
+        <div class="box dashboard_box">
+            <div class="box_header" style="padding: 15px;font-size: 16px;">
+                <div style="padding-top: 5px;" class="box_head">
+                    <el-breadcrumb separator="/">
+                        <el-breadcrumb-item :to="{ name: 'dashboard' }">Code Snippets</el-breadcrumb-item>
+                        <el-breadcrumb-item>
+                            Create New
+                        </el-breadcrumb-item>
+                    </el-breadcrumb>
+                </div>
+                <div v-if="snippet" style="display: flex;" class="box_actions">
+                    <el-button @click="saveCode()" :disabled="saving" v-loading="saving" type="success">
+                        Create Snippet
+                    </el-button>
+                </div>
+            </div>
+            <div class="box_body">
+                <snippet-form :snippet="snippet">
+                    <template v-slot:code_editor>
+                        <el-form-item label="Code" :class="'fsnip_code_lang_'+snippet.meta.type" class="code_editor_wrap">
+                            <el-tabs @tabChange="tabChanged()" v-model="snippet.meta.type" type="border-card">
+                                <el-tab-pane name="PHP" label="Functions (PHP)">
+                                    <code-editor
+                                        v-if="snippet.meta.type == 'PHP'"
+                                        :langType="snippet.meta.type"
+                                        v-model="snippet.code"
+                                    />
+                                </el-tab-pane>
+                                <el-tab-pane name="php_content" label="Content (HTML + PHP)">
+                                    <code-editor
+                                        v-if="snippet.meta.type == 'php_content'"
+                                        :langType="snippet.meta.type"
+                                        v-model="snippet.code"
+                                    />
+                                </el-tab-pane>
+                                <el-tab-pane name="css" label="CSS">
+                                    <code-editor
+                                        v-if="snippet.meta.type == 'css'"
+                                        :langType="snippet.meta.type"
+                                        v-model="snippet.code"
+                                    />
+                                </el-tab-pane>
+                                <el-tab-pane name="js" label="Javascript">
+                                    <code-editor
+                                        v-if="snippet.meta.type == 'js'"
+                                        :langType="snippet.meta.type"
+                                        v-model="snippet.code"
+                                    />
+                                </el-tab-pane>
+                            </el-tabs>
+                        </el-form-item>
+                    </template>
+                </snippet-form>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script type="text/babel">
+import SnippetForm from './_SnippetForm.vue'
+import CodeEditor from './_CodeEditor.vue'
+
+export default {
+    name: 'CreateSnippet',
+    components: {
+        SnippetForm,
+        CodeEditor
+    },
+    data() {
+        return {
+            loading: false,
+            snippet: {
+                code: '',
+                meta: {
+                    name: '',
+                    type: 'PHP',
+                    status: 'draft',
+                    description: '',
+                    run_at: 'all',
+                    tags: '',
+                    priority: 10
+                }
+            },
+            saving: false
+        }
+    },
+    methods: {
+        saveCode() {
+            // validate the code
+            if (!this.snippet.code) {
+                this.$notify.error('Please enter some code to save');
+                return;
+            }
+            // check if snippet starts with <?php
+            if (this.snippet.meta.type == 'PHP' && this.snippet.code.trim().startsWith('<?php')) {
+                this.$notify.error('The code should not starts with <?php');
+                return;
+            }
+
+            this.saving = true;
+            this.$post('snippets/create', {
+                code: this.snippet.code,
+                meta: this.snippet.meta
+            })
+                .then(response => {
+                    this.$notify.success(response.message);
+                    this.$router.push({ name: 'edit_snippet', params: { snippet_name: response.snippet } });
+                })
+                .catch((errors) => {
+                    this.$handleError(errors);
+                })
+                .finally(() => {
+                    this.saving = false;
+                });
+        },
+        toggleStatus() {
+            this.snippet.meta.status = (this.snippet.meta.status == 'published') ? 'draft' : 'published';
+            this.saveCode();
+        },
+        tabChanged() {
+            this.snippet.code = '';
+        }
+    },
+    created() {
+
+    }
+}
+</script>
