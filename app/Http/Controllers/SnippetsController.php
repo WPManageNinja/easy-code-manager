@@ -12,15 +12,31 @@ class SnippetsController
     {
         $snippetModel = new Snippet([
             'search' => sanitize_text_field($request->get_param('search')),
+            'type'   => sanitize_text_field($request->get_param('type')),
+            'tag' => sanitize_text_field($request->get_param('tag')),
         ]);
-        $snippets = $snippetModel->paginate();
 
-        foreach ($snippets['data'] as &$snippet) {
-            $snippet['file_name'] = basename($snippet['file']);
+        $perPage = $request->get_param('per_page');
+        $page = $request->get_param('page');
+
+        if (!$perPage) {
+            $perPage = 10;
+        }
+
+        if (!$page) {
+            $page = 1;
+        }
+
+        $snippets = $snippetModel->getIndexedSnippets($perPage, $page);
+
+        $tags = null;
+        if($request->get_param('with_tags')) {
+            $tags = $snippetModel->getAllSnippetTags();
         }
 
         return [
-            'snippets' => $snippets
+            'snippets' => $snippets,
+            'tags'     => $tags
         ];
     }
 
@@ -57,7 +73,7 @@ class SnippetsController
 
         $metaValidated = self::validateMeta($meta);
 
-        if(is_wp_error($metaValidated)) {
+        if (is_wp_error($metaValidated)) {
             return $metaValidated;
         }
 
@@ -100,7 +116,7 @@ class SnippetsController
 
         $metaValidated = self::validateMeta($meta);
 
-        if(is_wp_error($metaValidated)) {
+        if (is_wp_error($metaValidated)) {
             return $metaValidated;
         }
 
@@ -138,11 +154,11 @@ class SnippetsController
         $snippetModel = new Snippet();
         $snippet = $snippetModel->findByFileName($fileName);
 
-        if(is_wp_error($snippet)) {
+        if (is_wp_error($snippet)) {
             return $snippet;
         }
 
-        if($status != 'published') {
+        if ($status != 'published') {
             $status = 'draft';
         }
 
@@ -166,7 +182,7 @@ class SnippetsController
         $snippetModel = new Snippet();
         $snippet = $snippetModel->findByFileName($fileName);
 
-        if(is_wp_error($snippet)) {
+        if (is_wp_error($snippet)) {
             return $snippet;
         }
 

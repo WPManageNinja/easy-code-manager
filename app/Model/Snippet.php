@@ -2,6 +2,7 @@
 
 namespace FluentSnippets\App\Model;
 
+use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
 
 class Snippet
@@ -88,6 +89,107 @@ class Snippet
             'current_page' => (int)$page,
             'last_page'    => (int)ceil($total / $perPage)
         ];
+    }
+
+    public function getIndexedSnippets($perPage = null, $page = null)
+    {
+        $config = Helper::getIndexedConfig();
+
+        if (!$config || empty($config['meta'])) {
+            return [];
+        }
+
+        if (empty($config['published']) && empty($config['draft'])) {
+            return [];
+        }
+
+        if (!empty($this->args['status'])) {
+            if ($this->args['status'] == 'published') {
+                $snippets = $config['published'];
+            } else if ($this->args['status'] == 'draft') {
+                $snippets = $config['draft'];
+            } else {
+                $snippets = array_merge($config['published'], $config['draft']);
+            }
+        } else {
+            $snippets = array_merge($config['published'], $config['draft']);
+        }
+
+        if (empty($snippets)) {
+            return [];
+        }
+
+        $type = Arr::get($this->args, 'type');
+
+        if ($type && $type != 'all') {
+            $snippets = array_filter($snippets, function ($snippet) use ($type) {
+                return $snippet['type'] == $type;
+            });
+        }
+
+        if ($search = Arr::get($this->args, 'search')) {
+            $snippets = array_filter($snippets, function ($snippet) use ($search) {
+                return (strpos($snippet['name'], $search) !== false) || (strpos($snippet['description'], $search) !== false) || (strpos($snippet['tags'], $search) !== false);
+            });
+        }
+
+        if ($tag = Arr::get($this->args, 'tag')) {
+            $snippets = array_filter($snippets, function ($snippet) use ($tag) {
+                if (!$snippet['tags']) {
+                    return false;
+                }
+                $tags = array_map('trim', explode(',', $snippet['tags']));
+                return in_array($tag, $tags);
+            });
+        }
+
+        // Short the snippets by name
+        usort($snippets, function ($a, $b) {
+            return strcmp($a['name'], $b['name']);
+        });
+
+        if ($perPage != null && $page != null) {
+            $snippets = array_slice($snippets, ($page - 1) * $perPage, $perPage);
+            return [
+                'data'      => $snippets,
+                'page'      => (int)$page,
+                'per_page'  => (int)$perPage,
+                'total'     => count($snippets),
+                'last_page' => (int)ceil(count($snippets) / $perPage)
+            ];
+        }
+
+        return $snippets;
+    }
+
+    public function getAllSnippetTags()
+    {
+        $config = Helper::getIndexedConfig();
+
+        if (!$config || empty($config['meta'])) {
+            return [];
+        }
+
+        if (empty($config['published']) && empty($config['draft'])) {
+            return [];
+        }
+
+        $snippets = array_merge($config['published'], $config['draft']);
+        if (!$snippets) {
+            return [];
+        }
+
+        $allTags = [];
+
+        foreach ($snippets as $snippet) {
+            if (empty($snippet['tags'])) {
+                continue;
+            }
+            $tags = array_map('trim', explode(',', $snippet['tags']));
+            $allTags = array_merge($allTags, $tags);
+        }
+
+        return array_unique($allTags);
     }
 
     public function findByFileName($fileName)
@@ -193,7 +295,8 @@ class Snippet
             'tags'        => '',
             'description' => '',
             'type'        => '',
-            'run_at'      => ''
+            'run_at'      => '',
+            'group'       => ''
         ];
 
         foreach ($docBlock as $key => $value) {

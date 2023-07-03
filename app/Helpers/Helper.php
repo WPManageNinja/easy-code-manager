@@ -48,10 +48,12 @@ class Helper
             'description',
             'type',
             'status',
+            'tags',
             'created_at',
             'updated_at',
             'run_at',
-            'priority'
+            'priority',
+            'group'
         ];
 
         $snippets = (new \FluentSnippets\App\Model\Snippet())->get();
@@ -118,6 +120,16 @@ PHP;
         }
 
         return [];
+    }
+
+    public static function getIndexedConfig()
+    {
+        $cachedFile = self::getStorageDir() . '/index.php';
+        if (!file_exists($cachedFile)) {
+            return [];
+        }
+
+        return include $cachedFile;
     }
 }
 

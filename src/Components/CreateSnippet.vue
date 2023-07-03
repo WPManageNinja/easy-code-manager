@@ -22,20 +22,38 @@
                         <el-form-item label="Code" :class="'fsnip_code_lang_'+snippet.meta.type" class="code_editor_wrap">
                             <el-tabs @tabChange="tabChanged()" v-model="snippet.meta.type" type="border-card">
                                 <el-tab-pane name="PHP" label="Functions (PHP)">
+                                    <template #label>
+                                        <span class="custom-tabs-label">
+                                             <span>Functions</span>
+                                            <span class="fsn_label fsn_php">PHP</span>
+                                        </span>
+                                    </template>
                                     <code-editor
                                         v-if="snippet.meta.type == 'PHP'"
                                         :langType="snippet.meta.type"
                                         v-model="snippet.code"
                                     />
                                 </el-tab-pane>
-                                <el-tab-pane name="php_content" label="Content (HTML + PHP)">
+                                <el-tab-pane name="php_content">
+                                    <template #label>
+                                        <span class="custom-tabs-label">
+                                             <span>Content</span>
+                                            <span class="fsn_label fsn_mixed">HTML + PHP</span>
+                                        </span>
+                                    </template>
                                     <code-editor
                                         v-if="snippet.meta.type == 'php_content'"
                                         :langType="snippet.meta.type"
                                         v-model="snippet.code"
                                     />
                                 </el-tab-pane>
-                                <el-tab-pane name="css" label="CSS">
+                                <el-tab-pane name="css">
+                                    <template #label>
+                                        <span class="custom-tabs-label">
+                                             <span>Styles</span>
+                                            <span class="fsn_label fsn_css">CSS</span>
+                                        </span>
+                                    </template>
                                     <code-editor
                                         v-if="snippet.meta.type == 'css'"
                                         :langType="snippet.meta.type"
@@ -43,6 +61,12 @@
                                     />
                                 </el-tab-pane>
                                 <el-tab-pane name="js" label="Javascript">
+                                    <template #label>
+                                        <span class="custom-tabs-label">
+                                             <span>Scripts</span>
+                                            <span class="fsn_label fsn_js">JS</span>
+                                        </span>
+                                    </template>
                                     <code-editor
                                         v-if="snippet.meta.type == 'js'"
                                         :langType="snippet.meta.type"

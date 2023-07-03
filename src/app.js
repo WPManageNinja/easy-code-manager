@@ -79,6 +79,14 @@ app.mixin({
         relativeTimeFromUtc(utcDateTime) {
             const localDateTime = dayjs.utc(utcDateTime).local();
             return localDateTime.fromNow();
+        },
+        getLangLabelName(lang) {
+            switch (lang) {
+                case 'php_content':
+                    return 'PHP + HTML';
+                default:
+                    return lang.toUpperCase();
+            }
         }
     }
 });

@@ -1,35 +1,36 @@
 <template>
     <el-form label-position="top" :model="snippet.meta">
-        <el-form-item label="Snippet Name">
-            <el-input placeholder="Your Snippet Name" size="large" type="text" v-model="snippet.meta.name" />
-        </el-form-item>
-        <slot name="code_editor">
-            <el-form-item :class="'fsnip_code_lang_'+snippet.meta.type" class="code_editor_wrap">
-                <template #label>
-                    <span>Code <el-tag size="small" type="info">{{snippet.meta.type}}</el-tag></span>
-                </template>
-                <code-editor
-                    :langType="snippet.meta.type"
-                    v-model="snippet.code"
-                />
-            </el-form-item>
-        </slot>
 
-        <el-form-item v-if="runTypeOptions" label="Where to run?">
-            <el-radio-group v-model="snippet.meta.run_at">
-                <el-radio v-for="(runType, runLabel) in runTypeOptions" :key="runLabel" :label="runLabel">{{ runType }}</el-radio>
-            </el-radio-group>
-        </el-form-item>
-        <el-form-item label="Description">
-            <el-input placeholder="Internal Description for this snippet" type="textarea" v-model="snippet.meta.description" />
-        </el-form-item>
-        <el-row :gutter="30">
-            <el-col :md="12" :sm="12" :xs="24">
+        <el-row :gutter="20">
+            <el-col :xs="24" :sm="15" :md="16" :lg="18">
+                <slot name="code_editor">
+                    <el-form-item :class="'fsnip_code_lang_'+snippet.meta.type" class="code_editor_wrap">
+                        <template #label>
+                            <span>Code</span>
+                            <span class="fsn_label" :class="'fsn_'+snippet.meta.type">{{ getLangLabelName(snippet.meta.type) }}</span>
+                        </template>
+                        <code-editor
+                            :langType="snippet.meta.type"
+                            v-model="snippet.code"
+                        />
+                    </el-form-item>
+                </slot>
+                <el-form-item v-if="runTypeOptions" label="Where to run?">
+                    <el-radio-group v-model="snippet.meta.run_at">
+                        <el-radio v-for="(runType, runLabel) in runTypeOptions" :key="runLabel" :label="runLabel">{{ runType }}</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="9" :md="8" :lg="6">
+                <el-form-item label="Snippet Name">
+                    <el-input placeholder="Your Snippet Name" size="large" type="text" v-model="snippet.meta.name" />
+                </el-form-item>
+                <el-form-item label="Description">
+                    <el-input placeholder="Internal Description for this snippet" type="textarea" v-model="snippet.meta.description" />
+                </el-form-item>
                 <el-form-item label="Tags">
                     <tag-creator v-model="snippet.meta.tags" />
                 </el-form-item>
-            </el-col>
-            <el-col :md="12" :sm="12" :xs="24">
                 <el-form-item label="Priority">
                     <template #label>
                         <span>
@@ -45,8 +46,24 @@
                     </template>
                     <el-input-number v-model="snippet.meta.priority" :min="1" />
                 </el-form-item>
+                <el-form-item label="Snippet Group">
+                    <template #label>
+                        <span>
+                            Snippet Group <el-tooltip
+                            class="box-item"
+                            effect="dark"
+                            content="You may group your snippets for better organization and easy to find."
+                            placement="top-start"
+                        >
+                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                          </el-tooltip>
+                        </span>
+                    </template>
+                    <el-input placeholder="Snippet Group" size="large" type="text" v-model="snippet.meta.group" />
+                </el-form-item>
             </el-col>
         </el-row>
+
     </el-form>
 </template>
 
