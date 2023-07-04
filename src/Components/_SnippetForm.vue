@@ -1,6 +1,5 @@
 <template>
     <el-form label-position="top" :model="snippet.meta">
-
         <el-row :gutter="20">
             <el-col :xs="24" :sm="15" :md="16" :lg="18">
                 <slot name="code_editor">
@@ -26,10 +25,22 @@
                     <el-input placeholder="Your Snippet Name" size="large" type="text" v-model="snippet.meta.name" />
                 </el-form-item>
                 <el-form-item label="Description">
-                    <el-input placeholder="Internal Description for this snippet" type="textarea" v-model="snippet.meta.description" />
+                    <el-input placeholder="Internal Description for this snippet" :rows="3" type="textarea" v-model="snippet.meta.description" />
                 </el-form-item>
-                <el-form-item label="Tags">
-                    <tag-creator v-model="snippet.meta.tags" />
+                <el-form-item label="Snippet Group">
+                    <template #label>
+                        <span>
+                            Snippet Group <el-tooltip
+                            class="box-item"
+                            effect="dark"
+                            content="You may group your snippets for better organization and easy to find."
+                            placement="top-start"
+                        >
+                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                          </el-tooltip>
+                        </span>
+                    </template>
+                    <select-plus pop_placeholder="Create new group" placeholder="Select Snippet Group" :options="appVars.groups" v-model="snippet.meta.group" />
                 </el-form-item>
                 <el-form-item label="Priority">
                     <template #label>
@@ -46,20 +57,8 @@
                     </template>
                     <el-input-number v-model="snippet.meta.priority" :min="1" />
                 </el-form-item>
-                <el-form-item label="Snippet Group">
-                    <template #label>
-                        <span>
-                            Snippet Group <el-tooltip
-                            class="box-item"
-                            effect="dark"
-                            content="You may group your snippets for better organization and easy to find."
-                            placement="top-start"
-                        >
-                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
-                          </el-tooltip>
-                        </span>
-                    </template>
-                    <el-input placeholder="Snippet Group" size="large" type="text" v-model="snippet.meta.group" />
+                <el-form-item class="snippet_tags_item" label="Tags">
+                    <tag-creator v-model="snippet.meta.tags" />
                 </el-form-item>
             </el-col>
         </el-row>
@@ -72,12 +71,14 @@ import TagCreator from './_TagCreator.vue'
 import CodeEditor from './_CodeEditor.vue'
 import {InfoFilled} from '@element-plus/icons-vue';
 import {markRaw} from "vue";
+import SelectPlus from './_SelectPlus.vue';
 
 export default {
     name: 'SnippetForm',
     components: {
         TagCreator,
-        CodeEditor
+        CodeEditor,
+        SelectPlus
     },
     data() {
         return {

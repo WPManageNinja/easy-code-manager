@@ -7,6 +7,13 @@
                     <el-button @click="getSnippets()" size="small">{{ $t('refresh') }}</el-button>
                 </div>
                 <div style="display: flex;" class="box_actions">
+                    <el-input clearable @keyup.native.enter="getSnippets()"
+                              style="width: 200px; margin-left: 10px;"
+                              size="small" type="text" v-model="search" placeholder="Search">
+                        <template #append>
+                            <el-button @click="getSnippets()" :icon="SearchIcon"/>
+                        </template>
+                    </el-input>
                     <el-button style="margin-left: 10px;" @click="createSnippet()" type="primary">{{
                             $t('New Snippet')
                         }}
@@ -25,18 +32,19 @@
                         </li>
                     </ul>
                     <div class="snip_right_items">
-                        <el-input class="snip_ac_item" clearable @keyup.native.enter="getSnippets()" style="width: 200px; margin-left: 10px;"
-                                  size="small" type="text" v-model="search" placeholder="Search">
-                            <template #append>
-                                <el-button @click="getSnippets()" :icon="SearchIcon"/>
-                            </template>
-                        </el-input>
-                        <el-select class="snip_ac_item" @change="getSnippets()" clearable placeholder="All tags" filterable v-model="selectedTag">
+                        <el-radio-group @change="$storeLocalData('view_type', viewType)" v-model="viewType" size="small">
+                            <el-radio-button label="table">{{ $t('Table') }}</el-radio-button>
+                            <el-radio-button label="grouped">{{ $t('Grouped') }}</el-radio-button>
+                        </el-radio-group>
+                        <el-select class="snip_ac_item" @change="getSnippets()" clearable placeholder="All tags"
+                                   filterable v-model="selectedTag">
                             <el-option v-for="tag in tags" :key="tag" :label="tag" :value="tag"></el-option>
                         </el-select>
                     </div>
                 </div>
+
                 <el-table
+                    v-if="viewType == 'table'"
                     v-loading="loading"
                     :data="snippets"
                     :row-class-name="tableRowClassName"
@@ -75,7 +83,7 @@
                                 </el-popconfirm>
                                 <template v-if="scope.row.group">
                                     <span class="fc_middot">|</span>
-                                    <span><el-icon><FolderOpened /></el-icon> {{ scope.row.group }}</span>
+                                    <span><el-icon><FolderOpened/></el-icon> {{ scope.row.group }}</span>
                                 </template>
                             </div>
                         </template>
@@ -108,6 +116,65 @@
                         </template>
                     </el-table-column>
                 </el-table>
+
+                <div v-else-if="groupedSnippets" v-loading="loading" class="groups_snippets">
+                    <div v-for="(group, groupName) in groupedSnippets.groups" :key="groupName" class="fsnip_group">
+                        <div class="group_name">
+                            <el-icon>
+                                <FolderOpened/>
+                            </el-icon>
+                            <span>{{ group.label }}</span>
+                        </div>
+                        <ul class="group_files">
+                            <li v-for="snippet in group.snippets" :class="'fsnip_status_'+snippet.status" :key="snippet.file_name" class="group_file">
+                                <div @click="$router.push({ name: 'edit_snippet', params: { snippet_name: snippet.file_name } })" class="group_file_name">
+                                    <el-icon>
+                                        <Document/>
+                                    </el-icon>
+                                    {{ snippet.name }}
+                                    <span class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
+                                        {{ getLangLabelName(snippet.type) }}
+                                    </span>
+                                </div>
+                                <div class="group_file_meta">
+                                    <div class="snippet_actions">
+                                        <span title="Updated At: "><el-icon><Stopwatch /></el-icon> {{ relativeTimeFromUtc(snippet.updated_at) }}</span>
+                                        <span class="fc_middot">|</span>
+                                        <span @click.prevent="console.log('OK')">
+                                            <el-switch size="small" v-model="snippet.status" active-value="published" inactive-value="draft"
+                                                   active-color="#13ce66" @change="updateSnippetStatus(snippet)"></el-switch> {{snippet.status}}
+                                        </span>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <ul v-if="groupedSnippets.roots.length" class="group_files roots_files">
+                        <li v-for="snippet in groupedSnippets.roots" :class="'fsnip_status_'+snippet.status" :key="snippet.file_name" class="group_file">
+                            <div @click="$router.push({ name: 'edit_snippet', params: { snippet_name: snippet.file_name } })" class="group_file_name">
+                                <el-icon>
+                                    <Document/>
+                                </el-icon>
+                                {{ snippet.name }}
+                                <span class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
+                                        {{ getLangLabelName(snippet.type) }}
+                                    </span>
+                            </div>
+                            <div class="group_file_meta">
+                                <div class="snippet_actions">
+                                    <span style="margin-right: 10px;">{{ limitChars(snippet.description, 50)}}</span>
+                                    <span title="Updated At: "><el-icon><Stopwatch /></el-icon> {{ relativeTimeFromUtc(snippet.updated_at) }}</span>
+                                    <span class="fc_middot">|</span>
+                                    <span @click.prevent="console.log('OK')">
+                                            <el-switch size="small" v-model="snippet.status" active-value="published" inactive-value="draft"
+                                                       active-color="#13ce66" @change="updateSnippetStatus(snippet)"></el-switch> {{snippet.status}}
+                                        </span>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
                 <el-row style="margin-top: 20px; padding: 0 15px;" :gutter="30">
                     <el-col :md="12" :xs="24">
 
@@ -129,8 +196,9 @@
 </template>
 
 <script type="text/babel">
-import {Search, FolderOpened} from '@element-plus/icons-vue';
+import {Search, FolderOpened, Document, Stopwatch} from '@element-plus/icons-vue';
 import {markRaw} from 'vue';
+import each from 'lodash/each';
 
 export default {
     name: 'Dashboard',
@@ -140,7 +208,7 @@ export default {
             SearchIcon: markRaw(Search),
             paginate: {
                 page: 1,
-                per_page: 20,
+                per_page: 100,
                 total: 0
             },
             search: '',
@@ -170,11 +238,14 @@ export default {
             ],
             loadingFirst: true,
             tags: [],
-            selectedTag: ''
+            selectedTag: '',
+            viewType: 'table'
         }
     },
     components: {
-        FolderOpened
+        FolderOpened,
+        Document,
+        Stopwatch
     },
     methods: {
         changePage(page) {
@@ -257,7 +328,58 @@ export default {
                 })
         }
     },
+    computed: {
+        groupedSnippets() {
+            if (this.viewType == 'table') {
+                return null;
+            }
+            const groups = {};
+
+            const roots = [];
+
+            each(this.snippets, (snippet) => {
+                let group = snippet.group;
+                if (!group) {
+                    roots.push(snippet);
+                } else {
+                    if (!groups[group]) {
+                        groups[group] = {
+                            label: group,
+                            snippets: []
+                        };
+                    }
+                    groups[group].snippets.push(snippet);
+                }
+            });
+
+            // values from groups
+            const groupArray = Object.values(groups);
+
+            // sort each group snippets by name
+            groupArray.forEach((group) => {
+                group.snippets.sort((a, b) => {
+                    return a.name.localeCompare(b.name);
+                });
+            });
+
+            // Short the groups by label
+            groupArray.sort((a, b) => {
+                return a.label.localeCompare(b.label);
+            });
+
+            // short the roots with name
+            roots.sort((a, b) => {
+                return a.name.localeCompare(b.name);
+            });
+
+            return {
+                groups: groupArray,
+                roots: roots
+            };
+        }
+    },
     created() {
+        this.viewType = this.$getLocalData('view_type', 'table');
         this.getSnippets();
     }
 }

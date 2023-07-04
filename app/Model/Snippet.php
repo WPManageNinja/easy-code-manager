@@ -129,7 +129,7 @@ class Snippet
 
         if ($search = Arr::get($this->args, 'search')) {
             $snippets = array_filter($snippets, function ($snippet) use ($search) {
-                return (strpos($snippet['name'], $search) !== false) || (strpos($snippet['description'], $search) !== false) || (strpos($snippet['tags'], $search) !== false);
+                return (strpos($snippet['name'], $search) !== false) || (strpos($snippet['description'], $search) !== false) || (strpos($snippet['tags'], $search) !== false) || (strpos($snippet['group'], $search) !== false);
             });
         }
 
@@ -162,7 +162,7 @@ class Snippet
         return $snippets;
     }
 
-    public function getAllSnippetTags()
+    public function getAllSnippetTagsGroups()
     {
         $config = Helper::getIndexedConfig();
 
@@ -180,16 +180,24 @@ class Snippet
         }
 
         $allTags = [];
+        $allGroups = [];
 
         foreach ($snippets as $snippet) {
-            if (empty($snippet['tags'])) {
-                continue;
+            if (!empty($snippet['tags'])) {
+                $tags = array_map('trim', explode(',', $snippet['tags']));
+                $allTags = array_merge($allTags, $tags);
             }
-            $tags = array_map('trim', explode(',', $snippet['tags']));
-            $allTags = array_merge($allTags, $tags);
+
+            if (!empty($snippet['group'])) {
+                $allGroups[] = trim($snippet['group']);
+            }
         }
 
-        return array_unique($allTags);
+        $allTags = array_unique($allTags);
+        asort($allTags);
+        $allGroups = array_unique($allGroups);
+        asort($allGroups);
+        return [array_values($allTags), array_values($allGroups)];
     }
 
     public function findByFileName($fileName)
@@ -197,7 +205,7 @@ class Snippet
         $snippetDir = Helper::getStorageDir();
         $file = $snippetDir . '/' . $fileName;
 
-        if (!file_exists($file) && $fileName === 'index.php') {
+        if (!file_exists($file) || $fileName === 'index.php') {
             return new \WP_Error('file_not_found', 'File not found');
         }
 

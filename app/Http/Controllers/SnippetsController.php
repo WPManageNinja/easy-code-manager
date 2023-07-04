@@ -27,16 +27,9 @@ class SnippetsController
             $page = 1;
         }
 
-        $snippets = $snippetModel->getIndexedSnippets($perPage, $page);
-
-        $tags = null;
-        if($request->get_param('with_tags')) {
-            $tags = $snippetModel->getAllSnippetTags();
-        }
 
         return [
-            'snippets' => $snippets,
-            'tags'     => $tags
+            'snippets' => $snippetModel->getIndexedSnippets($perPage, $page)
         ];
     }
 

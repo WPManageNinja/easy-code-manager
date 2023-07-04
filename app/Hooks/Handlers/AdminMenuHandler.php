@@ -3,6 +3,7 @@
 namespace FluentSnippets\App\Hooks\Handlers;
 
 use FluentSnippets\App\Helpers\Helper;
+use FluentSnippets\App\Model\Snippet;
 
 class AdminMenuHandler
 {
@@ -36,6 +37,8 @@ class AdminMenuHandler
 
         $currentUser = wp_get_current_user();
 
+        [$tags, $groups] = (new Snippet())->getAllSnippetTagsGroups();
+
         wp_enqueue_script('fluent_snippets_app', FLUENT_SNIPPETS_PLUGIN_URL . 'dist/app.js', ['jquery'], '1.0', true);
 
         wp_localize_script('fluent_snippets_app', 'fluentSnippetAdmin', [
@@ -56,7 +59,9 @@ class AdminMenuHandler
             ],
             'i18n'            => [
                 'Dashboard'                     => __('Dashboard', 'fluent-security'),
-            ]
+            ],
+            'tags' => $tags,
+            'groups' => $groups
         ]);
 
         echo '<div id="fluent_snippets_app"><h3 style="text-align: center; margin-top: 100px;">Loading Snippets..</h3></div>';

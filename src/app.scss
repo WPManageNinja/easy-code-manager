@@ -611,7 +611,7 @@ ul.fls_listed_data {
   }
 }
 
-tr.fsnip_status_draft {
+.fsnip_status_draft {
   opacity: 0.6;
 }
 
@@ -754,10 +754,86 @@ span.fsn_label {
 
 .snip_right_items {
   display: flex;
+
   .snip_ac_item {
     margin-left: 10px;
+
     &.el-select {
       max-width: 150px;
     }
+  }
+}
+
+.groups_snippets {
+  margin: 0 20px;
+  .fsnip_group {
+    padding: 0 0 10px;
+
+    .group_name {
+      font-size: 14px;
+      font-weight: 700;
+      i {
+        margin-right: 5px;
+      }
+    }
+  }
+
+  .group_file_meta {
+    display: none;
+  }
+
+  .group_files {
+    font-size: 12px;
+    color: #606266;
+    line-height: 1.5;
+    word-break: break-all;
+    list-style: none;
+    margin: 5px 0 5px 20px;
+    li.group_file {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    li {
+      list-style: none;
+      padding: 8px 10px;
+      margin: 0;
+      font-size: 13px;
+      &:nth-child(even) {
+        background: #f9fafc;
+      }
+      &:hover {
+        background-color: rgb(225 230 236);
+        color: black;
+        .group_file_meta {
+          display: block;
+        }
+      }
+      .fsn_label {
+        font-size: 8px;
+        line-height: 8px;
+      }
+    }
+  }
+
+  ul.group_files.roots_files {
+    margin-left: -10px;
+  }
+  .group_file_name {
+    font-size: 15px;
+    display: flex;
+    line-height: 24px;
+    gap: 5px;
+    align-items: center;
+    cursor: pointer;
+  }
+}
+.select_plus_wrap {
+  display: flex;
+}
+.snippet_tags_item {
+  .el-form-item__content {
+    display: block;
   }
 }

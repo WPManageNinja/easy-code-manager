@@ -87,6 +87,12 @@ app.mixin({
                 default:
                     return lang.toUpperCase();
             }
+        },
+        $storeLocalData(key, value) {
+            this.Storage.set(key, value);
+        },
+        $getLocalData(key, defaultValue = '') {
+            return this.Storage.get(key, defaultValue);
         }
     }
 });
