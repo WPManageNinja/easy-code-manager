@@ -1,6 +1,7 @@
 import Dashboard from './Components/Dashboard.vue';
 import SnippetEditView from './Components/SnippetEditView.vue';
 import CreateSnippet from './Components/CreateSnippet.vue';
+import Settings from './Components/ConfigSettings.vue';
 
 export var routes = [
     {
@@ -26,6 +27,14 @@ export var routes = [
         component: CreateSnippet,
         meta: {
             active: 'dashboard'
+        }
+    },
+    {
+        path: '/settings',
+        name: 'settings',
+        component: Settings,
+        meta: {
+            active: 'settings'
         }
     }
 ];

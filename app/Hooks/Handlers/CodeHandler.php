@@ -20,11 +20,19 @@ class CodeHandler
 
     public function runSnippets()
     {
+        if(defined('FLUENT_SNIPPET_SAFE_MODE') && FLUENT_SNIPPET_SAFE_MODE) {
+            return;
+        }
+        
         if (!apply_filters('fluent_snippets/run_snippets', true)) {
             return;
         }
 
         $snippets = Helper::getPublishedSnippets();
+
+        if (empty($snippets)) {
+            return;
+        }
 
         $storageDir = Helper::getStorageDir();
 

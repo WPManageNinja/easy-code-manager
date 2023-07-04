@@ -26,7 +26,6 @@ $bodyBg: #f1f2f5;
       margin-left: 10px;
       display: inline-block;
       vertical-align: middle;
-      padding-top: 10px;
 
       a {
         display: block;
@@ -67,7 +66,7 @@ $bodyBg: #f1f2f5;
         padding: 0;
         margin: 0;
 
-        a.router-link-exact-active {
+        a.router-link-active {
           border-bottom: 2px solid #9d95d8;
           color: black;
         }
@@ -84,7 +83,6 @@ $bodyBg: #f1f2f5;
           line-height: 100%;
           text-decoration: none;
           color: #909399;
-
           span {
             font-size: 14px;
             line-height: 17px;
@@ -835,5 +833,26 @@ span.fsn_label {
 .snippet_tags_item {
   .el-form-item__content {
     display: block;
+  }
+}
+
+.snip_shortcode {
+  display: flex;
+  align-items: center;
+  span.snip_code {
+    background: #b4b6ba;
+    display: flex;
+    padding: 0 0 0 8px;
+    border-radius: 5px;
+    color: black;
+    gap: 10px;
+    align-items: center;
+    i.el-icon {
+      cursor: pointer;
+      margin: 8px 8px 8px 0;
+      &:hover {
+        color: #409eff;
+      }
+    }
   }
 }

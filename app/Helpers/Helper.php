@@ -33,15 +33,18 @@ class Helper
 
     public static function cacheSnippetIndex($fileName = '', $isForced = false)
     {
+        $meta = [
+            'cached_at'      => date('Y-m-d H:i:s'),
+            'cached_version' => FLUENT_SNIPPETS_PLUGIN_VERSION,
+            'cashed_domain'  => site_url()
+        ];
+
         $data = [
             'published' => [],
-            'draft'     => [],
-            'meta'      => [
-                'cached_at'      => date('Y-m-d H:i:s'),
-                'cached_version' => FLUENT_SNIPPETS_PLUGIN_VERSION,
-                'cashed_domain'  => site_url()
-            ]
+            'draft'     => []
         ];
+
+        $data['meta'] = array_merge($meta, self::getConfigSettings());
 
         $metaKeys = [
             'name',
@@ -85,6 +88,11 @@ class Helper
             $data[$snippet['status']][$fileName] = $meta;
         }
 
+        return self::saveIndexedConfig($data);
+    }
+
+    public static function saveIndexedConfig($data)
+    {
         $cacheFile = self::getStorageDir() . '/index.php';
 
         if (!file_exists($cacheFile)) {
@@ -103,7 +111,7 @@ PHP;
 
         $code .= 'return ' . var_export($data, true) . ';';
 
-        file_put_contents($cacheFile, $code);
+        return file_put_contents($cacheFile, $code);
     }
 
     public static function getPublishedSnippets()
@@ -131,5 +139,26 @@ PHP;
 
         return include $cachedFile;
     }
+
+    public static function getConfigSettings()
+    {
+        $config = self::getIndexedConfig();
+
+        $defaults = [
+            'auto_disable'        => 'yes',
+            'auto_publish'        => 'no',
+            'remove_on_uninstall' => 'no'
+        ];
+
+        if (!$config) {
+            return $defaults;
+        }
+
+        $settings = Arr::only($config['meta'], array_keys($defaults));
+        $settings = array_filter($settings);
+
+        return wp_parse_args($settings, $defaults);
+    }
+
 }
 

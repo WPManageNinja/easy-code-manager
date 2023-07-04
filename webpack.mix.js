@@ -33,4 +33,5 @@ mix.webpackConfig({
 });
 
 mix.js('src/app.js', 'dist').vue({ version: 3 })
+    .copy('src/images', 'dist/images')
     .setPublicPath('dist');

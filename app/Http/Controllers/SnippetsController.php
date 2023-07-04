@@ -2,7 +2,6 @@
 
 namespace FluentSnippets\App\Http\Controllers;
 
-use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Model\Snippet;
 
@@ -26,7 +25,6 @@ class SnippetsController
         if (!$page) {
             $page = 1;
         }
-
 
         return [
             'snippets' => $snippetModel->getIndexedSnippets($perPage, $page)
@@ -90,6 +88,12 @@ class SnippetsController
             return $validated;
         }
 
+        $settings = Helper::getConfigSettings();
+
+        if($settings['auto_publish'] == 'yes') {
+            $meta['status'] = 'published';
+        }
+        
         // check if the $code which is a php snippet is valid or not
         $snippetModel = new Snippet();
         $snippet = $snippetModel->createSnippet($code, $meta);

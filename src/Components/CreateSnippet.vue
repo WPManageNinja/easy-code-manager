@@ -17,7 +17,7 @@
                 </div>
             </div>
             <div class="box_body">
-                <snippet-form :snippet="snippet">
+                <snippet-form :is_new="true" :snippet="snippet">
                     <template v-slot:code_editor>
                         <el-form-item label="Code" :class="'fsnip_code_lang_'+snippet.meta.type" class="code_editor_wrap">
                             <el-tabs @tabChange="tabChanged()" v-model="snippet.meta.type" type="border-card">

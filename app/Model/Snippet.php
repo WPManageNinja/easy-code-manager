@@ -249,7 +249,17 @@ class Snippet
             $fileCount = 1;
         }
 
-        $fileName = $fileCount . '-' . sanitize_title($metaData['name'], 'snippet', 'display') . '.php';
+        // get the first 4 words of the snippet name
+        $fileTitle = $metaData['name'];
+        $nameArr = explode(' ', $fileTitle);
+        if(count($nameArr) > 4) {
+            $nameArr = array_slice($nameArr, 0, 4);
+            $fileTitle = implode(' ', $nameArr);
+        }
+
+        $fileTitle = sanitize_title($fileTitle, 'snippet', 'display');
+
+        $fileName = $fileCount . '-' . $fileTitle . '.php';
 
         $fileName = sanitize_file_name($fileName);
 

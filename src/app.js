@@ -94,6 +94,17 @@ app.mixin({
         $getLocalData(key, defaultValue = '') {
             return this.Storage.get(key, defaultValue);
         }
+    },
+    watch: {
+        $route(to, from) {
+            const active = to.meta.active;
+            if(!active) {
+                return;
+            }
+            jQuery('.fsnip_menu_primary').removeClass('router-link-active');
+            jQuery('.fsnip_menu_primary.fsnip_menu_'+active).addClass('router-link-active');
+            console.log(jQuery('.fsnip_menu_primary.fsnip_menu_'+active));
+        }
     }
 });
 
