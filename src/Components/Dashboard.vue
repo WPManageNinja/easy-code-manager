@@ -182,6 +182,7 @@
                     <el-col :md="12" :xs="24">
                         <div class="fql_pagi text-align-right" style="float: right;">
                             <el-pagination @current-change="changePage"
+                                           :hide-on-single-page="true"
                                            :current-page="paginate.page"
                                            :page-size="paginate.per_page"
                                            background layout="total, prev, pager, next"
@@ -267,15 +268,11 @@ export default {
                 page: this.paginate.page,
                 search: this.search,
                 type: this.selectedLang,
-                with_tags: this.loadingFirst,
                 tag: this.selectedTag
             })
                 .then(response => {
                     this.snippets = response.snippets.data;
                     this.paginate.total = response.snippets.total;
-                    if (response.tags) {
-                        this.tags = response.tags;
-                    }
                 })
                 .catch((errors) => {
                     this.$handleError(errors);
@@ -381,6 +378,7 @@ export default {
     created() {
         this.viewType = this.$getLocalData('view_type', 'table');
         this.getSnippets();
+        this.tags = this.appVars.tags;
     }
 }
 </script>
