@@ -134,7 +134,16 @@ class CodeHandler
             return '';
         }
 
+        $config = Helper::getIndexedConfig();
+
+        if($config['meta']['force_disabled'] == 'yes') {
+            return $this->shortCodeError('Snippets are disabled');
+        }
+
         $fileName = sanitize_file_name($fileName . '.php');
+        if(isset($config['error_files'][$fileName])) {
+            return $this->shortCodeError('Snippet has an error');
+        }
 
         $snippet = (new Snippet())->findByFileName($fileName);
 
