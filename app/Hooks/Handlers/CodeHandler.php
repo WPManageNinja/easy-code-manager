@@ -8,7 +8,6 @@ use FluentSnippets\App\Model\Snippet;
 
 class CodeHandler
 {
-
     protected $storageDir;
 
     public function register()
@@ -16,7 +15,6 @@ class CodeHandler
         $this->storageDir = Helper::getStorageDir();
 
         if (!$this->isDisabled()) {
-
             add_action('shutdown', function () {
                 $error = error_get_last();
                 if ($error && $error['type'] === 1) {
@@ -136,12 +134,12 @@ class CodeHandler
 
         $config = Helper::getIndexedConfig();
 
-        if($config['meta']['force_disabled'] == 'yes') {
+        if ($config['meta']['force_disabled'] == 'yes') {
             return $this->shortCodeError('Snippets are disabled');
         }
 
         $fileName = sanitize_file_name($fileName . '.php');
-        if(isset($config['error_files'][$fileName])) {
+        if (isset($config['error_files'][$fileName])) {
             return $this->shortCodeError('Snippet has an error');
         }
 

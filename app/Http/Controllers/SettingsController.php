@@ -29,8 +29,9 @@ class SettingsController
         $settings = wp_parse_args($config, $defaults);
 
         return [
-            'settings'   => $settings,
-            'secret_url' => site_url('index.php?fluent_snippets=1&snippet_secret=' . Helper::getSecretKey())
+            'settings'      => $settings,
+            'is_standalone' => defined('FLUENT_SNIPPETS_RUNNING_MU'),
+            'secret_url'    => site_url('index.php?fluent_snippets=1&snippet_secret=' . Helper::getSecretKey())
         ];
     }
 
@@ -96,4 +97,25 @@ class SettingsController
         ];
     }
 
+    public static function configStandAloneSystem(\WP_REST_Request $request)
+    {
+        $isEnable = $request->get_param('enable') == 'yes';
+
+        if ($isEnable == 'yes') {
+            $result = Helper::enableStandAlone();
+            $message = __('Standalone mode has been activated', 'fluent-snippets');
+        } else {
+            $message = __('Standalone mode has been deactivated', 'fluent-snippets');
+            $result = Helper::disableStandAlone();
+        }
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return [
+            'message' => $message,
+            'is_standalone' => defined('FLUENT_SNIPPETS_RUNNING_MU'),
+        ];
+    }
 }

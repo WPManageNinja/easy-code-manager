@@ -1,0 +1,262 @@
+<?php
+
+if (!defined('ABSPATH')) {
+    return;
+}
+
+define('FLUENT_SNIPPETS_RUNNING_MU', true);
+define('FLUENT_SNIPPETS_RUNNING_MU_VERSION', '1.0');
+
+class FluentSnippetsMuRunner
+{
+    private $storageDir = '';
+
+    public function boot()
+    {
+        if ($this->isDisabled()) {
+            return;
+        }
+
+        $this->setStorageDir();
+        $this->runSnippets();
+        add_shortcode('fluent_snippet', [$this, 'handleShortcode']);
+    }
+
+    private function setStorageDir()
+    {
+        $upload_dir = wp_upload_dir();
+        $baseDir = $upload_dir['basedir'];
+        $this->storageDir = $baseDir . '/fluent-snippet-storage';
+    }
+
+    private function runSnippets()
+    {
+        if (!file_exists($this->storageDir . '/index.php')) {
+            return;
+        }
+
+        $config = include $this->storageDir . '/index.php';
+
+        if (empty($config) || empty($config['published']) || !is_array($config['published'])) {
+            return; // No config or published scripts exist exists
+        }
+
+        if ($config['meta']['force_disabled'] == 'yes') {
+            return; // this forcefully disabled via URL
+        }
+
+        $errorFiles = [];
+        if (!empty($config['error_files'])) {
+            $errorFiles = [];
+        }
+        $snippets = $config['published'];
+        foreach ($snippets as $fileName => $snippet) {
+
+            if ($errorFiles && isset($errorFiles[$fileName])) {
+                // There has an error. Skip this
+                continue;
+            }
+
+            $type = $snippet['type'];
+            $file = $this->storageDir . '/' . sanitize_file_name($fileName);
+
+            if (!file_exists($file)) {
+                continue;
+            }
+
+            switch ($type) {
+                case 'PHP':
+                    $runAt = $snippet['run_at'];
+                    if ($runAt == 'backend') {
+                        if (is_admin()) {
+                            require_once $file;
+                        }
+                    } else {
+                        require_once $file;
+                    }
+                    break;
+                case 'js':
+                    $runAt = $snippet['run_at'];
+                    if (!$runAt) {
+                        $runAt = 'wp_footer';
+                    }
+
+                    if (in_array($runAt, ['wp_head', 'wp_footer'])) {
+                        add_action($runAt, function () use ($file) {
+                            ?>
+                            <script><?php require_once $file; ?></script>
+                            <?php
+                        }, 99);
+                    }
+                    break;
+                case 'css':
+                    add_action('wp_head', function () use ($file) {
+                        ?>
+                        <style><?php require_once $file; ?></style>
+                        <?php
+                    }, 99);
+                    break;
+                case 'php_content':
+                    $runAt = $snippet['run_at'];
+                    if ($runAt == 'wp_footer' || $runAt == 'wp_head') {
+                        add_action($runAt, function () use ($file) {
+                            require_once $file;
+                        }, 11);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private function isDisabled()
+    {
+        return (defined('FLUENT_SNIPPETS_SAFE_MODE') && FLUENT_SNIPPETS_SAFE_MODE) || !apply_filters('fluent_snippets/run_snippets', true);
+    }
+
+    public function handleShortcode($atts, $content = null)
+    {
+        $atts = shortcode_atts([
+            'id' => '',
+        ], $atts);
+
+        $fileName = $atts['id'];
+        if (empty($fileName)) {
+            return '';
+        }
+
+        if (!file_exists($this->storageDir . '/index.php')) {
+            return '';
+        }
+
+        $config = include $this->storageDir . '/index.php';
+
+        if ($config['meta']['force_disabled'] == 'yes') {
+            return $this->shortCodeError('Snippets are disabled');
+        }
+
+        $fileName = sanitize_file_name($fileName . '.php');
+        if (isset($config['error_files'][$fileName])) {
+            return $this->shortCodeError('Snippet has an error');
+        }
+
+        $snippet = $this->findByFileName($fileName);
+
+        if (is_wp_error($snippet)) {
+            return $this->shortCodeError($snippet->get_error_message());
+        }
+
+        if (empty($snippet['meta']['type']) || $snippet['meta']['type'] !== 'php_content') {
+            return $this->shortCodeError('Snippet type is not PHP Content');
+        }
+
+        if (empty($snippet['meta']['run_at']) || $snippet['meta']['run_at'] != 'shortcode') {
+            return $this->shortCodeError('Snippet run at is not shortcode');
+        }
+
+        if (empty($snippet['meta']['status']) || $snippet['meta']['status'] != 'published') {
+            return $this->shortCodeError('Snippet status is not published');
+        }
+
+        ob_start();
+
+        $maybeReturn = include $snippet['file'];
+
+        $result = ob_get_clean();
+
+        if ($result) {
+            return $result;
+        }
+
+        if (is_string($maybeReturn) || is_numeric($maybeReturn)) {
+            return $maybeReturn;
+        }
+
+        return $this->shortCodeError('Return Data is not valid. Return data need to be string or number');
+    }
+
+    public function findByFileName($fileName)
+    {
+
+        $file = $this->storageDir . '/' . $fileName;
+
+        if (!file_exists($file) || $fileName === 'index.php') {
+            return new \WP_Error('file_not_found', 'File not found');
+        }
+
+        $fileContent = file_get_contents($this->storageDir . '/' . $fileName);
+        [$docBlockArray, $code] = $this->parseBlock($fileContent);
+
+        return [
+            'meta'   => $docBlockArray,
+            'code'   => $code,
+            'file'   => $file,
+            'status' => (!empty($docBlockArray['status'])) ? $docBlockArray['status'] : 'draft'
+        ];
+    }
+
+    private function parseBlock($fileContent)
+    {
+        // get content from // <Internal Doc Start> to // <Internal Doc End>
+        $fileContent = explode('// <Internal Doc Start>', $fileContent);
+
+        if (count($fileContent) < 2) {
+            return [null, null];
+        }
+
+        $fileContent = explode('// <Internal Doc End> ?>' . PHP_EOL, $fileContent[1]);
+        $docBlock = $fileContent[0];
+        $code = $fileContent[1];
+
+        $docBlock = explode('*', $docBlock);
+        // Explode by : and get the key and value
+        $docBlockArray = [
+            'name'        => '',
+            'status'      => '',
+            'tags'        => '',
+            'description' => '',
+            'type'        => '',
+            'run_at'      => '',
+            'group'       => ''
+        ];
+
+        foreach ($docBlock as $key => $value) {
+            $value = trim($value);
+            $arr = explode(':', $value);
+            if (count($arr) < 2) {
+                continue;
+            }
+
+            // get the first item from the array and remove it from $arr
+            $key = array_shift($arr);
+            $key = trim(str_replace('@', '', $key));
+            if (!$key) {
+                continue;
+            }
+            $docBlockArray[$key] = trim(implode(':', $arr));
+        }
+
+        return [$docBlockArray, $code];
+    }
+
+    private function shortCodeError($message)
+    {
+
+        if (!current_user_can('manage_options')) {
+            return "";
+        }
+
+        if (!$message) {
+            $message = 'Shortcode could not be rendered';
+        }
+
+        return "<div class='fluent-snippet-error'>'.wp_kses_post($message).'</div>";
+    }
+}
+
+add_action('plugins_loaded', function () {
+    if (!defined('FLUENT_SNIPPETS_PLUGIN_PATH')) {
+        (new FluentSnippetsMuRunner)->boot();
+    }
+}, 9);

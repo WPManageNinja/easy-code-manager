@@ -30,8 +30,8 @@
                     </el-form-item>
                     <el-form-item>
                         <el-checkbox :disabled="true" true-label="yes" false-label="no"
-                                     v-model="settings.remove_on_uninstall">Remove all
-                            data including <b>All Scripts</b> completely on plugin delete (coming soon)
+                                     v-model="settings.remove_on_uninstall">
+                            Remove all data including <b>All Scripts</b> completely on plugin delete (coming soon)
                         </el-checkbox>
                     </el-form-item>
                 </el-form>
@@ -73,6 +73,36 @@
                 <el-skeleton :rows="2" animated></el-skeleton>
             </div>
         </div>
+
+        <div class="box dashboard_box box_narrow">
+            <div class="box_header" style="padding: 15px; font-size: 16px;">
+                <div style="padding-top: 5px;" class="box_head">
+                    Standalone Mode (Must use mode)
+                    <el-tag v-if="is_standalone" type="success">Enabled</el-tag>
+                </div>
+            </div>
+            <div v-if="!fetching" style="padding: 15px 15px 25px;" class="box_body">
+                <p>FluentSnippet does not force you to keep installing this plugin all the time. You can disable or
+                    uninstall this plugin and still keep running your snippets as a stand-alone mode.</p>
+                <template v-if="is_standalone">
+                    <p style="font-weight: bold;">Standalone Mode is currently activated. Even if you uninstall or
+                        delete this plugin, Your scripts will still run.</p>
+                    <el-button v-loading="saving" :disabled="saving" size="small" @click="updateStandAloneMode('no')">
+                        Disable Standalone Mode
+                    </el-button>
+                </template>
+                <template v-else>
+                    <p>When using standalone mode your scripts will be executed from mu-plugins file.</p>
+                    <el-button v-loading="saving" :disabled="saving" type="primary"
+                               @click="updateStandAloneMode('yes')">Enable Standalone Mode
+                    </el-button>
+                </template>
+            </div>
+            <div v-else class="box_body">
+                <el-skeleton :rows="2" animated></el-skeleton>
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -88,7 +118,8 @@ export default {
             },
             secret_url: '',
             fetching: true,
-            saving: false
+            saving: false,
+            is_standalone: false
         }
     },
     methods: {
@@ -98,6 +129,8 @@ export default {
                 .then(response => {
                     this.settings = response.settings;
                     this.secret_url = response.secret_url;
+                    this.is_standalone = response.is_standalone;
+                    this.appVars.is_standalone = response.is_standalone;
                 })
                 .catch((errors) => {
                     this.$handleError(errors);
@@ -133,6 +166,22 @@ export default {
                     type: 'error'
                 });
             });
+        },
+        updateStandAloneMode(enabled) {
+            this.saving = true;
+            this.$post('settings/standalone', {
+                enable: enabled
+            })
+                .then(response => {
+                    this.$notify.success(response.message);
+                    this.getSettings();
+                })
+                .catch((errors) => {
+                    this.$handleError(errors);
+                })
+                .finally(() => {
+                    this.saving = false;
+                });
         }
     },
     mounted() {

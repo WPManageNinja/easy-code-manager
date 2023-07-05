@@ -58,7 +58,7 @@ class Helper
         }
 
         $data['meta'] = [
-            'secret_key' => $previousConfig['meta']['secret_key'],
+            'secret_key'          => $previousConfig['meta']['secret_key'],
             'force_disabled'      => $previousConfig['meta']['force_disabled'],
             'cached_at'           => date('Y-m-d H:i:s'),
             'cached_version'      => FLUENT_SNIPPETS_PLUGIN_VERSION,
@@ -188,6 +188,48 @@ PHP;
     {
         $config = self::getIndexedConfig();
         return Arr::get($config, 'meta.secret_key');
+    }
+
+
+    public static function enableStandAlone()
+    {
+        if (defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION') && FLUENT_SNIPPETS_RUNNING_MU_VERSION == FLUENT_SNIPPETS_PLUGIN_VERSION) {
+            return true;
+        }
+
+        $muDir = WPMU_PLUGIN_DIR;
+        if (!is_dir($muDir)) {
+            mkdir($muDir, 0755);
+        }
+
+        if (!is_dir($muDir)) {
+            return new \WP_Error('failed', 'mu-plugins dir could not be created');
+        }
+
+        file_put_contents(
+            $muDir . '/fluent-snippets-mu.php',
+            file_get_contents(FLUENT_SNIPPETS_PLUGIN_PATH . 'app/Services/mu.stub')
+        );
+
+        if (!file_exists($muDir . '/fluent-snippets-mu.php')) {
+            return new \WP_Error('failed', 'file could not be moved to mu-plugins directory');
+        }
+
+        return true;
+    }
+
+    public static function disableStandAlone()
+    {
+        $muDir = WPMU_PLUGIN_DIR;
+
+        if (!file_exists($muDir . '/fluent-snippets-mu.php')) {
+            return true;
+        }
+
+        @unlink(WPMU_PLUGIN_DIR . '/fluent-snippets-mu.php');
+
+        return true;
+
     }
 }
 

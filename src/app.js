@@ -103,7 +103,6 @@ app.mixin({
             }
             jQuery('.fsnip_menu_primary').removeClass('router-link-active');
             jQuery('.fsnip_menu_primary.fsnip_menu_'+active).addClass('router-link-active');
-            console.log(jQuery('.fsnip_menu_primary.fsnip_menu_'+active));
         }
     }
 });
