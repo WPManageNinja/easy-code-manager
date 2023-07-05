@@ -26,7 +26,6 @@ class AdminMenuHandler
             $this->getMenuIcon(),
             120
         );
-
     }
 
     public function render()

@@ -291,18 +291,29 @@ class PhpValidator
                 'line' => $parse_error->getLine(),
             ));
         }
-        ob_end_clean();
+        $output = ob_get_clean();
 
         if (is_wp_error($result)) {
             return $result;
         }
 
-        if ($result) {
+        if($output) {
             return new \WP_Error(
-                'unexpected_output',
-                $result,
+                'has_buffer',
+                'PHP code should not have print / echo statement',
                 array(
                     'line' => 0,
+                    'output' => $output
+                ));
+        }
+
+        if ($result) {
+            return new \WP_Error(
+                'has_buffer',
+                'PHP code should not have print / echo statement',
+                array(
+                    'line' => 0,
+                    'output' => $result
                 ));
         }
 
