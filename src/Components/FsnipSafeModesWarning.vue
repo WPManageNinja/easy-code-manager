@@ -21,7 +21,7 @@
 
 <script type="text/babel">
 export default {
-    name: 'SafeModesWarning',
+    name: 'FsnipSafeModesWarning',
     props: ['config'],
     data() {
         return {

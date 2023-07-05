@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name:  Fluent Code Snippets
- * Plugin URI:   https://fluentforms.com
+ * Plugin URI:   https://fluentsnippets.com
  * Description:  Super Fast File Based Native Code Snippets Manager for WordPress
  * Author:       Fluent Snippets
- * Author URI:   https://fluentforms.com
+ * Author URI:   https://fluentsnippets.com
  * License:      GPL-2.0-or-later
  * License URI:  license.txt
  * Text Domain:  fluent-snippets
@@ -24,7 +24,7 @@ define('FLUENT_SNIPPETS_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('FLUENT_SNIPPETS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('FLUENT_SNIPPETS_PLUGIN_VERSION', '1.0.0');
 
-class FluentCodeSnippets
+class FluentCodeSnippetsBoot
 {
     public function boot()
     {
@@ -62,5 +62,4 @@ class FluentCodeSnippets
     }
 }
 
-$fluentCodeSnippets = new FluentCodeSnippets();
-$fluentCodeSnippets->boot();
+(new FluentCodeSnippetsBoot())->boot();

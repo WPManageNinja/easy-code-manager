@@ -113,17 +113,6 @@ class Helper
             $data[$snippet['status']][$fileName] = $meta;
         }
 
-        if ($errorFiles) {
-//            // remove deleted snippets from cache
-//            $errorIndexes = array_intersect(array_keys($errorFiles), array_keys(array_merge(array_keys($data['published']), array_keys($data['draft']))));
-//
-//            if ($errorIndexes) {
-//                $errorFiles = Arr::only($errorFiles, $errorIndexes);
-//            } else {
-//                $errorFiles = [];
-//            }
-        }
-
         $data['error_files'] = $errorFiles;
 
         return self::saveIndexedConfig($data);
@@ -200,6 +189,5 @@ PHP;
         $config = self::getIndexedConfig();
         return Arr::get($config, 'meta.secret_key');
     }
-
 }
 

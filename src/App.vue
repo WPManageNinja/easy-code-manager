@@ -17,7 +17,7 @@
                 </li>
             </ul>
         </div>
-        <safe-modes-warning :config="appVars.safeModes" />
+        <fsnip-promo :config="appVars.safeModes" />
         <div class="ff_app_body">
             <router-view></router-view>
         </div>
@@ -25,11 +25,11 @@
 </template>
 
 <script type="text/babel">
-import SafeModesWarning from './Components/SafeModesWarning.vue';
+import FsnipPromo from './Components/FsnipSafeModesWarning.vue';
 export default {
     name: 'FluentAuthApp',
     components: {
-        SafeModesWarning
+        FsnipPromo
     },
     data() {
         return {
