@@ -13,11 +13,22 @@ class CodeHandler
 
     public function register()
     {
-
         $this->storageDir = Helper::getStorageDir();
 
         if (!$this->isDisabled()) {
-            add_action('wp_php_error_args', array($this, 'maybeHandleFatalError'), 1, 2);
+
+            add_action('shutdown', function () {
+                $error = error_get_last();
+                if ($error && $error['type'] === 1) {
+                    $this->maybeHandleFatalError([
+                        'response' => 500
+                    ], $error);
+                }
+            });
+
+            // This is for the early error handling
+            add_filter('wp_php_error_args', array($this, 'maybeHandleFatalError'), 1, 2);
+
             add_action('plugins_loaded', [$this, 'runSnippets'], 9);
             add_shortcode('fluent_snippet', [$this, 'handleShortcode']);
         }
@@ -189,7 +200,7 @@ class CodeHandler
         if (isset($config['draft'][$fileName])) {
             unset($config['draft'][$fileName]);
         }
-        
+
         if (isset($config['error_files'][$fileName])) {
             unset($config['error_files'][$fileName]);
         }
@@ -199,6 +210,7 @@ class CodeHandler
 
     public function maybeHandleFatalError($args, $error)
     {
+
         if (empty($args['response']) || $args['response'] != 500) {
             return $args;
         }
@@ -219,7 +231,13 @@ class CodeHandler
         // let's get the indexed config
         $config = Helper::getIndexedConfig();
 
+        $fileName = basename($file);
+
         if (empty($config)) {
+            return $args;
+        }
+
+        if (isset($config['error_files'][$fileName])) {
             return $args;
         }
 
@@ -233,7 +251,7 @@ class CodeHandler
             $message = str_replace($file, 'SNIPPET', $message);
         }
 
-        $config['error_files'][basename($file)] = $message;
+        $config['error_files'][$fileName] = $message;
 
         Helper::saveIndexedConfig($config, $this->storageDir . '/index.php');
 
