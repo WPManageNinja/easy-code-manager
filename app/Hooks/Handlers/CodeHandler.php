@@ -8,32 +8,39 @@ use FluentSnippets\App\Model\Snippet;
 
 class CodeHandler
 {
+
+    protected $storageDir;
+
     public function register()
     {
-        add_action('plugins_loaded', [$this, 'runSnippets'], 9);
-        add_shortcode('fluent_snippet', [$this, 'handleShortcode']);
+
+        $this->storageDir = Helper::getStorageDir();
+
+        if (!$this->isDisabled()) {
+            add_action('wp_php_error_args', array($this, 'maybeHandleFatalError'), 1, 2);
+            add_action('plugins_loaded', [$this, 'runSnippets'], 9);
+            add_shortcode('fluent_snippet', [$this, 'handleShortcode']);
+        }
 
         add_action('fluent_snippets/snippet_created', [$this, 'rebuildCache']);
         add_action('fluent_snippets/snippet_updated', [$this, 'rebuildCache']);
-        add_action('fluent_snippets/snippet_deleted', [$this, 'rebuildCache']);
+        add_action('fluent_snippets/snippet_deleted', [$this, 'handleFileDelete']);
     }
 
     public function runSnippets()
     {
-        if(defined('FLUENT_SNIPPET_SAFE_MODE') && FLUENT_SNIPPET_SAFE_MODE) {
-            return;
-        }
-        
-        if (!apply_filters('fluent_snippets/run_snippets', true)) {
-            return;
+        $config = Helper::getIndexedConfig();
+        if (empty($config) || empty($config['published']) || !is_array($config['published'])) {
+            return; // No config exists
         }
 
-        $snippets = Helper::getPublishedSnippets();
-
-        if (empty($snippets)) {
-            return;
+        if (Arr::get($config, 'meta.force_disabled') == 'yes') {
+            return; // this forcefully disabled via URL
         }
 
+        $errorFiles = Arr::get($config, 'error_files', []);
+
+        $snippets = $config['published'];
         $storageDir = Helper::getStorageDir();
 
         $hasInvalidFiles = false;
@@ -43,6 +50,11 @@ class CodeHandler
                 if ($_REQUEST['fluent_saving_snippet_name'] === $fileName && current_user_can('manage_options')) {
                     continue;
                 }
+            }
+
+            if ($errorFiles && isset($errorFiles[$fileName])) {
+                // There has an error. Skip this
+                continue;
             }
 
             $type = $snippet['type'];
@@ -165,5 +177,87 @@ class CodeHandler
     public function rebuildCache($snippetFile)
     {
         Helper::cacheSnippetIndex($snippetFile);
+    }
+
+    public function handleFileDelete($fileName)
+    {
+        $config = Helper::getIndexedConfig();
+
+        if (isset($config['published'][$fileName])) {
+            unset($config['published'][$fileName]);
+        }
+        if (isset($config['draft'][$fileName])) {
+            unset($config['draft'][$fileName]);
+        }
+        
+        if (isset($config['error_files'][$fileName])) {
+            unset($config['error_files'][$fileName]);
+        }
+
+        Helper::cacheSnippetIndex();
+    }
+
+    public function maybeHandleFatalError($args, $error)
+    {
+        if (empty($args['response']) || $args['response'] != 500) {
+            return $args;
+        }
+
+        if (empty($error['file'])) {
+            return $args;
+        }
+
+        if (isset($_REQUEST['fluent_saving_snippet_name'])) {
+            return $args;
+        }
+
+        $file = $error['file'];
+        if ($this->storageDir !== dirname($file)) {
+            return $args;
+        }
+
+        // let's get the indexed config
+        $config = Helper::getIndexedConfig();
+
+        if (empty($config)) {
+            return $args;
+        }
+
+        // this is our script error. Let's disable the whole plugin run
+        $message = 'Unknown Error';
+        if (!empty($error['message'])) {
+            $message = $error['message'];
+            // get the first line of the message
+            $message = explode("\n", $message)[0];
+
+            $message = str_replace($file, 'SNIPPET', $message);
+        }
+
+        $config['error_files'][basename($file)] = $message;
+
+        Helper::saveIndexedConfig($config, $this->storageDir . '/index.php');
+
+        return $args;
+    }
+
+    private function isDisabled()
+    {
+        $result = (defined('FLUENT_SNIPPETS_SAFE_MODE') && FLUENT_SNIPPETS_SAFE_MODE) || !apply_filters('fluent_snippets/run_snippets', true);
+
+        if ($result) {
+            return true;
+        }
+
+        if (isset($_REQUEST['fluent_snippets']) && isset($_REQUEST['snippet_secret'])) {
+            $config = Helper::getIndexedConfig();
+            if (sanitize_text_field($_REQUEST['snippet_secret']) == $config['meta']['secret_key']) {
+                $config['meta']['force_disabled'] = 'yes';
+                Helper::saveIndexedConfig($config);
+                header('Location: ' . admin_url('admin.php?page=fluent-snippets'));
+                die();
+            }
+        }
+
+        return false;
     }
 }

@@ -17,7 +17,7 @@
                 </li>
             </ul>
         </div>
-
+        <safe-modes-warning :config="appVars.safeModes" />
         <div class="ff_app_body">
             <router-view></router-view>
         </div>
@@ -25,8 +25,12 @@
 </template>
 
 <script type="text/babel">
+import SafeModesWarning from './Components/SafeModesWarning.vue';
 export default {
     name: 'FluentAuthApp',
+    components: {
+        SafeModesWarning
+    },
     data() {
         return {
             menuItems: [

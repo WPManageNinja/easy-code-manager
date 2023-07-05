@@ -12,4 +12,5 @@ $router->get('snippets', ['\FluentSnippets\App\Http\Controllers\SnippetsControll
     ->post('snippets/update_status', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'updateSnippetStatus'], $permissions)
     ->post('snippets/delete_snippet', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'deleteSnippet'], $permissions)
     ->get('settings', ['\FluentSnippets\App\Http\Controllers\SettingsController', 'getSettings'], $permissions)
-    ->post('settings', ['\FluentSnippets\App\Http\Controllers\SettingsController', 'saveSettings'], $permissions);
+    ->post('settings', ['\FluentSnippets\App\Http\Controllers\SettingsController', 'saveSettings'], $permissions)
+    ->post('settings/disable-safe-mode', ['\FluentSnippets\App\Http\Controllers\SettingsController', 'disableSafeMode'], $permissions);

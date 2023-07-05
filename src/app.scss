@@ -856,3 +856,30 @@ span.fsn_label {
     }
   }
 }
+
+.el-table__row.fsnip_status_error {
+  background-color: #ffff8e;
+}
+
+.snippet_error_wrap {
+  margin: -27px -15px 10px;
+  background: #ffff8e;
+  padding: 15px;
+}
+
+.fsnip_safe .fsnip_warn {
+  background: #fff6a2;
+  padding: 15px;
+  margin-top: -20px;
+  margin-right: 20px;
+  h3 {
+    margin: 0;
+    padding: 5px 0;
+  }
+  p {
+    margin: 5px 0;
+  }
+  code {
+    display: inline-block;
+  }
+}

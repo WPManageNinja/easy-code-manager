@@ -8,7 +8,10 @@
                         <el-breadcrumb-item>
                             <span v-if="snippet">
                                 {{ snippet.meta.name }}
-                                <el-tag :type="(snippet.meta.status == 'published') ? 'success' : 'danger'" size="small">{{snippet.meta.status}}</el-tag>
+                                <el-tag v-if="snippet.error" size="small" type="danger">
+                                    PAUSED
+                                </el-tag>
+                                <el-tag v-else :type="(snippet.meta.status == 'published') ? 'success' : 'warning'" size="small">{{snippet.meta.status}}</el-tag>
                             </span>
                             <span v-else>Snippet details</span>
                         </el-breadcrumb-item>
@@ -18,7 +21,7 @@
                     <el-button @click="saveCode()" :disabled="loading || saving" type="success">
                         Update Snippet
                     </el-button>
-                    <el-button @click="toggleStatus()">
+                    <el-button v-if="!snippet.error" @click="toggleStatus()">
                         <span v-if="snippet.meta.status == 'published'">Deactivate</span>
                         <span v-else>Activate</span>
                     </el-button>
@@ -31,6 +34,11 @@
                 <h2>Sorry Snippet could not be loaded</h2>
             </div>
             <div v-else class="box_body">
+                <div class="snippet_error_wrap" v-if="snippet.error">
+                    <p>The snippet encountered an fatal error and It has been deactivated automatically. Please review your code, fix the issues and reactive.</p>
+                    <p><strong>Error Message:</strong> {{snippet.error}}</p>
+                    <el-button @click="saveCode(true)" :disabled="loading || saving" type="primary">Try Reactivate</el-button>
+                </div>
                 <snippet-form :snippet="snippet"></snippet-form>
             </div>
         </div>
@@ -69,7 +77,7 @@ export default {
                     this.loading = false;
                 });
         },
-        saveCode() {
+        saveCode(reactivate = false) {
             // validate the code
             if (!this.snippet.code) {
                 this.$notify.error('Please enter some code to save');
@@ -85,10 +93,14 @@ export default {
             this.$post('snippets/update', {
                 fluent_saving_snippet_name: this.snippet_name,
                 code: this.snippet.code,
-                meta: this.snippet.meta
+                meta: this.snippet.meta,
+                reactivate: reactivate
             })
                 .then(response => {
                     this.$notify.success('Snippet has been updated successfully');
+                    if(reactivate) {
+                        this.fetchSnippet();
+                    }
                 })
                 .catch((errors) => {
                     this.$handleError(errors);

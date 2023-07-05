@@ -20,19 +20,57 @@
                         </el-checkbox>
                     </el-form-item>
                     <el-form-item>
-                        <el-checkbox true-label="yes" false-label="no" v-model="settings.auto_disable">Stop executing
-                            scripts on fatal error from scripts.
+                        <el-checkbox true-label="yes" false-label="no" v-model="settings.auto_disable">
+                            Automatically Disable Script on fatal error
                         </el-checkbox>
+                        <div style="color: red;" v-if="settings.auto_disable != 'yes'">
+                            We highly recommend to enable this option. If disabled, then your site may go down if there
+                            has any error on the scripts.
+                        </div>
                     </el-form-item>
                     <el-form-item>
-                        <el-checkbox true-label="yes" false-label="no" v-model="settings.remove_on_uninstall">Remove all
-                            data including <b>All Scripts</b> completely on plugin delete
+                        <el-checkbox :disabled="true" true-label="yes" false-label="no"
+                                     v-model="settings.remove_on_uninstall">Remove all
+                            data including <b>All Scripts</b> completely on plugin delete (coming soon)
                         </el-checkbox>
                     </el-form-item>
                 </el-form>
             </div>
             <div v-else class="box_body">
                 <el-skeleton :rows="5" animated></el-skeleton>
+            </div>
+        </div>
+        <div class="box dashboard_box box_narrow">
+            <div class="box_header" style="padding: 15px; font-size: 16px;">
+                <div style="padding-top: 5px;" class="box_head">
+                    Safe Mode
+                </div>
+            </div>
+            <div v-if="!fetching" style="padding: 15px 15px 25px;" class="box_body">
+                <p>
+                    FluentSnippets always try to deactivate any script if fatal error encountered. There are still
+                    situations when you might get locked due to any fatal error from your snippets.
+                </p>
+                <p>
+                    This doesn't happen often, but if it does, or if you just want to turn off all code snippets for a
+                    while, you can use a thing called safe mode.
+                </p>
+                <p><b>To use safe mode</b>, use the following URL and once you visit the URL, FluentSnippets will
+                    disable all scripts temporarily.</p>
+                <b>Safe Mode URL</b>
+                <el-input style="margin-top: 5px;" size="large" v-model="secret_url" :disabled="true">
+                    <template #append>
+                        <el-button @click="copyItem(secret_url)">Copy</el-button>
+                    </template>
+                </el-input>
+
+                <h3>Enable Safe Mode Programmatically:</h3>
+                <p>If you want to enable safe mode programmatically, you can add the following code to your
+                    wp-config.php file</p>
+                <code style="padding: 10px;">define('FLUENT_SNIPPETS_SAFE_MODE', true);</code>
+            </div>
+            <div v-else class="box_body">
+                <el-skeleton :rows="2" animated></el-skeleton>
             </div>
         </div>
     </div>
@@ -48,6 +86,7 @@ export default {
                 auto_publish: 'yes',
                 remove_on_uninstall: 'no',
             },
+            secret_url: '',
             fetching: true,
             saving: false
         }
@@ -58,6 +97,7 @@ export default {
             this.$get('settings')
                 .then(response => {
                     this.settings = response.settings;
+                    this.secret_url = response.secret_url;
                 })
                 .catch((errors) => {
                     this.$handleError(errors);
@@ -80,6 +120,19 @@ export default {
                 .finally(() => {
                     this.saving = false;
                 });
+        },
+        copyItem(copyText) {
+            navigator.clipboard.writeText(copyText).then(() => {
+                this.$notify.success({
+                    message: 'Secure SafeMode URL has been copied to clipboard',
+                    type: 'success'
+                });
+            }, () => {
+                this.$notify.error({
+                    message: 'Failed to copy shortcode',
+                    type: 'error'
+                });
+            });
         }
     },
     mounted() {

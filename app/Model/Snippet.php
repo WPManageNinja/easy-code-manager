@@ -108,6 +108,10 @@ class Snippet
                 $snippets = $config['published'];
             } else if ($this->args['status'] == 'draft') {
                 $snippets = $config['draft'];
+            } else if($this->args['status'] == 'paused') {
+                $snippets = array_merge($config['published'], $config['draft']);
+                $errorFiles = Arr::get($config, 'error_files', []);
+                $snippets = Arr::only($snippets, array_keys($errorFiles));
             } else {
                 $snippets = array_merge($config['published'], $config['draft']);
             }
@@ -117,6 +121,15 @@ class Snippet
 
         if (empty($snippets)) {
             return [];
+        }
+
+        $errorFiles = Arr::get($config, 'error_files', []);
+        if($errorFiles) {
+            foreach ($errorFiles as $fileName => $error) {
+                if(isset($snippets[$fileName])) {
+                    $snippets[$fileName]['error'] = $error;
+                }
+            }
         }
 
         $type = Arr::get($this->args, 'type');
@@ -252,7 +265,7 @@ class Snippet
         // get the first 4 words of the snippet name
         $fileTitle = $metaData['name'];
         $nameArr = explode(' ', $fileTitle);
-        if(count($nameArr) > 4) {
+        if (count($nameArr) > 4) {
             $nameArr = array_slice($nameArr, 0, 4);
             $fileTitle = implode(' ', $nameArr);
         }

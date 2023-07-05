@@ -52,8 +52,9 @@
                 >
                     <el-table-column width="80">
                         <template #default="scope">
-                            <el-switch v-model="scope.row.status" active-value="published" inactive-value="draft"
+                            <el-switch v-if="!scope.row.error" v-model="scope.row.status" active-value="published" inactive-value="draft"
                                        active-color="#13ce66" @change="updateSnippetStatus(scope.row)"></el-switch>
+                            <span v-else>Paused</span>
                         </template>
                     </el-table-column>
 
@@ -64,10 +65,11 @@
                                              :to="{ name: 'edit_snippet', params: { snippet_name: scope.row.file_name } }">
                                     <span>{{ scope.row.name }}</span>
                                 </router-link>
-                                <el-tag style="margin-left: 10px;" size="small"
-                                        :type="(scope.row.status == 'published') ? 'success' : 'danger'">
+                                <el-tag v-if="!scope.row.error" style="margin-left: 10px;" size="small"
+                                        :type="(scope.row.status == 'published') ? 'success' : 'warning'">
                                     {{ scope.row.status }}
                                 </el-tag>
+                                <el-tag v-else style="margin-left: 10px;" size="small" type="danger">ERROR</el-tag>
                             </div>
                             <div class="snippet_actions">
                                 <router-link class="edit_snippet_link"
@@ -90,7 +92,10 @@
                     </el-table-column>
                     <el-table-column :label="$t('Description')" min-width="200">
                         <template #default="scope">
-                            {{ limitChars(scope.row.description, 100) }}
+                            <span v-if="scope.row.error">ERROR: {{scope.row.error}}</span>
+                            <span v-else>
+                                {{ limitChars(scope.row.description, 100) }}
+                            </span>
                         </template>
                     </el-table-column>
                     <el-table-column :label="$t('Type')" width="120">
@@ -132,15 +137,26 @@
                                         <Document/>
                                     </el-icon>
                                     {{ snippet.name }}
-                                    <span class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
+                                    <template v-if="snippet.error">
+                                        <span style="background: red; color: white;" class="fsn_label">Error: </span>
+                                        <span style="margin-right: 10px; color: red;">{{ limitChars(snippet.error, 100)}}</span>
+                                    </template>
+                                    <span v-else class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
                                         {{ getLangLabelName(snippet.type) }}
-                                    </span>
+                                </span>
                                 </div>
                                 <div class="group_file_meta">
                                     <div class="snippet_actions">
                                         <span title="Updated At: "><el-icon><Stopwatch /></el-icon> {{ relativeTimeFromUtc(snippet.updated_at) }}</span>
                                         <span class="fc_middot">|</span>
-                                        <span @click.prevent="console.log('OK')">
+                                        <el-popconfirm width="220" @confirm="confirmDeleteSnippet(snippet)"
+                                                       title="Are you sure to delete this?">
+                                            <template #reference>
+                                                <span class="fsnip_delete">delete</span>
+                                            </template>
+                                        </el-popconfirm>
+                                        <span class="fc_middot">|</span>
+                                        <span v-if="!snippet.error">
                                             <el-switch size="small" v-model="snippet.status" active-value="published" inactive-value="draft"
                                                    active-color="#13ce66" @change="updateSnippetStatus(snippet)"></el-switch> {{snippet.status}}
                                         </span>
@@ -156,25 +172,34 @@
                                     <Document/>
                                 </el-icon>
                                 {{ snippet.name }}
-                                <span class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
+                                <template v-if="snippet.error">
+                                    <span style="background: red; color: white;" class="fsn_label">Error: </span>
+                                    <span style="margin-right: 10px; color: red;">{{ limitChars(snippet.error, 100)}}</span>
+                                </template>
+                                <span v-else class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
                                         {{ getLangLabelName(snippet.type) }}
-                                    </span>
+                                </span>
                             </div>
                             <div class="group_file_meta">
                                 <div class="snippet_actions">
-                                    <span style="margin-right: 10px;">{{ limitChars(snippet.description, 50)}}</span>
+                                    <span v-if="!snippet.error" style="margin-right: 10px;">{{ limitChars(snippet.description, 50)}}</span>
                                     <span title="Updated At: "><el-icon><Stopwatch /></el-icon> {{ relativeTimeFromUtc(snippet.updated_at) }}</span>
                                     <span class="fc_middot">|</span>
-                                    <span @click.prevent="console.log('OK')">
-                                            <el-switch size="small" v-model="snippet.status" active-value="published" inactive-value="draft"
-                                                       active-color="#13ce66" @change="updateSnippetStatus(snippet)"></el-switch> {{snippet.status}}
-                                        </span>
+                                    <el-popconfirm width="220" @confirm="confirmDeleteSnippet(snippet)"
+                                                   title="Are you sure to delete this?">
+                                        <template #reference>
+                                            <span class="fsnip_delete">delete</span>
+                                        </template>
+                                    </el-popconfirm>
+                                    <span class="fc_middot">|</span>
+                                    <span>
+                                        <el-switch v-if="!snippet.error" size="small" v-model="snippet.status" active-value="published" inactive-value="draft" active-color="#13ce66" @change="updateSnippetStatus(snippet)"></el-switch> {{snippet.status}}
+                                    </span>
                                 </div>
                             </div>
                         </li>
                     </ul>
                 </div>
-
                 <el-row style="margin-top: 20px; padding: 0 15px;" :gutter="30">
                     <el-col :md="12" :xs="24">
 
@@ -283,6 +308,9 @@ export default {
                 });
         },
         tableRowClassName({row, rowIndex}) {
+            if (row.error) {
+                return 'fsnip_status_error';
+            }
             return 'fsnip_status_' + row.status;
         },
         limitChars(string, limit = 100) {

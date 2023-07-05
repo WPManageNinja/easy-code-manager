@@ -51,6 +51,12 @@ class SnippetsController
             $snippet['code'] = ltrim($snippet['code'], PHP_EOL);
         }
 
+        $config = Helper::getIndexedConfig();
+
+        if(!empty($config['error_files']) && !empty($config['error_files'][$snippet['file_name']])) {
+            $snippet['error'] = $config['error_files'][$snippet['file_name']];
+        }
+
         return [
             'snippet' => $snippet
         ];
@@ -93,7 +99,7 @@ class SnippetsController
         if($settings['auto_publish'] == 'yes') {
             $meta['status'] = 'published';
         }
-        
+
         // check if the $code which is a php snippet is valid or not
         $snippetModel = new Snippet();
         $snippet = $snippetModel->createSnippet($code, $meta);
@@ -101,7 +107,7 @@ class SnippetsController
 
         return [
             'snippet' => $snippet,
-            'message' => 'Snippet created successfully'
+            'message' => __('Snippet created successfully', 'fluent-snippets')
         ];
     }
 
@@ -134,6 +140,14 @@ class SnippetsController
         // check if the $code which is a php snippet is valid or not
         $snippetModel = new Snippet();
         $snippet = $snippetModel->updateSnippet($fileName, $code, $meta);
+
+        if($request->get_param('reactivate')) {
+            $config = Helper::getIndexedConfig();
+            if(isset($config['error_files'][$fileName])) {
+                unset($config['error_files'][$fileName]);
+            }
+            Helper::saveIndexedConfig($config);
+        }
 
         do_action('fluent_snippets/snippet_updated', $snippet);
 

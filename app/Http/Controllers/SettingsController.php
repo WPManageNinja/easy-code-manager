@@ -29,7 +29,8 @@ class SettingsController
         $settings = wp_parse_args($config, $defaults);
 
         return [
-            'settings' => $settings
+            'settings'   => $settings,
+            'secret_url' => site_url('index.php?fluent_snippets=1&snippet_secret=' . Helper::getSecretKey())
         ];
     }
 
@@ -75,6 +76,23 @@ class SettingsController
         return [
             'message'  => __('Settings has been successfully updated', 'fluent-snippets'),
             'settings' => $settings
+        ];
+    }
+
+    public static function disableSafeMode(\WP_REST_Request $request)
+    {
+        $config = Helper::getIndexedConfig();
+
+        if (!$config) {
+            return new \WP_Error('invalid_config', 'Config file could not be generated');
+        }
+
+        $config['meta']['force_disabled'] = 'no';
+
+        $config = Helper::saveIndexedConfig($config);
+
+        return [
+            'message' => __('Safe mode has been disabled', 'fluent-snippets')
         ];
     }
 
