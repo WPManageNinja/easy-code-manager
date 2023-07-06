@@ -10,10 +10,10 @@ class SnippetsController
     public static function getSnippets(\WP_REST_Request $request)
     {
         $snippetModel = new Snippet([
-            'search' => sanitize_text_field($request->get_param('search')),
-            'type'   => sanitize_text_field($request->get_param('type')),
-            'tag' => sanitize_text_field($request->get_param('tag')),
-            'sort_by' => sanitize_text_field($request->get_param('sort_by')),
+            'search'     => sanitize_text_field($request->get_param('search')),
+            'type'       => sanitize_text_field($request->get_param('type')),
+            'tag'        => sanitize_text_field($request->get_param('tag')),
+            'sort_by'    => sanitize_text_field($request->get_param('sort_by')),
             'sort_order' => strtolower(sanitize_text_field($request->get_param('sort_order'))),
         ]);
 
@@ -55,7 +55,7 @@ class SnippetsController
 
         $config = Helper::getIndexedConfig();
 
-        if(!empty($config['error_files']) && !empty($config['error_files'][$snippet['file_name']])) {
+        if (!empty($config['error_files']) && !empty($config['error_files'][$snippet['file_name']])) {
             $snippet['error'] = $config['error_files'][$snippet['file_name']];
         }
 
@@ -67,6 +67,10 @@ class SnippetsController
 
     public static function createSnippet(\WP_REST_Request $request)
     {
+        if ($restricted = self::isBlockedRequest()) {
+            return $restricted;
+        }
+
         $meta = $request->get_param('meta');
         $code = $request->get_param('code');
 
@@ -98,7 +102,7 @@ class SnippetsController
 
         $settings = Helper::getConfigSettings();
 
-        if($settings['auto_publish'] == 'yes') {
+        if ($settings['auto_publish'] == 'yes') {
             $meta['status'] = 'published';
         }
 
@@ -115,6 +119,10 @@ class SnippetsController
 
     public static function updateSnippet(\WP_REST_Request $request)
     {
+        if ($restricted = self::isBlockedRequest()) {
+            return $restricted;
+        }
+
         $fileName = sanitize_file_name($request->get_param('fluent_saving_snippet_name'));
         $meta = $request->get_param('meta');
         $code = $request->get_param('code');
@@ -143,9 +151,9 @@ class SnippetsController
         $snippetModel = new Snippet();
         $snippet = $snippetModel->updateSnippet($fileName, $code, $meta);
 
-        if($request->get_param('reactivate')) {
+        if ($request->get_param('reactivate')) {
             $config = Helper::getIndexedConfig();
-            if(isset($config['error_files'][$fileName])) {
+            if (isset($config['error_files'][$fileName])) {
                 unset($config['error_files'][$fileName]);
             }
             Helper::saveIndexedConfig($config);
@@ -161,6 +169,10 @@ class SnippetsController
 
     public static function updateSnippetStatus(\WP_REST_Request $request)
     {
+        if ($restricted = self::isBlockedRequest()) {
+            return $restricted;
+        }
+
         $fileName = sanitize_file_name($request->get_param('fluent_saving_snippet_name'));
         $status = sanitize_text_field($request->get_param('status'));
 
@@ -190,6 +202,10 @@ class SnippetsController
 
     public static function deleteSnippet(\WP_REST_Request $request)
     {
+        if ($restricted = self::isBlockedRequest()) {
+            return $restricted;
+        }
+
         $fileName = sanitize_file_name($request->get_param('fluent_saving_snippet_name'));
 
         $snippetModel = new Snippet();
@@ -219,5 +235,14 @@ class SnippetsController
         }
 
         return true;
+    }
+
+    private static function isBlockedRequest()
+    {
+        if (current_user_can('unfiltered_html')) {
+            return false;
+        }
+
+        return new \WP_Error('invalid_request', 'You do not have permission to perform this action. Required Permission: unfiltered_html');
     }
 }

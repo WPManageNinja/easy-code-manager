@@ -11,6 +11,10 @@ class SettingsController
 {
     public static function getSettings(\WP_REST_Request $request)
     {
+        if ($restricted = self::isBlockedRequest()) {
+            return $restricted;
+        }
+
         $config = Helper::getIndexedConfig();
 
         $defaults = [
@@ -37,6 +41,10 @@ class SettingsController
 
     public static function saveSettings(\WP_REST_Request $request)
     {
+        if ($restricted = self::isBlockedRequest()) {
+            return $restricted;
+        }
+
         $settings = $request->get_param('settings');
 
         if (!is_array($settings)) {
@@ -82,6 +90,10 @@ class SettingsController
 
     public static function disableSafeMode(\WP_REST_Request $request)
     {
+        if ($restricted = self::isBlockedRequest()) {
+            return $restricted;
+        }
+
         $config = Helper::getIndexedConfig();
 
         if (!$config) {
@@ -99,6 +111,10 @@ class SettingsController
 
     public static function configStandAloneSystem(\WP_REST_Request $request)
     {
+        if ($restricted = self::isBlockedRequest()) {
+            return $restricted;
+        }
+
         $isEnable = $request->get_param('enable') == 'yes';
 
         if ($isEnable == 'yes') {
@@ -117,5 +133,14 @@ class SettingsController
             'message' => $message,
             'is_standalone' => defined('FLUENT_SNIPPETS_RUNNING_MU'),
         ];
+    }
+
+    private static function isBlockedRequest()
+    {
+        if (current_user_can('unfiltered_html') && current_user_can('manage_options')) {
+            return false;
+        }
+
+        return new \WP_Error('invalid_request', 'You do not have permission to perform this action. Required Permission: unfiltered_html & manage_options');
     }
 }
