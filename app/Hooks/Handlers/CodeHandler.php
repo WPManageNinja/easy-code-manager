@@ -90,16 +90,24 @@ class CodeHandler
 
                     if (in_array($runAt, ['wp_head', 'wp_footer'])) {
                         add_action($runAt, function () use ($file) {
+                            if (!file_exists($file)) {
+                                return;
+                            }
+                            $code = (new Snippet())->parseBlock(file_get_contents($file), true);
                             ?>
-                            <script><?php require_once $file; ?></script>
+                            <script><?php echo $code; ?></script>
                             <?php
                         }, 99);
                     }
                     break;
                 case 'css':
                     add_action('wp_head', function () use ($file) {
+                        if (!file_exists($file)) {
+                            return;
+                        };
+                        $code = (new Snippet())->parseBlock(file_get_contents($file), true);
                         ?>
-                        <style><?php require_once $file; ?></style>
+                        <style><?php echo $code; ?></style>
                         <?php
                     }, 99);
                     break;

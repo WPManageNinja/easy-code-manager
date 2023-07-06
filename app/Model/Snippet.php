@@ -335,18 +335,27 @@ class Snippet
         return true;
     }
 
-    private function parseBlock($fileContent)
+    public function parseBlock($fileContent, $codeOnly = false)
     {
         // get content from // <Internal Doc Start> to // <Internal Doc End>
         $fileContent = explode('// <Internal Doc Start>', $fileContent);
 
         if (count($fileContent) < 2) {
+
+            if($codeOnly) {
+                return '';
+            }
+
             return [null, null];
         }
 
         $fileContent = explode('// <Internal Doc End> ?>' . PHP_EOL, $fileContent[1]);
-        $docBlock = $fileContent[0];
         $code = $fileContent[1];
+        if($codeOnly) {
+            return $code;
+        }
+        $docBlock = $fileContent[0];
+
 
         $docBlock = explode('*', $docBlock);
         // Explode by : and get the key and value
