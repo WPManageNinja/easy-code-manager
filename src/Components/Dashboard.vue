@@ -4,7 +4,6 @@
             <div class="box_header" style="padding: 15px;font-size: 16px;">
                 <div style="padding-top: 5px;" class="box_head">
                     {{ $t('Code Snippets') }}
-                    <el-button @click="getSnippets()" size="small">{{ $t('refresh') }}</el-button>
                 </div>
                 <div style="display: flex;" class="box_actions">
                     <el-input clearable @keyup.native.enter="getSnippets()"
@@ -32,14 +31,43 @@
                         </li>
                     </ul>
                     <div class="snip_right_items">
-                        <el-radio-group @change="$storeLocalData('view_type', viewType)" v-model="viewType" size="small">
+                        <el-radio-group @change="$storeLocalData('view_type', viewType)" v-model="viewType">
                             <el-radio-button label="table">{{ $t('Table') }}</el-radio-button>
                             <el-radio-button label="grouped">{{ $t('Grouped') }}</el-radio-button>
                         </el-radio-group>
-                        <el-select class="snip_ac_item" @change="getSnippets()" clearable placeholder="All tags"
+                        <el-select style="margin-right: 10px;" size="small" class="snip_ac_item" @change="getSnippets()"
+                                   clearable placeholder="All tags"
                                    filterable v-model="selectedTag">
                             <el-option v-for="tag in tags" :key="tag" :label="tag" :value="tag"></el-option>
                         </el-select>
+                        <el-popover :visible="showingPop" placement="bottom-end" width="auto">
+                            <div class="fct_filter_items">
+                                <h3>Sort By</h3>
+                                <div style="max-height: 150px; overflow: auto;">
+                                    <el-radio-group class="fct_radios_blocks" v-model="sorting.sortBy">
+                                        <el-radio v-for="column in sortingOrderColumns" :key="column.value"
+                                                  :label="column.value">
+                                            {{ column.label }}
+                                        </el-radio>
+                                    </el-radio-group>
+                                </div>
+                                <hr/>
+                                <el-radio-group size="small" v-model="sorting.sortType">
+                                    <el-radio-button label="ASC">Ascending</el-radio-button>
+                                    <el-radio-button label="DESC">Descending</el-radio-button>
+                                </el-radio-group>
+                                <span style="display: block; width: 100%; margin-bottom: 20px;"></span>
+                                <el-button @click="applySorting()" type="success">Apply</el-button>
+                            </div>
+                            <template #reference>
+                                <el-button @click="showingPop = true" type="default">
+                                    <el-icon style="margin-right: 5px;">
+                                        <SortIcon/>
+                                    </el-icon>
+                                    Sort
+                                </el-button>
+                            </template>
+                        </el-popover>
                     </div>
                 </div>
 
@@ -52,7 +80,8 @@
                 >
                     <el-table-column width="80">
                         <template #default="scope">
-                            <el-switch v-if="!scope.row.error" v-model="scope.row.status" active-value="published" inactive-value="draft"
+                            <el-switch v-if="!scope.row.error" v-model="scope.row.status" active-value="published"
+                                       inactive-value="draft"
                                        active-color="#13ce66" @change="updateSnippetStatus(scope.row)"></el-switch>
                             <span v-else>Paused</span>
                         </template>
@@ -92,7 +121,7 @@
                     </el-table-column>
                     <el-table-column :label="$t('Description')" min-width="200">
                         <template #default="scope">
-                            <span v-if="scope.row.error">ERROR: {{scope.row.error}}</span>
+                            <span v-if="scope.row.error">ERROR: {{ scope.row.error }}</span>
                             <span v-else>
                                 {{ limitChars(scope.row.description, 100) }}
                             </span>
@@ -131,15 +160,19 @@
                             <span>{{ group.label }}</span>
                         </div>
                         <ul class="group_files">
-                            <li v-for="snippet in group.snippets" :class="'fsnip_status_'+snippet.status" :key="snippet.file_name" class="group_file">
-                                <div @click="$router.push({ name: 'edit_snippet', params: { snippet_name: snippet.file_name } })" class="group_file_name">
+                            <li v-for="snippet in group.snippets" :class="'fsnip_status_'+snippet.status"
+                                :key="snippet.file_name" class="group_file">
+                                <div
+                                    @click="$router.push({ name: 'edit_snippet', params: { snippet_name: snippet.file_name } })"
+                                    class="group_file_name">
                                     <el-icon>
                                         <Document/>
                                     </el-icon>
                                     {{ snippet.name }}
                                     <template v-if="snippet.error">
                                         <span style="background: red; color: white;" class="fsn_label">Error: </span>
-                                        <span style="margin-right: 10px; color: red;">{{ limitChars(snippet.error, 100)}}</span>
+                                        <span
+                                            style="margin-right: 10px; color: red;">{{ limitChars(snippet.error, 100) }}</span>
                                     </template>
                                     <span v-else class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
                                         {{ getLangLabelName(snippet.type) }}
@@ -147,7 +180,9 @@
                                 </div>
                                 <div class="group_file_meta">
                                     <div class="snippet_actions">
-                                        <span title="Updated At: "><el-icon><Stopwatch /></el-icon> {{ relativeTimeFromUtc(snippet.updated_at) }}</span>
+                                        <span title="Updated At: "><el-icon><Stopwatch/></el-icon> {{
+                                                relativeTimeFromUtc(snippet.updated_at)
+                                            }}</span>
                                         <span class="fc_middot">|</span>
                                         <el-popconfirm width="220" @confirm="confirmDeleteSnippet(snippet)"
                                                        title="Are you sure to delete this?">
@@ -157,8 +192,10 @@
                                         </el-popconfirm>
                                         <span class="fc_middot">|</span>
                                         <span v-if="!snippet.error">
-                                            <el-switch size="small" v-model="snippet.status" active-value="published" inactive-value="draft"
-                                                   active-color="#13ce66" @change="updateSnippetStatus(snippet)"></el-switch> {{snippet.status}}
+                                            <el-switch size="small" v-model="snippet.status" active-value="published"
+                                                       inactive-value="draft"
+                                                       active-color="#13ce66"
+                                                       @change="updateSnippetStatus(snippet)"></el-switch> {{ snippet.status }}
                                         </span>
                                     </div>
                                 </div>
@@ -166,15 +203,19 @@
                         </ul>
                     </div>
                     <ul v-if="groupedSnippets.roots.length" class="group_files roots_files">
-                        <li v-for="snippet in groupedSnippets.roots" :class="'fsnip_status_'+snippet.status" :key="snippet.file_name" class="group_file">
-                            <div @click="$router.push({ name: 'edit_snippet', params: { snippet_name: snippet.file_name } })" class="group_file_name">
+                        <li v-for="snippet in groupedSnippets.roots" :class="'fsnip_status_'+snippet.status"
+                            :key="snippet.file_name" class="group_file">
+                            <div
+                                @click="$router.push({ name: 'edit_snippet', params: { snippet_name: snippet.file_name } })"
+                                class="group_file_name">
                                 <el-icon>
                                     <Document/>
                                 </el-icon>
                                 {{ snippet.name }}
                                 <template v-if="snippet.error">
                                     <span style="background: red; color: white;" class="fsn_label">Error: </span>
-                                    <span style="margin-right: 10px; color: red;">{{ limitChars(snippet.error, 100)}}</span>
+                                    <span
+                                        style="margin-right: 10px; color: red;">{{ limitChars(snippet.error, 100) }}</span>
                                 </template>
                                 <span v-else class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
                                         {{ getLangLabelName(snippet.type) }}
@@ -182,8 +223,11 @@
                             </div>
                             <div class="group_file_meta">
                                 <div class="snippet_actions">
-                                    <span v-if="!snippet.error" style="margin-right: 10px;">{{ limitChars(snippet.description, 50)}}</span>
-                                    <span title="Updated At: "><el-icon><Stopwatch /></el-icon> {{ relativeTimeFromUtc(snippet.updated_at) }}</span>
+                                    <span v-if="!snippet.error"
+                                          style="margin-right: 10px;">{{ limitChars(snippet.description, 50) }}</span>
+                                    <span title="Updated At: "><el-icon><Stopwatch/></el-icon> {{
+                                            relativeTimeFromUtc(snippet.updated_at)
+                                        }}</span>
                                     <span class="fc_middot">|</span>
                                     <el-popconfirm width="220" @confirm="confirmDeleteSnippet(snippet)"
                                                    title="Are you sure to delete this?">
@@ -193,7 +237,10 @@
                                     </el-popconfirm>
                                     <span class="fc_middot">|</span>
                                     <span>
-                                        <el-switch v-if="!snippet.error" size="small" v-model="snippet.status" active-value="published" inactive-value="draft" active-color="#13ce66" @change="updateSnippetStatus(snippet)"></el-switch> {{snippet.status}}
+                                        <el-switch v-if="!snippet.error" size="small" v-model="snippet.status"
+                                                   active-value="published" inactive-value="draft"
+                                                   active-color="#13ce66"
+                                                   @change="updateSnippetStatus(snippet)"></el-switch> {{ snippet.status }}
                                     </span>
                                 </div>
                             </div>
@@ -222,7 +269,7 @@
 </template>
 
 <script type="text/babel">
-import {Search, FolderOpened, Document, Stopwatch} from '@element-plus/icons-vue';
+import {Search, FolderOpened, Document, Stopwatch, Sort} from '@element-plus/icons-vue';
 import {markRaw} from 'vue';
 import each from 'lodash/each';
 
@@ -236,6 +283,10 @@ export default {
                 page: 1,
                 per_page: 100,
                 total: 0
+            },
+            sorting: {
+                sortType: 'DESC',
+                sortBy: 'created_at'
             },
             search: '',
             loading: false,
@@ -265,17 +316,41 @@ export default {
             loadingFirst: true,
             tags: [],
             selectedTag: '',
-            viewType: 'table'
+            viewType: 'table',
+            sortingOrderColumns: [
+                {
+                    value: 'name',
+                    label: 'Name'
+                },
+                {
+                    value: 'created_at',
+                    label: 'Created At'
+                },
+                {
+                    value: 'updated_at',
+                    label: 'Updated At'
+                },
+                {
+                    value: 'priority',
+                    label: 'Priority'
+                }
+            ],
+            showingPop: false
         }
     },
     components: {
-        FolderOpened,
-        Document,
-        Stopwatch
+        FolderOpened: markRaw(FolderOpened),
+        Document: markRaw(Document),
+        Stopwatch: markRaw(Stopwatch),
+        SortIcon: markRaw(Sort)
     },
     methods: {
         changePage(page) {
             this.paginate.page = page;
+            this.getSnippets();
+        },
+        applySorting() {
+            this.$storeLocalData('snippet_sorting', this.sorting);
             this.getSnippets();
         },
         changeLang(lang) {
@@ -287,13 +362,16 @@ export default {
             this.getSnippets();
         },
         getSnippets() {
+            this.showingPop = false;
             this.loading = true;
             this.$get('snippets', {
                 per_page: this.paginate.per_page,
                 page: this.paginate.page,
                 search: this.search,
                 type: this.selectedLang,
-                tag: this.selectedTag
+                tag: this.selectedTag,
+                sort_by: this.sorting.sortBy,
+                sort_order: this.sorting.sortType
             })
                 .then(response => {
                     this.snippets = response.snippets.data;
@@ -405,6 +483,11 @@ export default {
     },
     created() {
         this.viewType = this.$getLocalData('view_type', 'table');
+        this.sorting = this.$getLocalData('snippet_sorting', {
+            sortType: 'DESC',
+            sortBy: 'created_at'
+        });
+
         this.getSnippets();
         this.tags = this.appVars.tags;
     }

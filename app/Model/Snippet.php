@@ -108,7 +108,7 @@ class Snippet
                 $snippets = $config['published'];
             } else if ($this->args['status'] == 'draft') {
                 $snippets = $config['draft'];
-            } else if($this->args['status'] == 'paused') {
+            } else if ($this->args['status'] == 'paused') {
                 $snippets = array_merge($config['published'], $config['draft']);
                 $errorFiles = Arr::get($config, 'error_files', []);
                 $snippets = Arr::only($snippets, array_keys($errorFiles));
@@ -124,13 +124,15 @@ class Snippet
         }
 
         $errorFiles = Arr::get($config, 'error_files', []);
-        if($errorFiles) {
+        if ($errorFiles) {
             foreach ($errorFiles as $fileName => $error) {
-                if(isset($snippets[$fileName])) {
+                if (isset($snippets[$fileName])) {
                     $snippets[$fileName]['error'] = $error;
                 }
             }
         }
+
+        $snippets = array_values($snippets);
 
         $type = Arr::get($this->args, 'type');
 
@@ -156,10 +158,7 @@ class Snippet
             });
         }
 
-        // Short the snippets by name
-        usort($snippets, function ($a, $b) {
-            return strcmp($a['name'], $b['name']);
-        });
+        $snippets = $this->sortSnippets($snippets);
 
         if ($perPage != null && $page != null) {
             $snippets = array_slice($snippets, ($page - 1) * $perPage, $perPage);
@@ -171,6 +170,37 @@ class Snippet
                 'last_page' => (int)ceil(count($snippets) / $perPage)
             ];
         }
+
+        return $snippets;
+    }
+
+    private function sortSnippets($snippets)
+    {
+        $sortingMaps = [
+            'created_at' => 'strtotime',
+            'updated_at' => 'strtotime',
+            'priority'   => 'intval',
+            'name'       => 'strtolower',
+        ];
+
+        $sortBy = $this->args['sort_by'] ?? 'created_at';
+        $sortOrder = $this->args['sort_order'] ?? 'desc';
+
+        $callback = Arr::get($sortingMaps, $sortBy);
+
+        if (!$callback) {
+            return $snippets;
+        }
+
+        // Short the snippets by name
+        usort($snippets, function ($a, $b) use ($sortBy, $sortOrder, $callback) {
+            $value1 = call_user_func($callback, $a[$sortBy]);
+            $value2 = call_user_func($callback, $b[$sortBy]);
+            if ($sortBy == 'name') {
+                return $sortOrder == 'asc' ? strcasecmp(trim($a['name']), trim($b['name'])) : strcasecmp(trim($b['name']), trim($a['name']));
+            }
+            return $sortOrder == 'asc' ? $value1 <=> $value2 : $value2 <=> $value1;
+        });
 
         return $snippets;
     }

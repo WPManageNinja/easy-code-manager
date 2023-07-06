@@ -883,3 +883,11 @@ span.fsn_label {
     display: inline-block;
   }
 }
+
+.fct_radios_blocks {
+  display: block;
+  > label {
+    display: block;
+    margin-right: 0;
+  }
+}

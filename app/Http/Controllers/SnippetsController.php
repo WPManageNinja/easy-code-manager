@@ -13,6 +13,8 @@ class SnippetsController
             'search' => sanitize_text_field($request->get_param('search')),
             'type'   => sanitize_text_field($request->get_param('type')),
             'tag' => sanitize_text_field($request->get_param('tag')),
+            'sort_by' => sanitize_text_field($request->get_param('sort_by')),
+            'sort_order' => strtolower(sanitize_text_field($request->get_param('sort_order'))),
         ]);
 
         $perPage = $request->get_param('per_page');

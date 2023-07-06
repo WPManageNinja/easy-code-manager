@@ -4,6 +4,10 @@ if (!defined('ABSPATH')) {
     return;
 }
 
+if(defined('FLUENT_SNIPPETS_RUNNING_MU')) {
+    return;
+}
+
 define('FLUENT_SNIPPETS_RUNNING_MU', true);
 define('FLUENT_SNIPPETS_RUNNING_MU_VERSION', '1.0');
 
