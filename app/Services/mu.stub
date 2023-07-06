@@ -87,16 +87,25 @@ class FluentSnippetsMuRunner
 
                     if (in_array($runAt, ['wp_head', 'wp_footer'])) {
                         add_action($runAt, function () use ($file) {
+                            if (!file_exists($file)) {
+                                return;
+                            }
+                            $code = $this->parseBlock(file_get_contents($file), true);
                             ?>
-                            <script><?php require_once $file; ?></script>
+                            <script><?php echo $code; ?></script>
                             <?php
                         }, 99);
                     }
                     break;
+                    break;
                 case 'css':
                     add_action('wp_head', function () use ($file) {
+                        if (!file_exists($file)) {
+                            return;
+                        };
+                        $code = $this->parseBlock(file_get_contents($file), true);
                         ?>
-                        <style><?php require_once $file; ?></style>
+                        <style><?php echo $code; ?></style>
                         <?php
                     }, 99);
                     break;
@@ -200,18 +209,25 @@ class FluentSnippetsMuRunner
         ];
     }
 
-    private function parseBlock($fileContent)
+    private function parseBlock($fileContent, $codeOnly = false)
     {
         // get content from // <Internal Doc Start> to // <Internal Doc End>
         $fileContent = explode('// <Internal Doc Start>', $fileContent);
 
         if (count($fileContent) < 2) {
+            if($codeOnly) {
+                return '';
+            }
             return [null, null];
         }
 
         $fileContent = explode('// <Internal Doc End> ?>' . PHP_EOL, $fileContent[1]);
         $docBlock = $fileContent[0];
         $code = $fileContent[1];
+
+        if($codeOnly) {
+            return $code;
+        }
 
         $docBlock = explode('*', $docBlock);
         // Explode by : and get the key and value
