@@ -71,7 +71,7 @@ class SnippetsController
             return $restricted;
         }
 
-        $meta = $request->get_param('meta');
+        $meta = json_decode($request->get_param('meta'), true);
         $code = $request->get_param('code');
 
         $metaValidated = self::validateMeta($meta);
@@ -124,7 +124,7 @@ class SnippetsController
         }
 
         $fileName = sanitize_file_name($request->get_param('fluent_saving_snippet_name'));
-        $meta = $request->get_param('meta');
+        $meta = json_decode($request->get_param('meta'), true);
         $code = $request->get_param('code');
 
         $metaValidated = self::validateMeta($meta);

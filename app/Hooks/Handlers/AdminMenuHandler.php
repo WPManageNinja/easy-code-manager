@@ -32,10 +32,10 @@ class AdminMenuHandler
     {
         add_filter('admin_footer_text', function ($content) {
             $ext = '';
-            if(defined('FLUENT_SNIPPETS_RUNNING_MU')) {
+            if (defined('FLUENT_SNIPPETS_RUNNING_MU')) {
                 $ext = '<b>Standalone (MU Mode) is activated</b>';
             }
-            return 'Thank you for using <a rel="noopener"  target="_blank" href="https://fluentauth.com">Fluent Snippets</a>.'.' '.$ext;
+            return 'Thank you for using <a rel="noopener"  target="_blank" href="https://fluentauth.com">Fluent Snippets</a>.' . ' ' . $ext;
         });
 
         $currentUser = wp_get_current_user();
@@ -45,28 +45,29 @@ class AdminMenuHandler
         wp_enqueue_script('fluent_snippets_app', FLUENT_SNIPPETS_PLUGIN_URL . 'dist/app.js', ['jquery'], '1.0', true);
 
         wp_localize_script('fluent_snippets_app', 'fluentSnippetAdmin', [
-            'slug'          => 'fluent-snippets',
-            'nonce'         => wp_create_nonce('fluent-snippets'),
-            'rest'          => [
+            'slug'                       => 'fluent-snippets',
+            'nonce'                      => wp_create_nonce('fluent-snippets'),
+            'rest'                       => [
                 'base_url'  => esc_url_raw(rest_url()),
                 'url'       => rest_url('fluent-snippets'),
                 'nonce'     => wp_create_nonce('wp_rest'),
                 'namespace' => 'fluent-snippets',
                 'version'   => '1'
             ],
-            'asset_url'     => FLUENT_SNIPPETS_PLUGIN_URL . 'dist/',
-            'me'            => [
+            'asset_url'                  => FLUENT_SNIPPETS_PLUGIN_URL . 'dist/',
+            'me'                         => [
                 'id'        => $currentUser->ID,
                 'full_name' => trim($currentUser->first_name . ' ' . $currentUser->last_name),
                 'email'     => $currentUser->user_email
             ],
-            'i18n'          => [
+            'i18n'                       => [
                 'Dashboard' => __('Dashboard', 'fluent-security'),
             ],
-            'tags'          => $tags,
-            'groups'        => $groups,
-            'safeModes'     => $this->getSafeModeInfo(),
-            'is_standalone' => defined('FLUENT_SNIPPETS_RUNNING_MU')
+            'tags'                       => $tags,
+            'groups'                     => $groups,
+            'safeModes'                  => $this->getSafeModeInfo(),
+            'is_standalone'              => defined('FLUENT_SNIPPETS_RUNNING_MU'),
+            'advanced_condition_options' => $this->getAdvancedConditionOptions()
         ]);
 
         echo '<div id="fluent_snippets_app"><h3 style="text-align: center; margin-top: 100px;">' . __('Loading Snippets..', 'fluent-snippets') . '</h3></div>';
@@ -80,6 +81,95 @@ class AdminMenuHandler
             'is_defined_disabled'  => defined('FLUENT_SNIPPETS_SAFE_MODE') && FLUENT_SNIPPETS_SAFE_MODE,
             'is_filtered_disabled' => !apply_filters('fluent_snippets/run_snippets', true),
             'is_forced_disabled'   => Arr::get($config, 'meta.force_disabled') == 'yes'
+        ];
+    }
+
+
+    private function getAdvancedConditionOptions()
+    {
+        $postTypes = get_post_types(array('public' => true), 'objects');
+
+        $formattedPostTypes = array();
+        foreach ($postTypes as $postType) {
+            $formattedPostTypes[$postType->name] = $postType->label;
+        }
+
+        $taxonomies = get_taxonomies(['public' => true], 'objects');
+        $formattedTaxonomies = array();
+        foreach ($taxonomies as $taxonomy) {
+            if ('post_format' === $taxonomy->name) {
+                continue;
+            }
+            $formattedTaxonomies[$taxonomy->name] = $taxonomy->labels->singular_name;
+        }
+
+        return [
+            [
+                'label'    => __('User', 'fluent-snippets'),
+                'value'    => 'user',
+                'children' => [
+                    [
+                        'label'       => __('Logged-in', 'fluent-snippets'),
+                        'value'       => 'authenticated',
+                        'type'        => 'single_assert_option',
+                        'is_multiple' => false,
+                        'options'     => [
+                            'yes' => 'True',
+                            'no'  => 'False'
+                        ]
+                    ],
+                    [
+                        'label'             => __('User Role', 'fluent-snippets'),
+                        'value'             => 'role',
+                        'is_multiple'       => true,
+                        'is_singular_value' => true,
+                        'type'              => 'selections',
+                        'options'           => Helper::getUserRoles()
+                    ]
+                ],
+            ],
+            [
+                'label'    => __('Page', 'fluent-snippets'),
+                'value'    => 'page',
+                'children' => [
+                    [
+                        'label'             => __('Type of page', 'fluent-snippets'),
+                        'value'             => 'page_type',
+                        'type'              => 'selections',
+                        'is_multiple'       => true,
+                        'is_singular_value' => true,
+                        'options'           => array(
+                            'is_front_page' => __('Homepage', 'fluent-snippets'),
+                            'is_archive'    => __('Archive', 'fluent-snippets'),
+                            'is_singular'   => __('Single Post/Page/CPT', 'fluent-snippets'),
+                            'is_search'     => __('Search page', 'fluent-snippets'),
+                            'is_404'        => __('404 page', 'fluent-snippets'),
+                            'is_author'     => __('Author page', 'fluent-snippets')
+                        )
+                    ],
+                    [
+                        'label'             => __('Post Type', 'fluent-snippets'),
+                        'value'             => 'post_type',
+                        'type'              => 'selections',
+                        'is_multiple'       => true,
+                        'is_singular_value' => true,
+                        'options'           => $formattedPostTypes
+                    ],
+                    [
+                        'label'             => __('Taxonomy Page', 'fluent-snippets'),
+                        'value'             => 'taxonomy_page',
+                        'type'              => 'selections',
+                        'is_multiple'       => true,
+                        'is_singular_value' => true,
+                        'options'           => $formattedTaxonomies
+                    ],
+                    [
+                        'label' => __('URL'),
+                        'value' => 'url',
+                        'type'  => 'text'
+                    ]
+                ]
+            ]
         ];
     }
 

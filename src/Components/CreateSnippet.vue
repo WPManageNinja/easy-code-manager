@@ -122,11 +122,11 @@ export default {
                 this.$notify.error('The code should not starts with <?php');
                 return;
             }
-
+            
             this.saving = true;
             this.$post('snippets/create', {
                 code: this.snippet.code,
-                meta: this.snippet.meta
+                meta: JSON.stringify(this.snippet.meta)
             })
                 .then(response => {
                     this.$notify.success(response.message);

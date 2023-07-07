@@ -342,7 +342,7 @@ class Snippet
 
         if (count($fileContent) < 2) {
 
-            if($codeOnly) {
+            if ($codeOnly) {
                 return '';
             }
 
@@ -351,7 +351,7 @@ class Snippet
 
         $fileContent = explode('// <Internal Doc End> ?>' . PHP_EOL, $fileContent[1]);
         $code = $fileContent[1];
-        if($codeOnly) {
+        if ($codeOnly) {
             return $code;
         }
         $docBlock = $fileContent[0];
@@ -366,7 +366,8 @@ class Snippet
             'description' => '',
             'type'        => '',
             'run_at'      => '',
-            'group'       => ''
+            'group'       => '',
+            'condition'   => ''
         ];
 
         foreach ($docBlock as $key => $value) {
@@ -385,6 +386,21 @@ class Snippet
             $docBlockArray[$key] = trim(implode(':', $arr));
         }
 
+        if (!empty($docBlockArray['condition'])) {
+            $data = json_decode($docBlockArray['condition'], true);
+            if ($data && is_array($data)) {
+                $docBlockArray['condition'] = $data;
+            }
+        }
+
+        if (empty($docBlockArray['condition'])) {
+            $docBlockArray['condition'] = [
+                'status' => 'no',
+                'run_if' => 'assertive',
+                'items'  => [[]]
+            ];
+        }
+
         return [$docBlockArray, $code];
     }
 
@@ -400,7 +416,12 @@ class Snippet
             'tags'       => '',
             'updated_by' => get_current_user_id(),
             'name'       => 'Snippet Created @ ' . current_time('mysql'),
-            'priority'   => 10
+            'priority'   => 10,
+            'condition' => [
+                'status' => 'no',
+                'run_if' => 'assertive',
+                'items'  => [[]]
+            ]
         ];
 
         $metaData = wp_parse_args($metaData, $metaDefaults);
@@ -412,6 +433,8 @@ class Snippet
         if (!$convertString) {
             return $metaData;
         }
+
+        $metaData['condition'] = json_encode($metaData['condition']);
 
         $docBlockString = '<?php' . PHP_EOL . '// <Internal Doc Start>' . PHP_EOL . '/*' . PHP_EOL . '*';
 

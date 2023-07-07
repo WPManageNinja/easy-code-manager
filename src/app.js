@@ -93,6 +93,13 @@ app.mixin({
         },
         $getLocalData(key, defaultValue = '') {
             return this.Storage.get(key, defaultValue);
+        },
+        is_rtl: false,
+        ucFirst(string) {
+            if(!string) {
+                return '';
+            }
+            return string.charAt(0).toUpperCase() + string.slice(1);
         }
     },
     watch: {

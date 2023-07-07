@@ -80,7 +80,8 @@ class Helper
             'updated_at',
             'run_at',
             'priority',
-            'group'
+            'group',
+            'condition'
         ];
 
         $snippets = (new \FluentSnippets\App\Model\Snippet())->get();
@@ -230,6 +231,19 @@ PHP;
 
         return true;
 
+    }
+
+    public static function getUserRoles()
+    {
+        $roles = get_editable_roles();
+
+        $formattedRoles = [];
+
+        foreach ($roles as $role => $data) {
+            $formattedRoles[$role] = $data['name'];
+        }
+
+        return $formattedRoles;
     }
 }
 

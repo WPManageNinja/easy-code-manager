@@ -35,6 +35,8 @@
                     </div>
                 </div>
 
+                <advanced-conditions :snippet="snippet" />
+
             </el-col>
             <el-col :xs="24" :sm="9" :md="8" :lg="6">
                 <el-form-item label="Snippet Name">
@@ -88,6 +90,7 @@ import CodeEditor from './_CodeEditor.vue'
 import {InfoFilled, CopyDocument} from '@element-plus/icons-vue';
 import {markRaw} from "vue";
 import SelectPlus from './_SelectPlus.vue';
+import AdvancedConditions from './_AdvancedConditions.vue';
 
 export default {
     name: 'SnippetForm',
@@ -95,7 +98,8 @@ export default {
         TagCreator,
         CodeEditor,
         SelectPlus,
-        CopyDocument
+        CopyDocument,
+        AdvancedConditions
     },
     data() {
         return {

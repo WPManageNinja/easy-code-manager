@@ -93,7 +93,7 @@ export default {
             this.$post('snippets/update', {
                 fluent_saving_snippet_name: this.snippet_name,
                 code: this.snippet.code,
-                meta: this.snippet.meta,
+                meta: JSON.stringify(this.snippet.meta),
                 reactivate: reactivate
             })
                 .then(response => {

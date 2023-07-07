@@ -5,6 +5,7 @@ namespace FluentSnippets\App\Hooks\Handlers;
 use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Model\Snippet;
+use FluentSnippets\App\Services\FluentSnippetCondition;
 
 class CodeHandler
 {
@@ -27,7 +28,7 @@ class CodeHandler
             // This is for the early error handling
             add_filter('wp_php_error_args', array($this, 'maybeHandleFatalError'), 1, 2);
 
-            add_action('plugins_loaded', [$this, 'runSnippets'], 9);
+            add_action('wp', [$this, 'runSnippets'], 9);
             add_shortcode('fluent_snippet', [$this, 'handleShortcode']);
         }
 
@@ -54,11 +55,17 @@ class CodeHandler
 
         $hasInvalidFiles = false;
 
+        $conditionalClass = new FluentSnippetCondition();
+
         foreach ($snippets as $fileName => $snippet) {
             if (isset($_REQUEST['fluent_saving_snippet_name'])) {
                 if ($_REQUEST['fluent_saving_snippet_name'] === $fileName && current_user_can('manage_options')) {
                     continue;
                 }
+            }
+
+            if (!$conditionalClass->evaluate($snippet['condition'])) {
+                continue;
             }
 
             if ($errorFiles && isset($errorFiles[$fileName])) {
@@ -87,7 +94,6 @@ class CodeHandler
                     break;
                 case 'js':
                     $runAt = Arr::get($snippet, 'run_at', 'wp_footer');
-
                     if (in_array($runAt, ['wp_head', 'wp_footer'])) {
                         add_action($runAt, function () use ($file) {
                             if (!file_exists($file)) {
