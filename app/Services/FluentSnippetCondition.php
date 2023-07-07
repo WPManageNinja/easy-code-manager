@@ -9,33 +9,27 @@ class FluentSnippetCondition
         if (empty($conditionSettings) || empty($conditionSettings['status']) || $conditionSettings['status'] != 'yes' || empty($conditionSettings['items'])) {
             return true;
         }
-
         $conditionItems = array_filter($conditionSettings['items']);
-        if (!$conditionItems) {
-            return true;
-        }
-
+        if (!$conditionItems) { return true; }
         foreach ($conditionItems as $conditions) {
-            if ($this->evaluateItems($conditions)) {
-                return true;
-            }
+            if ($this->evaluateItems($conditions)) { return true; }
         }
-
         return false;
     }
 
     private function evaluateItems($conditions)
     {
         foreach ($conditions as $condition) {
-            if (!$this->evaluateCondition($condition)) {
-                return false;
-            }
+            if (!$this->evaluateCondition($condition)) { return false; }
         }
         return true;
     }
 
     private function evaluateCondition($condition)
     {
+        if (empty($condition['source']) || empty($condition['operator']) || empty($condition['value'])) {
+            return false;
+        }
         $source = $condition['source'][0];
 
         switch ($source) {
@@ -64,7 +58,6 @@ class FluentSnippetCondition
             }
             return $this->checkValues($roles, $value, $operator);
         }
-
         return false;
     }
 
@@ -84,7 +77,7 @@ class FluentSnippetCondition
             case 'taxonomy_page':
                 $queried_object = get_queried_object();
                 $tax = isset($queried_object->taxonomy) ? $queried_object->taxonomy : '';
-                if(!$tax) {
+                if (!$tax) {
                     return false;
                 }
 
@@ -92,7 +85,7 @@ class FluentSnippetCondition
             case 'url':
                 // get current url
                 global $wp;
-                $url = isset($wp->request) ? trailingslashit(add_query_arg( $_GET, home_url( $wp->request ) )) : '';
+                $url = isset($wp->request) ? trailingslashit(add_query_arg($_GET, home_url($wp->request))) : '';
                 if (!$url) {
                     return false;
                 }
@@ -106,9 +99,7 @@ class FluentSnippetCondition
     {
         global $wp_query;
 
-        if (empty($wp_query)) {
-            return '';
-        }
+        if (empty($wp_query)) { return ''; }
 
         if (is_front_page() || is_home()) {
             return 'is_front_page';
@@ -247,8 +238,6 @@ class FluentSnippetCondition
             case 'not_null':
                 return !!$sourceValue;
         }
-
         return false;
     }
-
 }
