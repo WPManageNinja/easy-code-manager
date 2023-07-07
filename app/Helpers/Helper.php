@@ -245,5 +245,18 @@ PHP;
 
         return $formattedRoles;
     }
+
+    public static function sanitizeMetaValue($value)
+    {
+        if(is_numeric($value)) {
+            return $value;
+        }
+
+        if(str_contains($value, '*/')) {
+            $value = str_replace('*/', '', $value); // we will not allow */ in meta values
+        }
+
+        return $value;
+    }
 }
 

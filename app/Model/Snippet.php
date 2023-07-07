@@ -407,22 +407,26 @@ class Snippet
     private function parseInputMeta($metaData, $convertString = false)
     {
         $metaDefaults = [
-            'type'       => 'PHP',
-            'status'     => 'draft',
-            'created_by' => get_current_user_id(),
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s'),
-            'is_valid'   => 1,
-            'tags'       => '',
-            'updated_by' => get_current_user_id(),
-            'name'       => 'Snippet Created @ ' . current_time('mysql'),
-            'priority'   => 10,
-            'condition' => [
+            'description' => '',
+            'tags'        => '',
+            'group'       => '',
+            'name'        => 'Snippet Created @ ' . current_time('mysql'),
+            'type'        => 'PHP',
+            'status'      => 'draft',
+            'created_by'  => get_current_user_id(),
+            'created_at'  => date('Y-m-d H:i:s'),
+            'updated_at'  => date('Y-m-d H:i:s'),
+            'is_valid'    => 1,
+            'updated_by'  => get_current_user_id(),
+            'priority'    => 10,
+            'condition'   => [
                 'status' => 'no',
                 'run_if' => 'assertive',
                 'items'  => [[]]
             ]
         ];
+
+        $metaData = Arr::only($metaData, array_keys($metaDefaults));
 
         $metaData = wp_parse_args($metaData, $metaDefaults);
 
@@ -439,7 +443,7 @@ class Snippet
         $docBlockString = '<?php' . PHP_EOL . '// <Internal Doc Start>' . PHP_EOL . '/*' . PHP_EOL . '*';
 
         foreach ($metaData as $key => $value) {
-            $docBlockString .= PHP_EOL . '* @' . $key . ': ' . $value;
+            $docBlockString .= PHP_EOL . '* @' . $key . ': ' . Helper::sanitizeMetaValue($value);
         }
 
         $docBlockString .= PHP_EOL . '*/' . PHP_EOL . '?>' . PHP_EOL . '<?php if (!defined("ABSPATH")) { return;} // <Internal Doc End> ?>' . PHP_EOL;

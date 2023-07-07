@@ -166,7 +166,7 @@ class FluentSnippetCondition
                 if (is_string($dataValue)) {
                     $dataValue = strtolower($dataValue);
                 }
-                return strpos($sourceValue, $dataValue) !== false;
+                return str_contains($sourceValue, $dataValue);
                 break;
             case 'doNotContains':
             case 'not_contains':
@@ -174,7 +174,7 @@ class FluentSnippetCondition
                 if (is_string($dataValue)) {
                     $dataValue = strtolower($dataValue);
                 }
-                return !strpos($sourceValue, $dataValue) !== false;;
+                return !str_contains($sourceValue, $dataValue);
                 break;
             case 'length_equal':
                 if (is_array($sourceValue)) {
