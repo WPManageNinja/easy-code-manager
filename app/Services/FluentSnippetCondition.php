@@ -48,12 +48,13 @@ class FluentSnippetCondition
         }
     }
 
-
     private function evaluateUserCondition($key, $operator, $value)
     {
         if ($key == 'authenticated') {
             return is_user_logged_in();
-        } else if ($key == 'role') {
+        }
+
+        if ($key == 'role') {
             $userId = get_current_user_id();
             if ($userId == 0) {
                 $roles = [];
@@ -91,7 +92,7 @@ class FluentSnippetCondition
             case 'url':
                 // get current url
                 global $wp;
-                $url = isset($wp->request) ? trailingslashit(home_url($wp->request)) : '';
+                $url = isset($wp->request) ? trailingslashit(add_query_arg( $_GET, home_url( $wp->request ) )) : '';
                 if (!$url) {
                     return false;
                 }
