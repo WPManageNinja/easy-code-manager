@@ -153,12 +153,12 @@ class CodeHandler
         $config = Helper::getIndexedConfig();
 
         if ($config['meta']['force_disabled'] == 'yes') {
-            return $this->shortCodeError('Snippets are disabled');
+            return $this->shortCodeError(__('Snippets are disabled', 'fluent-snippets'));
         }
 
         $fileName = sanitize_file_name($fileName . '.php');
         if (isset($config['error_files'][$fileName])) {
-            return $this->shortCodeError('Snippet has an error');
+            return $this->shortCodeError(__('Snippet has an error', 'fluent-snippets'));
         }
 
         $snippet = (new Snippet())->findByFileName($fileName);
@@ -168,21 +168,21 @@ class CodeHandler
         }
 
         if (Arr::get($snippet, 'meta.type') !== 'php_content') {
-            return $this->shortCodeError('Snippet type is not PHP Conetnt');
+            return $this->shortCodeError(__('Snippet type is not PHP Content', 'fluent-snippets'));
         }
 
         if (Arr::get($snippet, 'meta.run_at') != 'shortcode') {
-            return $this->shortCodeError('Snippet run at is not shortcode');
+            return $this->shortCodeError(__('Snippet run at is not shortcode', 'fluent-snippets'));
         }
 
         if (Arr::get($snippet, 'meta.status') != 'published') {
-            return $this->shortCodeError('Snippet status is not published');
+            return $this->shortCodeError(__('Snippet status is not published', 'fluent-snippets'));
         }
 
         // check condition
         $conditionalClass = new FluentSnippetCondition();
         if (!$conditionalClass->evaluate($snippet['condition'])) {
-            return $this->shortCodeError('Snippet condition is not valid');
+            return $this->shortCodeError(__('Snippet condition is not valid', 'fluent-snippets'));
         }
 
         ob_start();
@@ -199,7 +199,7 @@ class CodeHandler
             return $maybeReturn;
         }
 
-        return $this->shortCodeError('Return Data is not valid. Return data need to be string or number');
+        return $this->shortCodeError(__('Return Data is not valid. Return data need to be string or number', 'fluent-snippets'));
     }
 
     private function shortCodeError($message)
@@ -210,9 +210,9 @@ class CodeHandler
         }
 
         if (!$message) {
-            $message = 'Shortcode could not be rendered';
+            $message = __('Shortcode could not be rendered', 'fluent-snippets');
         }
-        $message .= '. This message is only visible to site admin role';
+        $message .= '. ' . __('This message is only visible to site admin role', 'fluent-snippets');
 
         return "<div class='fluent-snippet-error'>'.wp_kses_post($message).'</div>";
     }
