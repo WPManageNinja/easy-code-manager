@@ -229,7 +229,7 @@ class SnippetsController
 
     private static function validateMeta($meta)
     {
-        $required = ['name', 'status', 'type'];
+        $required = ['name', 'status', 'type', 'run_at'];
 
         foreach ($required as $key) {
             if (empty($meta[$key])) {

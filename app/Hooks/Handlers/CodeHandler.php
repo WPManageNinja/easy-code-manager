@@ -44,7 +44,7 @@ class CodeHandler
             return; // No config exists
         }
 
-        if (Arr::get($config, 'meta.force_disabled') == 'yes') {
+        if ($config['meta']['force_disabled'] == 'yes') {
             return; // this forcefully disabled via URL
         }
 
@@ -108,7 +108,13 @@ class CodeHandler
                     }
                     break;
                 case 'css':
-                    add_action('wp_head', function () use ($file, $snippet, $conditionalClass) {
+                    if ($runAt == 'everywehere' && is_admin()) {
+                        $runAt = 'admin_head';
+                    } else {
+                        $runAt = 'wp_head';
+                    }
+
+                    add_action($runAt, function () use ($file, $snippet, $conditionalClass) {
                         if (!$conditionalClass->evaluate($snippet['condition'])) {
                             return;
                         }

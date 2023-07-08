@@ -1,7 +1,7 @@
-import Dashboard from './Components/Dashboard.vue';
-import SnippetEditView from './Components/SnippetEditView.vue';
-import CreateSnippet from './Components/CreateSnippet.vue';
-import Settings from './Components/ConfigSettings.vue';
+import Dashboard from './components/Dashboard.vue';
+import SnippetEditView from './components/SnippetEditView.vue';
+import CreateSnippet from './components/CreateSnippet.vue';
+import Settings from './components/ConfigSettings.vue';
 
 export var routes = [
     {

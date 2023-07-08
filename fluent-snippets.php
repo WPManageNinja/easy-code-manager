@@ -59,7 +59,10 @@ class FluentCodeSnippetsBoot
         });
 
         require_once FLUENT_SNIPPETS_PLUGIN_PATH . 'app/Hooks/hooks.php';
+
+        register_deactivation_hook( __FILE__, [\FluentSnippets\App\Helpers\Helper::class, 'handleDeactivate']);
     }
 }
 
 (new FluentCodeSnippetsBoot())->boot();
+

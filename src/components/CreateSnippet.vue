@@ -19,7 +19,8 @@
             <div class="box_body">
                 <snippet-form :is_new="true" :snippet="snippet">
                     <template v-slot:code_editor>
-                        <el-form-item label="Code" :class="'fsnip_code_lang_'+snippet.meta.type" class="code_editor_wrap">
+                        <el-form-item label="Code" :class="'fsnip_code_lang_'+snippet.meta.type"
+                                      class="code_editor_wrap">
                             <el-tabs @tabChange="tabChanged()" v-model="snippet.meta.type" type="border-card">
                                 <el-tab-pane name="PHP" label="Functions (PHP)">
                                     <template #label>
@@ -122,14 +123,14 @@ export default {
                 this.$notify.error('The code should not starts with <?php');
                 return;
             }
-            
+
             this.saving = true;
             this.$post('snippets/create', {
                 meta: JSON.stringify({...this.snippet.meta, code: this.snippet.code})
             })
                 .then(response => {
                     this.$notify.success(response.message);
-                    this.$router.push({ name: 'edit_snippet', params: { snippet_name: response.snippet } });
+                    this.$router.push({name: 'edit_snippet', params: {snippet_name: response.snippet}});
                 })
                 .catch((errors) => {
                     this.$handleError(errors);
@@ -144,6 +145,16 @@ export default {
         },
         tabChanged() {
             this.snippet.code = '';
+            const type = this.snippet.meta.type;
+            if (type == 'PHP') {
+                this.snippet.meta.run_at = 'all';
+            } else if (type == 'php_content') {
+                this.snippet.meta.run_at = '';
+            } else if (type == 'css') {
+                this.snippet.meta.run_at = 'wp_head';
+            } else if (type == 'js') {
+                this.snippet.meta.run_at = 'wp_footer';
+            }
         }
     },
     created() {

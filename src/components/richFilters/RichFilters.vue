@@ -25,7 +25,7 @@
             </el-popover>
             {{add_label}}
             <el-button style="float: right;" @click="$emit('maybeRemove')" size="small" type="danger">
-                <el-icon><DeleteIcon /></el-icon>
+                <el-icon><delete-icon /></el-icon>
             </el-button>
         </div>
 
@@ -48,7 +48,7 @@
     </div>
 </template>
 <script type="text/babel">
-import FilterItem from './_FilterItem.vue';
+import FilterItem from './FilterItem';
 import each from 'lodash/each';
 import {Plus, Delete} from '@element-plus/icons-vue'
 import {markRaw} from "vue";
@@ -56,8 +56,8 @@ import {markRaw} from "vue";
 export default {
     name: 'RichFilters',
     components: {
-        DeleteIcon: markRaw(Delete),
-        FilterItem
+        'delete-icon': markRaw(Delete),
+        'filter-item': FilterItem
     },
     props: {
         items: {

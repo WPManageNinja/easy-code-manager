@@ -19,7 +19,7 @@
 </template>
 
 <script type="text/babel">
-import RichFilters from './RichFilters.vue';
+import RichFilters from './RichFilters';
 import isArray from 'lodash/isArray';
 
 export default {

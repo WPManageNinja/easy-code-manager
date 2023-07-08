@@ -192,9 +192,9 @@ PHP;
     }
 
 
-    public static function enableStandAlone()
+    public static function enableStandAlone($isForced = false)
     {
-        if (defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION') && FLUENT_SNIPPETS_RUNNING_MU_VERSION == FLUENT_SNIPPETS_PLUGIN_VERSION) {
+        if (defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION') && FLUENT_SNIPPETS_RUNNING_MU_VERSION == FLUENT_SNIPPETS_PLUGIN_VERSION && !$isForced) {
             return true;
         }
 
@@ -257,6 +257,13 @@ PHP;
         }
 
         return $value;
+    }
+
+    public static function handleDeactivate()
+    {
+        if (defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION')) {
+            self::enableStandAlone(true);
+        }
     }
 }
 

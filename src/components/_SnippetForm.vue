@@ -68,11 +68,11 @@
 <script type="text/babel">
 import TagCreator from './_TagCreator.vue'
 import CodeEditor from './_CodeEditor.vue'
-import {InfoFilled, CopyDocument} from '@element-plus/icons-vue';
+import {InfoFilled} from '@element-plus/icons-vue';
 import {markRaw} from "vue";
-import SelectPlus from './_SelectPlus.vue';
-import AdvancedConditions from './_AdvancedConditions.vue';
-import WhereRun from './_WhereRun.vue';
+import SelectPlus from './_SelectPlus';
+import AdvancedConditions from './AdvancedConditions';
+import WhereRun from './_WhereRun';
 
 export default {
     name: 'SnippetForm',
@@ -80,7 +80,6 @@ export default {
         TagCreator,
         CodeEditor,
         SelectPlus,
-        CopyDocument,
         AdvancedConditions,
         WhereRun
     },
@@ -89,11 +88,6 @@ export default {
             InfoField: markRaw(InfoFilled)
         }
     },
-    props: ['snippet', 'is_new'],
-    methods: {
-        getFileName(file) {
-            return file.replace('.php', '');
-        }
-    }
+    props: ['snippet', 'is_new']
 }
 </script>

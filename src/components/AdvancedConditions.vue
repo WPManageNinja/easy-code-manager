@@ -19,16 +19,15 @@
                 </div>
 
                 <template v-if="condition.status == 'yes'">
-                    <rich-condition-filters :filter-options="options" :advanced_filters="condition.items" />
+                    <filter-container :filter-options="options" :advanced_filters="condition.items" />
                 </template>
             </el-collapse-item>
         </el-collapse>
     </div>
-    <pre>{{snippet.condition}}</pre>
 </template>
 
 <script type="text/babel">
-import RichConditionFilters from './RichFilters/_RichFilterContainer.vue';
+import FilterContainer from '@/components/richFilters/FilterContainer';
 import {InfoFilled} from '@element-plus/icons-vue'
 import {markRaw} from "vue";
 
@@ -36,7 +35,7 @@ export default {
     name: 'AdvancedConditions',
     props: ['snippet'],
     components: {
-        RichConditionFilters,
+        FilterContainer,
         InfoFilled: markRaw(InfoFilled)
     },
     data() {

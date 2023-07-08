@@ -32,50 +32,13 @@
                           :min="itemConfig.min"
                           v-model="item.value"/>
                 <template v-if="itemConfig.type == 'selections'">
-                    <template v-if="itemConfig.component == 'product_selector'">
-                        <ajax-selector v-model="item.value" :field="{
-                        is_multiple: itemConfig.is_multiple,
-                        option_key: 'product_selector_' + itemConfig.provider,
-                        extended_key: itemConfig.extended_key || '',
-                        size: 'small',
-                        disabled: view_only,
-                        cacheable: itemConfig.cacheable,
-                        experimental_cache: itemConfig.experimental_cache
-                    }"/>
-                    </template>
-                    <template v-else-if="itemConfig.component == 'options_selector'">
-                        <option-selector v-model="item.value" :field="{
-                        is_multiple: itemConfig.is_multiple,
-                        size: 'small',
-                        disabled: view_only,
-                        option_key: itemConfig.option_key
-                    }"></option-selector>
-                    </template>
-                    <template v-else-if="itemConfig.options">
+                    <template v-if="itemConfig.options">
                         <el-select :disabled="view_only" size="small" :multiple="itemConfig.is_multiple"
                                    :placeholder="$t('Select Option')"
                                    v-model="item.value">
                             <el-option v-for="(optionLabel,option) in itemConfig.options" :key="option" :value="option"
                                        :label="optionLabel"></el-option>
                         </el-select>
-                    </template>
-                    <template v-else-if="itemConfig.component == 'ajax_selector'">
-                        <ajax-selector v-model="item.value" :field="{
-                        is_multiple: itemConfig.is_multiple,
-                        option_key: itemConfig.option_key,
-                        size: 'small',
-                        disabled: view_only,
-                        cacheable: itemConfig.cacheable,
-                        experimental_cache: itemConfig.experimental_cache
-                    }"/>
-                    </template>
-                    <template v-else-if="itemConfig.component == 'tax_selector'">
-                        <taxonomy-terms-selector v-model="item.value" :field="{
-                        is_multiple: itemConfig.is_multiple,
-                        size: 'small',
-                        disabled: view_only,
-                        taxonomy: itemConfig.taxonomy
-                    }"/>
                     </template>
                     <template v-else-if="itemConfig.disable_values">
                         <p v-html="itemConfig.value_description"></p>
@@ -128,21 +91,21 @@
 
 <script type="text/babel">
 import isArray from 'lodash/isArray';
-import AjaxSelector from './Elements/_AjaxSelector';
-import TaxonomyTermsSelector from './Elements/_TaxonomyTermsSelector';
-import OptionSelector from './Elements/_OptionSelector';
-import ItemTimesSelection from './_ItemTimesSelection';
+// import AjaxSelector from './Elements/_AjaxSelector';
+// import TaxonomyTermsSelector from './Elements/_TaxonomyTermsSelector';
+// import OptionSelector from './Elements/_OptionSelector';
+// import ItemTimesSelection from './_ItemTimesSelection';
 import {Delete} from '@element-plus/icons-vue'
 import {markRaw} from "vue";
 
 export default {
-    name: 'RichFilterItem',
+    name: 'FilterItem',
     props: ['item', 'filterLabels', 'view_only'],
     components: {
-        OptionSelector,
-        AjaxSelector,
-        TaxonomyTermsSelector,
-        ItemTimesSelection,
+        // OptionSelector,
+        // AjaxSelector,
+        // TaxonomyTermsSelector,
+        // ItemTimesSelection,
         DeleteIcon: markRaw(Delete)
     },
     data() {
