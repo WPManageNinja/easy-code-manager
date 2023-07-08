@@ -14,26 +14,8 @@
                         />
                     </el-form-item>
                 </slot>
-                <el-form-item v-if="runTypeOptions" label="Where to run?">
-                    <el-radio-group v-model="snippet.meta.run_at">
-                        <el-radio v-for="(runType, runLabel) in runTypeOptions" :key="runLabel" :label="runLabel">{{ runType }}</el-radio>
-                    </el-radio-group>
-                </el-form-item>
 
-                <div v-if="snippet.meta.run_at == 'shortcode'">
-                    <div v-if="is_new">
-                        <p>You can view the shortcode after save this snippet</p>
-                    </div>
-                    <div class="fsnip_highlight" v-else>
-                        <p style="line-height: 1.9">Use Shortcode to display the return or print content of this snippet:</p>
-                        <div class="snip_shortcode">
-                            <span class="snip_code">
-                                [fluent_snippet id="{{ getFileName(snippet.file_name) }}"]
-                                <el-icon @click="copyShortCode()"><CopyDocument /></el-icon>
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                <where-run :snippet="snippet" :is_new="is_new" />
 
                 <advanced-conditions :snippet="snippet" />
 
@@ -80,7 +62,6 @@
                 </el-form-item>
             </el-col>
         </el-row>
-
     </el-form>
 </template>
 
@@ -91,6 +72,7 @@ import {InfoFilled, CopyDocument} from '@element-plus/icons-vue';
 import {markRaw} from "vue";
 import SelectPlus from './_SelectPlus.vue';
 import AdvancedConditions from './_AdvancedConditions.vue';
+import WhereRun from './_WhereRun.vue';
 
 export default {
     name: 'SnippetForm',
@@ -99,7 +81,8 @@ export default {
         CodeEditor,
         SelectPlus,
         CopyDocument,
-        AdvancedConditions
+        AdvancedConditions,
+        WhereRun
     },
     data() {
         return {
@@ -107,51 +90,9 @@ export default {
         }
     },
     props: ['snippet', 'is_new'],
-    computed: {
-        runTypeOptions() {
-            if (this.snippet.meta.type == 'PHP') {
-                return {
-                    'all': 'Everywhere',
-                    'backend': 'Backend',
-                    'frontend': 'Frontend'
-                }
-            }
-
-            if(this.snippet.meta.type == 'php_content') {
-                return {
-                    'shortcode': '[/] Only display when inserted into a post or page',
-                    'wp_head': '<> Display in site <head> section.',
-                    'wp_footer': '<> Display at the end of the <body> section, in the footer.',
-                }
-            }
-
-            if(this.snippet.meta.type == 'js') {
-                return {
-                    'wp_head': '<> Add Javascript on header',
-                    'wp_footer': '<> Add Javascript on footer',
-                }
-            }
-
-            return false;
-        }
-    },
     methods: {
         getFileName(file) {
             return file.replace('.php', '');
-        },
-        copyShortCode() {
-            const copyText = `[fluent_snippet id="${this.getFileName(this.snippet.file_name)}"]`;
-            navigator.clipboard.writeText(copyText).then(() => {
-                this.$notify.success({
-                    message: 'Shortcode copied to clipboard',
-                    type: 'success'
-                });
-            }, () => {
-                this.$notify.error({
-                    message: 'Failed to copy shortcode',
-                    type: 'error'
-                });
-            });
         }
     }
 }

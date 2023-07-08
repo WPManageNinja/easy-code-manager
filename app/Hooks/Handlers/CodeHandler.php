@@ -120,7 +120,7 @@ class CodeHandler
                     break;
                 case 'php_content':
                     $runAt = $snippet['run_at'];
-                    if (in_array($runAt, ['wp_footer', 'wp_head'])) {
+                    if (in_array($runAt, ['wp_footer', 'wp_head', 'wp_body_open'])) {
                         add_action($runAt, function () use ($file, $snippet, $conditionalClass) {
                             if (!$conditionalClass->evaluate($snippet['condition'])) {
                                 return;
