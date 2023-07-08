@@ -28,7 +28,7 @@ class CodeHandler
             // This is for the early error handling
             add_filter('wp_php_error_args', array($this, 'maybeHandleFatalError'), 1, 2);
 
-            add_action('init', [$this, 'runSnippets'], 9);
+            add_action('plugins_loaded', [$this, 'runSnippets'], 9);
             add_shortcode('fluent_snippet', [$this, 'handleShortcode']);
         }
 
@@ -64,39 +64,40 @@ class CodeHandler
                 }
             }
 
-            if (!$conditionalClass->evaluate($snippet['condition'])) {
-                continue;
-            }
-
             if ($errorFiles && isset($errorFiles[$fileName])) {
                 // There has an error. Skip this
                 continue;
             }
 
-            $type = $snippet['type'];
             $file = $storageDir . '/' . sanitize_file_name($fileName);
-
             if (!file_exists($file)) {
                 $hasInvalidFiles = true;
                 continue;
             }
 
+            $type = $snippet['type'];
+
             switch ($type) {
                 case 'PHP':
-                    $runAt = Arr::get($snippet, 'run_at', 'all');
-                    if ($runAt == 'backend') {
-                        if (is_admin()) {
-                            require_once $file;
+                    add_action('init', function () use ($file, $snippet, $conditionalClass) {
+                        if (!$conditionalClass->evaluate($snippet['condition'])) {
+                            return;
                         }
-                    } else {
+                        $runAt = Arr::get($snippet, 'run_at', 'all');
+                        if ($runAt == 'backend') {
+                            if (is_admin()) {
+                                require_once $file;
+                            }
+                            return;
+                        }
                         require_once $file;
-                    }
+                    }, $snippet['priority']);
                     break;
                 case 'js':
                     $runAt = Arr::get($snippet, 'run_at', 'wp_footer');
                     if (in_array($runAt, ['wp_head', 'wp_footer'])) {
-                        add_action($runAt, function () use ($file) {
-                            if (!file_exists($file)) {
+                        add_action($runAt, function () use ($file, $snippet, $conditionalClass) {
+                            if (!$conditionalClass->evaluate($snippet['condition'])) {
                                 return;
                             }
                             $code = (new Snippet())->parseBlock(file_get_contents($file), true);
@@ -107,22 +108,25 @@ class CodeHandler
                     }
                     break;
                 case 'css':
-                    add_action('wp_head', function () use ($file) {
-                        if (!file_exists($file)) {
+                    add_action('wp_head', function () use ($file, $snippet, $conditionalClass) {
+                        if (!$conditionalClass->evaluate($snippet['condition'])) {
                             return;
-                        };
+                        }
                         $code = (new Snippet())->parseBlock(file_get_contents($file), true);
                         ?>
                         <style><?php echo $code; ?></style>
                         <?php
-                    }, 99);
+                    }, $snippet['priority']);
                     break;
                 case 'php_content':
                     $runAt = $snippet['run_at'];
-                    if ($runAt == 'wp_footer' || $runAt == 'wp_head') {
-                        add_action($runAt, function () use ($file) {
+                    if (in_array($runAt, ['wp_footer', 'wp_head'])) {
+                        add_action($runAt, function () use ($file, $snippet, $conditionalClass) {
+                            if (!$conditionalClass->evaluate($snippet['condition'])) {
+                                return;
+                            }
                             require_once $file;
-                        }, 11);
+                        }, $snippet['priority']);
                     }
                     break;
                 default:
@@ -175,6 +179,12 @@ class CodeHandler
             return $this->shortCodeError('Snippet status is not published');
         }
 
+        // check condition
+        $conditionalClass = new FluentSnippetCondition();
+        if (!$conditionalClass->evaluate($snippet['condition'])) {
+            return $this->shortCodeError('Snippet condition is not valid');
+        }
+
         ob_start();
 
         $maybeReturn = include $snippet['file'];
@@ -202,6 +212,7 @@ class CodeHandler
         if (!$message) {
             $message = 'Shortcode could not be rendered';
         }
+        $message .= '. This message is only visible to site admin role';
 
         return "<div class='fluent-snippet-error'>'.wp_kses_post($message).'</div>";
     }

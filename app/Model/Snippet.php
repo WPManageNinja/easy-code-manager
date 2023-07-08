@@ -391,6 +391,12 @@ class Snippet
             if ($data && is_array($data)) {
                 $docBlockArray['condition'] = $data;
             }
+        } else {
+            $docBlockArray['condition'] = [
+                'status' => 'no',
+                'run_if' => 'assertive',
+                'items'  => [[]]
+            ];
         }
 
         if (empty($docBlockArray['condition'])) {
