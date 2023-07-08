@@ -43,6 +43,8 @@ class FluentSnippetCondition
                 return $this->evaluateUserCondition($condition['source'][1], $condition['operator'], $condition['value']);
             case 'page':
                 return $this->evaluatePageCondition($condition['source'][1], $condition['operator'], $condition['value']);
+            case 'date':
+                return $this->evaluateDateCondition($condition['source'][1], $condition['operator'], $condition['value']);
             default:
                 return false;
         }
@@ -117,6 +119,32 @@ class FluentSnippetCondition
         }
     }
 
+    private function evaluateDateCondition($key, $operator, $value)
+    {
+        switch ($key) {
+            case 'date_range':
+                $currentTime = current_time('timestamp');
+                return $this->checkValues($currentTime, $value, $operator);
+            case 'day_of_week':
+                $dayOfWeek = strtolower(date('D', current_time('timestamp')));
+                return $this->checkValues($dayOfWeek, $value, $operator);
+            case 'time_range':
+                $operator = str_replace('date_', 'number_', $operator);
+                $currentTime = date('His', current_time('timestamp'));
+
+                $currentDay = date('Y-m-d', current_time('timestamp'));
+
+                $value = [
+                    (int) date('His', strtotime($currentDay.' '.$value[0])),
+                    (int) date('His', strtotime($currentDay.' '.$value[1])),
+                ];
+
+                return $this->checkValues($currentTime, $value, $operator);
+        }
+
+        return false;
+    }
+
     private function getCurrentPageType()
     {
         global $wp_query;
@@ -146,7 +174,6 @@ class FluentSnippetCondition
 
         return '';
     }
-
 
     /*
      * $sourceValue = dynamic value
@@ -253,6 +280,16 @@ class FluentSnippetCondition
                 return strtotime($sourceValue) > strtotime($dataValue);
             case 'date_equal':
                 return date('YMD', strtotime($sourceValue)) == date('YMD', strtotime($dataValue));
+            case 'date_within':
+                $range = [strtotime($dataValue[0]), strtotime($dataValue[1])];
+                return strtotime($sourceValue) >= $range[0] && strtotime($sourceValue) <= $range[1];
+            case 'date_not_within':
+                $range = [strtotime($dataValue[0]), strtotime($dataValue[1])];
+                return strtotime($sourceValue) <= $range[0] || strtotime($sourceValue) >= $range[1];
+            case 'number_within':
+                return $sourceValue >= $dataValue[0] && $sourceValue <= $dataValue[1];
+            case 'number_not_within':
+                return $sourceValue <= $dataValue[0] || $sourceValue >= $dataValue[1];
             case 'days_before':
                 return strtotime($sourceValue) < strtotime("-{$dataValue} days", current_time('timestamp'));
             case 'days_within':

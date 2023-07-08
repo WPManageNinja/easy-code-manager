@@ -125,8 +125,7 @@ export default {
             
             this.saving = true;
             this.$post('snippets/create', {
-                code: this.snippet.code,
-                meta: JSON.stringify(this.snippet.meta)
+                meta: JSON.stringify({...this.snippet.meta, code: this.snippet.code})
             })
                 .then(response => {
                     this.$notify.success(response.message);

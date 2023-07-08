@@ -72,7 +72,9 @@ class SnippetsController
         }
 
         $meta = json_decode($request->get_param('meta'), true);
-        $code = $request->get_param('code');
+        $code = $meta['code'];
+
+        unset($meta['code']);
 
         $metaValidated = self::validateMeta($meta);
 
@@ -125,7 +127,8 @@ class SnippetsController
 
         $fileName = sanitize_file_name($request->get_param('fluent_saving_snippet_name'));
         $meta = json_decode($request->get_param('meta'), true);
-        $code = $request->get_param('code');
+        $code = $meta['code'];
+        unset($meta['code']);
 
         $metaValidated = self::validateMeta($meta);
 

@@ -28,7 +28,7 @@ class CodeHandler
             // This is for the early error handling
             add_filter('wp_php_error_args', array($this, 'maybeHandleFatalError'), 1, 2);
 
-            add_action('wp', [$this, 'runSnippets'], 9);
+            add_action('init', [$this, 'runSnippets'], 9);
             add_shortcode('fluent_snippet', [$this, 'handleShortcode']);
         }
 

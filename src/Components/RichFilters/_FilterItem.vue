@@ -31,15 +31,6 @@
                           :placeholder="$t('Condition Value')"
                           :min="itemConfig.min"
                           v-model="item.value"/>
-                <template v-else-if="itemConfig.type == 'dates'">
-                    <el-input :disabled="view_only" size="small"
-                              v-if="item.operator == 'days_before' || item.operator == 'days_within'"
-                              type="number" :placeholder="$t('Days')" v-model="item.value"/>
-                    <el-date-picker v-else-if="item.operator" :type="itemConfig.date_type || 'date'"
-                                    :disabled="view_only" :value-format="itemConfig.value_format || 'yyyy-MM-dd'"
-                                    size="mini"
-                                    v-model="item.value"></el-date-picker>
-                </template>
                 <template v-if="itemConfig.type == 'selections'">
                     <template v-if="itemConfig.component == 'product_selector'">
                         <ajax-selector v-model="item.value" :field="{
@@ -107,6 +98,18 @@
                     <el-input :disabled="view_only" size="small"
                               :placeholder="$t('Condition Value')"
                               type="text" v-model="item.value"/>
+                </template>
+                <template v-else-if="itemConfig.type == 'dates'">
+                    <el-input :disabled="view_only" size="small"
+                              v-if="item.operator == 'days_before' || item.operator == 'days_within'"
+                              type="number" :placeholder="$t('Days')" v-model="item.value"/>
+                    <el-date-picker v-else-if="item.operator" :type="itemConfig.date_type || 'date'"
+                                    :disabled="view_only" :value-format="itemConfig.value_format || 'YYYY-MM-DD'"
+                                    size="small"
+                                    v-model="item.value"></el-date-picker>
+                </template>
+                <template v-else-if="itemConfig.type == 'time_range'">
+                    <el-time-picker arrow-control is-range size="small" :value-format="itemConfig.value_format || 'HH:mm:ss'" v-model="item.value"></el-time-picker>
                 </template>
             </template>
         </td>
@@ -225,7 +228,18 @@ export default {
                 };
             }
 
-            if (type == 'dates') {
+            if (type == 'dates' || type == 'time_range') {
+                if(this.itemConfig.is_range) {
+                    if(!isArray(this.item.value)) {
+                        this.value = [null, null];
+                    }
+
+                    return {
+                        date_within: this.$t('within'),
+                        date_not_within: this.$t('not within')
+                    }
+                }
+
                 return {
                     before: this.$t('before'),
                     after: this.$t('after'),

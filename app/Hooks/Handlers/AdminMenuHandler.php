@@ -169,10 +169,47 @@ class AdminMenuHandler
                         'type'  => 'text'
                     ],
                     [
-                        'label' => __('Page / Post IDs'),
-                        'value' => 'page_ids',
-                        'type'  => 'text_comma_in',
+                        'label'      => __('Page / Post IDs'),
+                        'value'      => 'page_ids',
+                        'type'       => 'text_comma_in',
                         'value_help' => 'Provide comma separated list of page/post IDs'
+                    ]
+                ]
+            ],
+            [
+                'label'    => __('Date', 'fluent-snippets'),
+                'value'    => 'date',
+                'children' => [
+                    [
+                        'label' => __('Date Range', 'fluent-snippets'),
+                        'value' => 'date_range',
+                        'type'  => 'dates',
+                        'date_type' => 'datetimerange',
+                        'is_range' => true,
+                        'value_format' => 'YYYY-MM-DD HH:mm'
+                    ],
+                    [
+                        'label' => __('Time Range', 'fluent-snippets'),
+                        'value' => 'time_range',
+                        'type'  => 'time_range',
+                        'is_range' => true,
+                        'value_format' => 'HH:mm:ss'
+                    ],
+                    [
+                        'label' => __('Day of the week', 'fluent-snippets'),
+                        'value' => 'day_of_week',
+                        'type'  => 'selections',
+                        'options' => [
+                            'mon' => __('Monday', 'fluent-snippets'),
+                            'tue' => __('Tuesday', 'fluent-snippets'),
+                            'wed' => __('Wednesday', 'fluent-snippets'),
+                            'thu' => __('Thursday', 'fluent-snippets'),
+                            'fri' => __('Friday', 'fluent-snippets'),
+                            'sat' => __('Saturday', 'fluent-snippets'),
+                            'sun' => __('Sunday', 'fluent-snippets'),
+                        ],
+                        'is_multiple'       => true,
+                        'is_singular_value' => true,
                     ]
                 ]
             ]
