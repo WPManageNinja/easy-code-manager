@@ -419,6 +419,7 @@ class Snippet
             'is_valid'    => 1,
             'updated_by'  => get_current_user_id(),
             'priority'    => 10,
+            'run_at'      => '',
             'condition'   => [
                 'status' => 'no',
                 'run_if' => 'assertive',

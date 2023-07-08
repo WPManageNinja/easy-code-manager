@@ -1,6 +1,6 @@
 <template>
     <div class="select_plus_wrap">
-        <el-select v-model="selected" clearable allow-create filterable :placeholder="placeholder">
+        <el-select @change="$emit('update:modelValue', selected)" v-model="selected" clearable allow-create filterable :placeholder="placeholder">
             <el-option
                 v-for="item in options"
                 :key="item"
