@@ -18,7 +18,7 @@
                            :label="optionLabel"></el-option>
             </el-select>
         </td>
-        <td class="fc_filter_value">
+        <td :class="'fnsip_filter_'+itemConfig.type" class="fc_filter_value">
             <template v-if="item.operator == 'is_null' || item.operator == 'not_null'">
                 --
             </template>
@@ -102,6 +102,12 @@
                 <template v-else-if="itemConfig.type == 'times_numeric'">
                     <item-times-selection :disabled="view_only" v-model="item.value" :field="itemConfig"/>
                 </template>
+                <template v-else-if="itemConfig.type == 'text_comma_in'">
+                    <div class="fsnip_value_help" v-if="itemConfig.value_help" v-html="itemConfig.value_help"></div>
+                    <el-input :disabled="view_only" size="small"
+                              :placeholder="$t('Condition Value')"
+                              type="text" v-model="item.value"/>
+                </template>
             </template>
         </td>
         <td v-if="!view_only" style="width: 50px; text-align: right;">
@@ -162,6 +168,7 @@ export default {
                     '!=': this.$t('does not equal'),
                 }
             }
+
             if (type == 'numeric' || type == 'times_numeric') {
                 return {
                     '>': this.$t('Greater Than'),
@@ -236,6 +243,13 @@ export default {
                     not_contains: this.$t('does not includes'),
                     is_null: this.$t('Empty'),
                     not_null: this.$t('Not Empty')
+                }
+            }
+
+            if(type == 'text_comma_in') {
+                return {
+                    in: this.$t('includes in'),
+                    not_in: this.$t('not includes in')
                 }
             }
 

@@ -164,9 +164,15 @@ class AdminMenuHandler
                         'options'           => $formattedTaxonomies
                     ],
                     [
-                        'label' => __('URL'),
+                        'label' => __('URL', 'fluent-snippets'),
                         'value' => 'url',
                         'type'  => 'text'
+                    ],
+                    [
+                        'label' => __('Page / Post IDs'),
+                        'value' => 'page_ids',
+                        'type'  => 'text_comma_in',
+                        'value_help' => 'Provide comma separated list of page/post IDs'
                     ]
                 ]
             ]

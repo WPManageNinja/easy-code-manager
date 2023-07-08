@@ -10,9 +10,13 @@ class FluentSnippetCondition
             return true;
         }
         $conditionItems = array_filter($conditionSettings['items']);
-        if (!$conditionItems) { return true; }
+        if (!$conditionItems) {
+            return true;
+        }
         foreach ($conditionItems as $conditions) {
-            if ($this->evaluateItems($conditions)) { return true; }
+            if ($this->evaluateItems($conditions)) {
+                return true;
+            }
         }
         return false;
     }
@@ -20,7 +24,9 @@ class FluentSnippetCondition
     private function evaluateItems($conditions)
     {
         foreach ($conditions as $condition) {
-            if (!$this->evaluateCondition($condition)) { return false; }
+            if (!$this->evaluateCondition($condition)) {
+                return false;
+            }
         }
         return true;
     }
@@ -90,6 +96,22 @@ class FluentSnippetCondition
                     return false;
                 }
                 return $this->checkValues($url, $value, $operator);
+            case 'page_ids':
+                if (!is_singular() && !is_page()) {
+                    return false;
+                }
+
+                $value = array_map(function ($item) {
+                    return intval(trim($item));
+                }, explode(',', $value));
+                $value = array_filter($value);
+
+                if (!$value) {
+                    return false;
+                }
+
+                $pageId = get_the_ID();
+                return $this->checkValues($pageId, $value, $operator);
             default:
                 return false;
         }
@@ -99,7 +121,9 @@ class FluentSnippetCondition
     {
         global $wp_query;
 
-        if (empty($wp_query)) { return ''; }
+        if (empty($wp_query)) {
+            return '';
+        }
 
         if (is_front_page() || is_home()) {
             return 'is_front_page';

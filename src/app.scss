@@ -961,6 +961,12 @@ span.fsn_label {
   .fc_rich_wrap > div:last-child .fc_cond_or {
     display: none;
   }
+
+  .fsnip_value_help {
+    font-size: 10px;
+    margin-top: 0;
+    margin-bottom: -2px;
+  }
 }
 
 .snip_condition_wrap {
