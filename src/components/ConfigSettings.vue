@@ -3,20 +3,20 @@
         <div class="box dashboard_box box_narrow">
             <div class="box_header" style="padding: 15px; font-size: 16px;">
                 <div style="padding-top: 5px;" class="box_head">
-                    Settings
+                    {{$t('Settings')}}
                 </div>
                 <div class="box_actions">
                     <el-button @click="saveSettings()" v-loading="saving" :disabled="fetching || saving" type="success">
-                        Save Settings
+                        {{$t('Save Settings')}}
                     </el-button>
                 </div>
             </div>
             <div v-if="!fetching" style="padding: 15px;" class="box_body">
-                <h3>General Settings</h3>
+                <h3>{{$t('General Settings')}}</h3>
                 <el-form v-model="settings" label-position="top">
                     <el-form-item>
-                        <el-checkbox true-label="yes" false-label="no" v-model="settings.auto_publish">Activate Snippets
-                            as default action. If disabled then it will be saved as "Draft"
+                        <el-checkbox true-label="yes" false-label="no" v-model="settings.auto_publish">
+                            Activate Snippets as default action. If disabled then it will be saved as "Draft"
                         </el-checkbox>
                     </el-form-item>
                     <el-form-item>
@@ -24,13 +24,11 @@
                             Automatically Disable Script on fatal error
                         </el-checkbox>
                         <div style="color: red;" v-if="settings.auto_disable != 'yes'">
-                            We highly recommend to enable this option. If disabled, then your site may go down if there
-                            has any error on the scripts.
+                            We highly recommend to enable this option. If disabled, then your site may go down if there has any error on the scripts.
                         </div>
                     </el-form-item>
                     <el-form-item>
-                        <el-checkbox :disabled="true" true-label="yes" false-label="no"
-                                     v-model="settings.remove_on_uninstall">
+                        <el-checkbox :disabled="true" true-label="yes" false-label="no" v-model="settings.remove_on_uninstall">
                             Remove all data including <b>All Scripts</b> completely on plugin delete (coming soon)
                         </el-checkbox>
                     </el-form-item>
@@ -43,7 +41,7 @@
         <div class="box dashboard_box box_narrow">
             <div class="box_header" style="padding: 15px; font-size: 16px;">
                 <div style="padding-top: 5px;" class="box_head">
-                    Safe Mode
+                    {{$t('Safe Mode')}}
                 </div>
             </div>
             <div v-if="!fetching" style="padding: 15px 15px 25px;" class="box_body">
@@ -78,7 +76,7 @@
             <div class="box_header" style="padding: 15px; font-size: 16px;">
                 <div style="padding-top: 5px;" class="box_head">
                     Standalone Mode (Must use mode)
-                    <el-tag v-if="is_standalone" type="success">Enabled</el-tag>
+                    <el-tag v-if="is_standalone" type="success">{{t('Enabled')}}</el-tag>
                 </div>
             </div>
             <div v-if="!fetching" style="padding: 15px 15px 25px;" class="box_body">
@@ -88,7 +86,7 @@
                     <p style="font-weight: bold;">Standalone Mode is currently activated. Even if you uninstall or
                         delete this plugin, Your scripts will still run.</p>
                     <el-button v-loading="saving" :disabled="saving" size="small" @click="updateStandAloneMode('no')">
-                        Disable Standalone Mode
+                        {{$t('Disable Standalone Mode')}}
                     </el-button>
                 </template>
                 <template v-else>

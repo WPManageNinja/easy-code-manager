@@ -67,7 +67,7 @@ export default {
         add_label: {
             type: String,
             default() {
-                return 'Add new filter to narrow down your contacts based on different properties';
+                return 'Add new filter to apply conditions for this snippet';
             }
         },
         filterOptions: {

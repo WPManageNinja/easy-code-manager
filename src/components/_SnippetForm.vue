@@ -5,7 +5,7 @@
                 <slot name="code_editor">
                     <el-form-item :class="'fsnip_code_lang_'+snippet.meta.type" class="code_editor_wrap">
                         <template #label>
-                            <span>Code</span>
+                            <span>{{$t('Code')}}</span>
                             <span class="fsn_label" :class="'fsn_'+snippet.meta.type">{{ getLangLabelName(snippet.meta.type) }}</span>
                         </template>
                         <code-editor
@@ -21,16 +21,16 @@
 
             </el-col>
             <el-col :xs="24" :sm="9" :md="8" :lg="6">
-                <el-form-item label="Snippet Name">
-                    <el-input placeholder="Your Snippet Name" size="large" type="text" v-model="snippet.meta.name" />
+                <el-form-item :label="$t('Snippet Name')">
+                    <el-input :placeholder="$t('Your Snippet Name')" size="large" type="text" v-model="snippet.meta.name" />
                 </el-form-item>
-                <el-form-item label="Description">
+                <el-form-item :label="$t('Description')">
                     <el-input placeholder="Internal Description for this snippet" :rows="3" type="textarea" v-model="snippet.meta.description" />
                 </el-form-item>
-                <el-form-item label="Snippet Group">
+                <el-form-item :label="$t('Snippet Group')">
                     <template #label>
                         <span>
-                            Snippet Group <el-tooltip
+                            {{$t('Snippet Group')}} <el-tooltip
                             class="box-item"
                             effect="dark"
                             content="You may group your snippets for better organization and easy to find."
@@ -40,12 +40,12 @@
                           </el-tooltip>
                         </span>
                     </template>
-                    <select-plus pop_placeholder="Create new group" placeholder="Select Snippet Group" :options="appVars.groups" v-model="snippet.meta.group" />
+                    <select-plus :pop_placeholder="$t('Create new group')" :placeholder="$t('Select Snippet Group')" :options="appVars.groups" v-model="snippet.meta.group" />
                 </el-form-item>
-                <el-form-item label="Priority">
+                <el-form-item :label="$t('Priority')">
                     <template #label>
                         <span>
-                            Priority <el-tooltip
+                            {{$t('Priority')}} <el-tooltip
                             class="box-item"
                             effect="dark"
                             content="The lower the number, the earlier to execute the snippet."

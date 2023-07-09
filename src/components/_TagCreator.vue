@@ -1,6 +1,6 @@
 <template>
     <div class="select_plus_wrap">
-        <el-select :fit-input-width="true" allow-create @change="updated()" :multiple="true" filterable clearable placeholder="Select Snippet Tags" v-model="dynamicTags">
+        <el-select :fit-input-width="true" allow-create @change="updated()" :multiple="true" filterable clearable :placeholder="$t('Select Snippet Tags')" v-model="dynamicTags">
             <el-option v-for="tag in appVars.tags" :label="tag" :value="tag"></el-option>
         </el-select>
         <el-popover :visible="createPop" placement="left" :width="400" trigger="click">
@@ -8,11 +8,11 @@
                 <el-button @click="createPop = true">+</el-button>
             </template>
             <el-input
-                placeholder="Create new tag"
+                :placeholder="$t('Create new tag')"
                 v-model="inputValue"
             >
             </el-input>
-            <el-button style="margin-top: 10px;" type="primary" @click="handleInputConfirm()">Add</el-button>
+            <el-button style="margin-top: 10px;" type="primary" @click="handleInputConfirm()">{{$t('Add')}}</el-button>
         </el-popover>
     </div>
 </template>

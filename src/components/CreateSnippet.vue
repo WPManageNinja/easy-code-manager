@@ -4,15 +4,15 @@
             <div class="box_header" style="padding: 15px;font-size: 16px;">
                 <div style="padding-top: 5px;" class="box_head">
                     <el-breadcrumb separator="/">
-                        <el-breadcrumb-item :to="{ name: 'dashboard' }">Code Snippets</el-breadcrumb-item>
+                        <el-breadcrumb-item :to="{ name: 'dashboard' }">{{$t('Code Snippets')}}</el-breadcrumb-item>
                         <el-breadcrumb-item>
-                            Create New
+                            {{$t('Create New')}}
                         </el-breadcrumb-item>
                     </el-breadcrumb>
                 </div>
                 <div v-if="snippet" style="display: flex;" class="box_actions">
                     <el-button @click="saveCode()" :disabled="saving" v-loading="saving" type="success">
-                        Create Snippet
+                        {{$t('Create Snippet')}}
                     </el-button>
                 </div>
             </div>
@@ -115,7 +115,7 @@ export default {
         saveCode() {
             // validate the code
             if (!this.snippet.code) {
-                this.$notify.error('Please enter some code to save');
+                this.$notify.error(this.$t('Please enter some code to save'));
                 return;
             }
             // check if snippet starts with <?php

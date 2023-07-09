@@ -4,26 +4,26 @@
             <div class="box_header" style="padding: 15px;font-size: 16px;">
                 <div style="padding-top: 5px;" class="box_head">
                     <el-breadcrumb separator="/">
-                        <el-breadcrumb-item :to="{ name: 'dashboard' }">Code Snippets</el-breadcrumb-item>
+                        <el-breadcrumb-item :to="{ name: 'dashboard' }">{{$t('Code Snippets')}}</el-breadcrumb-item>
                         <el-breadcrumb-item>
                             <span v-if="snippet">
                                 {{ snippet.meta.name }}
                                 <el-tag v-if="snippet.error" size="small" type="danger">
-                                    PAUSED
+                                    {{$t('PAUSED')}}
                                 </el-tag>
                                 <el-tag v-else :type="(snippet.meta.status == 'published') ? 'success' : 'warning'" size="small">{{snippet.meta.status}}</el-tag>
                             </span>
-                            <span v-else>Snippet details</span>
+                            <span v-else>{{$t('Snippet details')}}</span>
                         </el-breadcrumb-item>
                     </el-breadcrumb>
                 </div>
                 <div  v-loading="saving" v-if="snippet" style="display: flex;" class="box_actions">
                     <el-button @click="saveCode()" :disabled="loading || saving" type="success">
-                        Update Snippet
+                        {{$t('Update Snippet')}}
                     </el-button>
                     <el-button v-if="!snippet.error" @click="toggleStatus()">
-                        <span v-if="snippet.meta.status == 'published'">Deactivate</span>
-                        <span v-else>Activate</span>
+                        <span v-if="snippet.meta.status == 'published'">{{$t('Deactivate')}}</span>
+                        <span v-else>{{$t('Activate')}}</span>
                     </el-button>
                 </div>
             </div>
@@ -31,13 +31,13 @@
                 <el-skeleton :loading="loading" :rows="10"></el-skeleton>
             </div>
             <div v-else-if="!snippet" class="box_body">
-                <h2>Sorry Snippet could not be loaded</h2>
+                <h2>{{$t('Sorry Snippet could not be loaded')}}</h2>
             </div>
             <div v-else class="box_body">
                 <div class="snippet_error_wrap" v-if="snippet.error">
-                    <p>The snippet encountered an fatal error and It has been deactivated automatically. Please review your code, fix the issues and reactive.</p>
-                    <p><strong>Error Message:</strong> {{snippet.error}}</p>
-                    <el-button @click="saveCode(true)" :disabled="loading || saving" type="primary">Try Reactivate</el-button>
+                    <p>{{$t('The snippet encountered an fatal error and It has been deactivated automatically. Please review your code, fix the issues and reactive.')}}</p>
+                    <p><strong>{{$t('Error Message:')}}</strong> {{snippet.error}}</p>
+                    <el-button @click="saveCode(true)" :disabled="loading || saving" type="primary">{{$t('Try Reactivate')}}</el-button>
                 </div>
                 <snippet-form :snippet="snippet"></snippet-form>
             </div>
@@ -80,12 +80,12 @@ export default {
         saveCode(reactivate = false) {
             // validate the code
             if (!this.snippet.code) {
-                this.$notify.error('Please enter some code to save');
+                this.$notify.error(this.$t('Please enter some code to save'));
                 return;
             }
             // check if snippet starts with <?php
             if (this.snippet.meta.type == 'PHP' && this.snippet.code.trim().startsWith('<?php')) {
-                this.$notify.error('The code should not starts with <?php');
+                this.$notify.error(this.$t('The code should not starts with <?php'));
                 return;
             }
 
@@ -96,7 +96,7 @@ export default {
                 reactivate: reactivate
             })
                 .then(response => {
-                    this.$notify.success('Snippet has been updated successfully');
+                    this.$notify.success(this.$t('Snippet has been updated successfully'));
                     if(reactivate) {
                         this.fetchSnippet();
                     }

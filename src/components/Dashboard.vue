@@ -103,13 +103,13 @@
                             <div class="snippet_actions">
                                 <router-link class="edit_snippet_link"
                                              :to="{ name: 'edit_snippet', params: { snippet_name: scope.row.file_name } }">
-                                    edit
+                                    {{$t('edit')}}
                                 </router-link>
                                 <span class="fc_middot">|</span>
                                 <el-popconfirm width="220" @confirm="confirmDeleteSnippet(scope.row)"
                                                title="Are you sure to delete this?">
                                     <template #reference>
-                                        <span class="fsnip_delete">delete</span>
+                                        <span class="fsnip_delete">{{$t('delete')}}</span>
                                     </template>
                                 </el-popconfirm>
                                 <template v-if="scope.row.group">
@@ -187,7 +187,7 @@
                                         <el-popconfirm width="220" @confirm="confirmDeleteSnippet(snippet)"
                                                        title="Are you sure to delete this?">
                                             <template #reference>
-                                                <span class="fsnip_delete">delete</span>
+                                                <span class="fsnip_delete">{{$t('delete')}}</span>
                                             </template>
                                         </el-popconfirm>
                                         <span class="fc_middot">|</span>
@@ -230,9 +230,9 @@
                                         }}</span>
                                     <span class="fc_middot">|</span>
                                     <el-popconfirm width="220" @confirm="confirmDeleteSnippet(snippet)"
-                                                   title="Are you sure to delete this?">
+                                                   :title="$t('Are you sure to delete this?')">
                                         <template #reference>
-                                            <span class="fsnip_delete">delete</span>
+                                            <span class="fsnip_delete">{{$t('delete')}}</span>
                                         </template>
                                     </el-popconfirm>
                                     <span class="fc_middot">|</span>
@@ -293,7 +293,7 @@ export default {
             selectedLang: 'all',
             snippetMenus: [
                 {
-                    label: 'All Snippets',
+                    label: this.$t('All Snippets'),
                     value: 'all'
                 },
                 {
@@ -320,19 +320,19 @@ export default {
             sortingOrderColumns: [
                 {
                     value: 'name',
-                    label: 'Name'
+                    label: this.$t('Name')
                 },
                 {
                     value: 'created_at',
-                    label: 'Created At'
+                    label: this.$t('Created At')
                 },
                 {
                     value: 'updated_at',
-                    label: 'Updated At'
+                    label: this.$t('Updated At')
                 },
                 {
                     value: 'priority',
-                    label: 'Priority'
+                    label: this.$t('Priority')
                 }
             ],
             showingPop: false
