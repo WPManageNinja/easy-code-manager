@@ -210,16 +210,16 @@ class Snippet
         $config = Helper::getIndexedConfig();
 
         if (!$config || empty($config['meta'])) {
-            return [];
+            return [[], []];
         }
 
         if (empty($config['published']) && empty($config['draft'])) {
-            return [];
+            return [[], []];
         }
 
         $snippets = array_merge($config['published'], $config['draft']);
         if (!$snippets) {
-            return [];
+            return [[], []];
         }
 
         $allTags = [];
