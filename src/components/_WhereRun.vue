@@ -55,75 +55,11 @@ export default {
     },
     computed: {
         runTypeOptions() {
-            if (this.snippet.meta.type == 'PHP') {
-                return {
-                    'all': {
-                        'label': this.$t('Run Everywhere'),
-                        'description': this.$t('Snippet gets executed everywhere (both frontend and admin area)')
-                    },
-                    'backend': {
-                        'label': this.$t('Admin Only'),
-                        'description': this.$t('Snippet gets executed only in admin area (/wp-admin/)')
-                    },
-                    'frontend': {
-                        'label': this.$t('Frontend Only'),
-                        'description': this.$t('Snippet gets executed only in frontend area')
-                    }
-                }
+            const type = this.snippet.meta.type;
+            if(this.appVars.snippet_types[type]) {
+                return this.appVars.snippet_types[type].running_locations;
             }
-
-            if (this.snippet.meta.type == 'php_content') {
-                return {
-                    'shortcode': {
-                        'label': this.$t('Shortcode'),
-                        'description': this.$t('Only display when inserted into a post or page using shortcode')
-                    },
-                    'wp_head': {
-                        'label': this.$t('Site Wide Header'),
-                        'description': this.$t('Insert snippet between the head tags of your website (frontend).')
-                    },
-                    'wp_body_open': {
-                        'label': this.$t('Site Wide Body Open'),
-                        'description': this.$t('Insert snippet after the opening body tag of your website (frontend).')
-                    },
-                    'wp_footer': {
-                        'label': this.$t('Site Wide Footer'),
-                        'description': this.$t('Insert snippet before the closing body tag of your website on all pages (frontend).')
-                    }
-                }
-            }
-
-            if (this.snippet.meta.type == 'js') {
-                return {
-                    'wp_head': {
-                        'label': this.$t('Site Wide Header'),
-                        'description': this.$t('Run Javascript between the head tags of your website on all pages (frontend).')
-                    },
-                    'wp_footer': {
-                        'label': this.$t('Site Wide Footer'),
-                        'description': this.$t('Run Javascript before the closing body tag of your website on all pages (frontend).')
-                    }
-                }
-            }
-
-            if (this.snippet.meta.type == 'css') {
-                return {
-                    'wp_head': {
-                        'label': this.$t('Frontend'),
-                        'description': this.$t('Add CSS on all pages (frontend).')
-                    },
-                    'admin_head': {
-                        'label': this.$t('Backend'),
-                        'description': this.$t('Apply this snippet CSS to backend (/wp-admin/).')
-                    },
-                    'everywehere': {
-                        'label': this.$t('Both Backend and Frontend'),
-                        'description': this.$t('Apply this snippet CSS to both backend and frontend.')
-                    },
-                }
-            }
-
-            return false;
+            return null;
         },
         selectedOption() {
             if (this.runTypeOptions) {

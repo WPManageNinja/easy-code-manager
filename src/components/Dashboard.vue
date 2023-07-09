@@ -25,9 +25,14 @@
             <div v-else style="padding: 15px 0;" class="box_body">
                 <div class="fsnip_secondary_menu">
                     <ul class="fsnip_menu">
-                        <li v-for="item in snippetMenus" :ley="item.value"
-                            :class="{active_item : item.value == selectedLang}">
-                            <a @click.prevent="changeLang(item.value)" href="#" v-html="item.label"></a>
+                        <li :class="{active_item : 'all' == selectedLang}">
+                            <a @click.prevent="changeLang('all')" href="#">{{$t('All Snippets')}}</a>
+                        </li>
+                        <li v-for="(item, itemKey) in appVars.snippet_types" :key="itemKey"
+                            :class="{active_item : itemKey == selectedLang}">
+                            <a @click.prevent="changeLang(itemKey)" href="#">
+                                {{item.label}} <span class="fsn_label" :class="'fsn_'+itemKey">{{ item.inline_tag }}</span>
+                            </a>
                         </li>
                     </ul>
                     <div class="snip_right_items">
@@ -291,28 +296,6 @@ export default {
             search: '',
             loading: false,
             selectedLang: 'all',
-            snippetMenus: [
-                {
-                    label: this.$t('All Snippets'),
-                    value: 'all'
-                },
-                {
-                    label: 'Functions <span class="fsn_label fsn_php">PHP</span>',
-                    value: 'PHP'
-                },
-                {
-                    label: 'Content <span class="fsn_label fsn_mixed">PHP + HTML</span>',
-                    value: 'php_content'
-                },
-                {
-                    label: 'Styles <span class="fsn_label fsn_css">CSS</span>',
-                    value: 'css'
-                },
-                {
-                    label: 'Scripts <span class="fsn_label fsn_js">JS</span>',
-                    value: 'js'
-                }
-            ],
             loadingFirst: true,
             tags: [],
             selectedTag: '',

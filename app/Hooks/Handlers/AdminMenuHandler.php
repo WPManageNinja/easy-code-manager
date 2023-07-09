@@ -67,7 +67,8 @@ class AdminMenuHandler
             'groups'                     => $groups,
             'safeModes'                  => $this->getSafeModeInfo(),
             'is_standalone'              => defined('FLUENT_SNIPPETS_RUNNING_MU'),
-            'advanced_condition_options' => $this->getAdvancedConditionOptions()
+            'advanced_condition_options' => $this->getAdvancedConditionOptions(),
+            'snippet_types'              => $this->getSnippetTypes(),
         ]);
 
         echo '<div id="fluent_snippets_app"><h3 style="text-align: center; margin-top: 100px;">' . __('Loading Snippets..', 'fluent-snippets') . '</h3></div>';
@@ -84,6 +85,87 @@ class AdminMenuHandler
         ];
     }
 
+    public function getSnippetTypes()
+    {
+        return [
+            'PHP'         => [
+                'label'             => __('Functions', 'fluent-snippets'),
+                'value'             => 'PHP',
+                'inline_tag'        => 'PHP',
+                'running_locations' => [
+                    'all'      => [
+                        'label'       => __('Run Everywhere', 'fluent-snippets'),
+                        'description' => __('Snippet gets executed everywhere (both frontend and admin area)', 'fluent-snippets')
+                    ],
+                    'backend'  => [
+                        'label'       => __('Admin Only', 'fluent-snippets'),
+                        'description' => __('Snippet gets executed only in admin area (/wp-admin/)', 'fluent-snippets')
+                    ],
+                    'frontend' => [
+                        'label'       => __('Frontend Only', 'fluent-snippets'),
+                        'description' => __('Snippet gets executed only in frontend area', 'fluent-snippets')
+                    ]
+                ]
+            ],
+            'php_content' => [
+                'label'             => __('Content', 'fluent-snippets'),
+                'value'             => 'php_content',
+                'inline_tag'        => 'PHP + HTML',
+                'running_locations' => [
+                    'shortcode'    => [
+                        'label'       => __('Shortcode', 'fluent-snippets'),
+                        'description' => __('Only display when inserted into a post or page using shortcode', 'fluent-snippets')
+                    ],
+                    'wp_head'      => [
+                        'label'       => __('Site Wide Header', 'fluent-snippets'),
+                        'description' => __('Insert snippet between the head tags of your website (frontend).', 'fluent-snippets')
+                    ],
+                    'wp_body_open' => [
+                        'label'       => __('Site Wide Body Open', 'fluent-snippets'),
+                        'description' => __('Insert snippet after the opening body tag of your website (frontend).', 'fluent-snippets')
+                    ],
+                    'wp_footer'    => [
+                        'label'       => __('Site Wide Footer', 'fluent-snippets'),
+                        'description' => __('Insert snippet before the closing body tag of your website on all pages (frontend).', 'fluent-snippets')
+                    ]
+                ]
+            ],
+            'css'         => [
+                'label'             => __('Styles', 'fluent-snippets'),
+                'value'             => 'css',
+                'inline_tag'        => 'CSS',
+                'running_locations' => [
+                    'wp_head'    => [
+                        'label'       => __('Frontend', 'fluent-snippets'),
+                        'description' => __('Add CSS on all pages (frontend).', 'fluent-snippets')
+                    ],
+                    'admin_head' => [
+                        'label'       => __('Backend', 'fluent-snippets'),
+                        'description' => __('Apply this snippet CSS to backend (/wp-admin/).', 'fluent-snippets')
+                    ],
+                    'everywhere' => [
+                        'label'       => __('Both Backend and Frontend', 'fluent-snippets'),
+                        'description' => __('Apply this snippet CSS to both backend and frontend.', 'fluent-snippets')
+                    ]
+                ]
+            ],
+            'js'          => [
+                'label'             => __('Scripts', 'fluent-snippets'),
+                'value'             => 'js',
+                'inline_tag'        => 'JS',
+                'running_locations' => [
+                    'wp_head'   => [
+                        'label'       => __('Site Wide Header', 'fluent-snippets'),
+                        'description' => __('Run Javascript between the head tags of your website on all pages (frontend).', 'fluent-snippets')
+                    ],
+                    'wp_footer' => [
+                        'label'       => __('Site Wide Footer', 'fluent-snippets'),
+                        'description' => __('Run Javascript before the closing body tag of your website on all pages (frontend).', 'fluent-snippets')
+                    ]
+                ]
+            ],
+        ];
+    }
 
     private function getAdvancedConditionOptions()
     {
@@ -181,25 +263,25 @@ class AdminMenuHandler
                 'value'    => 'date',
                 'children' => [
                     [
-                        'label' => __('Date Range', 'fluent-snippets'),
-                        'value' => 'date_range',
-                        'type'  => 'dates',
-                        'date_type' => 'datetimerange',
-                        'is_range' => true,
+                        'label'        => __('Date Range', 'fluent-snippets'),
+                        'value'        => 'date_range',
+                        'type'         => 'dates',
+                        'date_type'    => 'datetimerange',
+                        'is_range'     => true,
                         'value_format' => 'YYYY-MM-DD HH:mm'
                     ],
                     [
-                        'label' => __('Time Range', 'fluent-snippets'),
-                        'value' => 'time_range',
-                        'type'  => 'time_range',
-                        'is_range' => true,
+                        'label'        => __('Time Range', 'fluent-snippets'),
+                        'value'        => 'time_range',
+                        'type'         => 'time_range',
+                        'is_range'     => true,
                         'value_format' => 'HH:mm:ss'
                     ],
                     [
-                        'label' => __('Day of the week', 'fluent-snippets'),
-                        'value' => 'day_of_week',
-                        'type'  => 'selections',
-                        'options' => [
+                        'label'             => __('Day of the week', 'fluent-snippets'),
+                        'value'             => 'day_of_week',
+                        'type'              => 'selections',
+                        'options'           => [
                             'mon' => __('Monday', 'fluent-snippets'),
                             'tue' => __('Tuesday', 'fluent-snippets'),
                             'wed' => __('Wednesday', 'fluent-snippets'),

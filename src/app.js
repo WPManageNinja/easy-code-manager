@@ -42,7 +42,8 @@ app.config.globalProperties.appVars = window.fluentSnippetAdmin;
 app.mixin({
     data() {
         return {
-            Storage
+            Storage,
+            is_rtl: false
         }
     },
     methods: {
@@ -94,7 +95,6 @@ app.mixin({
         $getLocalData(key, defaultValue = '') {
             return this.Storage.get(key, defaultValue);
         },
-        is_rtl: false,
         ucFirst(string) {
             if(!string) {
                 return '';

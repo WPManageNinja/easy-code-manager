@@ -22,7 +22,7 @@
                         <el-form-item label="Code" :class="'fsnip_code_lang_'+snippet.meta.type"
                                       class="code_editor_wrap">
                             <el-tabs @tabChange="tabChanged()" v-model="snippet.meta.type" type="border-card">
-                                <el-tab-pane name="PHP" label="Functions (PHP)">
+                                <el-tab-pane v-if="appVars.snippet_types.PHP" name="PHP" label="Functions (PHP)">
                                     <template #label>
                                         <span class="custom-tabs-label">
                                              <span>Functions</span>
@@ -35,7 +35,7 @@
                                         v-model="snippet.code"
                                     />
                                 </el-tab-pane>
-                                <el-tab-pane name="php_content">
+                                <el-tab-pane v-if="appVars.snippet_types.php_content" name="php_content">
                                     <template #label>
                                         <span class="custom-tabs-label">
                                              <span>Content</span>
@@ -48,7 +48,7 @@
                                         v-model="snippet.code"
                                     />
                                 </el-tab-pane>
-                                <el-tab-pane name="css">
+                                <el-tab-pane v-if="appVars.snippet_types.css" name="css">
                                     <template #label>
                                         <span class="custom-tabs-label">
                                              <span>Styles</span>
@@ -61,7 +61,7 @@
                                         v-model="snippet.code"
                                     />
                                 </el-tab-pane>
-                                <el-tab-pane name="js" label="Javascript">
+                                <el-tab-pane v-if="appVars.snippet_types.js" name="js" label="Javascript">
                                     <template #label>
                                         <span class="custom-tabs-label">
                                              <span>Scripts</span>
@@ -158,7 +158,7 @@ export default {
         }
     },
     created() {
-
+        this.snippet.meta.type = Object.keys(this.appVars.snippet_types)[0];
     }
 }
 </script>
