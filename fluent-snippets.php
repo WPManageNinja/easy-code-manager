@@ -1,22 +1,26 @@
 <?php
 /**
- * Plugin Name:  Fluent Code Snippets
+ * Plugin Name:  Fluent Snippets
  * Plugin URI:   https://fluentsnippets.com
- * Description:  Super Fast File Based Native Code Snippets Manager for WordPress
+ * Description:  Super Fast File Based Native Code Snippets (header / footer codes) Manager for WordPress
  * Author:       Fluent Snippets
  * Author URI:   https://fluentsnippets.com
  * License:      GPL-2.0-or-later
- * License URI:  license.txt
+ * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:  fluent-snippets
  * Version:     1.0.0
  * Requires PHP: 7.1
  * Requires at least: 5.0
- *
+ * Domain Path:  /language
  *
  */
 
 // Exit if accessed directly.
 if (!defined('ABSPATH')) {
+    return;
+}
+
+if (defined('FLUENT_SNIPPETS_PLUGIN_PATH')) {
     return;
 }
 
@@ -29,6 +33,10 @@ class FluentCodeSnippetsBoot
     public function boot()
     {
         $this->autoLoad();
+
+        add_action('init', function () {
+            load_plugin_textdomain('fluent-snippets', false, 'fluent-snippets/language');
+        });
     }
 
     private function autoLoad()
@@ -60,9 +68,8 @@ class FluentCodeSnippetsBoot
 
         require_once FLUENT_SNIPPETS_PLUGIN_PATH . 'app/Hooks/hooks.php';
 
-        register_deactivation_hook( __FILE__, [\FluentSnippets\App\Helpers\Helper::class, 'handleDeactivate']);
+        register_deactivation_hook(__FILE__, [\FluentSnippets\App\Helpers\Helper::class, 'handleDeactivate']);
     }
 }
 
 (new FluentCodeSnippetsBoot())->boot();
-

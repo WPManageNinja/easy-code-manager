@@ -39,7 +39,7 @@
                                     <template #label>
                                         <span class="custom-tabs-label">
                                              <span>Content</span>
-                                            <span class="fsn_label fsn_mixed">HTML + PHP</span>
+                                            <span class="fsn_label fsn_mixed">{{ appVars.snippet_types.php_content.inline_tag }}</span>
                                         </span>
                                     </template>
                                     <code-editor

@@ -87,7 +87,7 @@ class AdminMenuHandler
 
     public function getSnippetTypes()
     {
-        return [
+        return apply_filters('fluent_snippets/snippet_types', [
             'PHP'         => [
                 'label'             => __('Functions', 'fluent-snippets'),
                 'value'             => 'PHP',
@@ -164,7 +164,7 @@ class AdminMenuHandler
                     ]
                 ]
             ],
-        ];
+        ]);
     }
 
     private function getAdvancedConditionOptions()

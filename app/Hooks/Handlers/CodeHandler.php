@@ -102,7 +102,7 @@ class CodeHandler
                             }
                             $code = (new Snippet())->parseBlock(file_get_contents($file), true);
                             ?>
-                            <script><?php echo $code; ?></script>
+                            <script><?php echo Helper::escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></script>
                             <?php
                         }, 99);
                     }
@@ -120,7 +120,7 @@ class CodeHandler
                         }
                         $code = (new Snippet())->parseBlock(file_get_contents($file), true);
                         ?>
-                        <style><?php echo $code; ?></style>
+                        <style><?php echo Helper::escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></style>
                         <?php
                     }, $snippet['priority']);
                     break;

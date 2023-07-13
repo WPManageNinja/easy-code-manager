@@ -285,7 +285,7 @@ class PhpValidator
 
         ob_start();
         try {
-            $result = eval($code);
+            $result = eval($code); // phpcs:ignore Squiz.PHP.Eval.Discouraged
         } catch (\ParseError $parse_error) {
             $result = new \WP_Error('runtime_error', $parse_error->getMessage(), array(
                 'line' => $parse_error->getLine(),

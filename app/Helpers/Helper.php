@@ -265,5 +265,14 @@ PHP;
             self::enableStandAlone(true);
         }
     }
+
+    public static function escCssJs($code)
+    {
+        $code = preg_replace('/<script[^>]*>/', '', $code);
+        $code = preg_replace('/<\/script>/', '', $code);
+        // remove opening js tag and closing js tag maybe <script type="text/javascript"> too
+        $code = preg_replace('/<style[^>]*>/', '', $code);
+        return preg_replace('/<\/style>/', '', $code);
+    }
 }
 

@@ -93,6 +93,11 @@ class SnippetsController
             }
             $code = rtrim($code, '?>');
             $code = '<?php' . PHP_EOL . $code;
+        } else if ($meta['type'] == 'php_content') {
+            $code = apply_filters('fluent_snippets/sanitize_mixed_content', $code, $meta);
+            if (is_wp_error($code)) {
+                return $code;
+            }
         }
 
         // Validate the code
@@ -136,11 +141,19 @@ class SnippetsController
             return $metaValidated;
         }
 
-        // Check if the php snippet $code is valid or not by validating it
-
         if ($meta['type'] == 'PHP') {
             $code = rtrim($code, '?>');
             $code = '<?php' . PHP_EOL . $code;
+        } else if ($meta['type'] == 'php_content') {
+            $code = apply_filters('fluent_snippets/sanitize_mixed_content', $code, $meta);
+            if (is_wp_error($code)) {
+                return $code;
+            }
+        } else {
+            $sanitizedCode = Helper::escCssJs($code);
+            if ($sanitizedCode !== $code) {
+                return new \WP_Error('invalid_code', 'Please remove any any style or script tag from the code');
+            }
         }
 
         // Validate the code
