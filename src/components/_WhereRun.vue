@@ -12,7 +12,7 @@
         </div>
 
         <div v-show="showSelector" class="run_selector_options">
-            <div v-for="(runType, runLabel) in runTypeOptions" :key="runLabel" @click="snippet.meta.run_at = runLabel; showSelector = false" class="selector_option">
+            <div v-for="(runType, runLabel) in runTypeOptions" :key="runLabel" @click="snippet.meta.run_at = runLabel; showSelector = false" :class="{selector_option_selected: runLabel == snippet.meta.run_at  }" class="selector_option">
                 <p class="option_label">
                     {{ runType.label }}
                     <el-tag v-if="runLabel == snippet.meta.run_at" size="small">{{$t('selected')}}</el-tag>

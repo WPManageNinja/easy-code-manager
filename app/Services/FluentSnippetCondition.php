@@ -90,6 +90,15 @@ class FluentSnippetCondition
                 }
 
                 return $this->checkValues($tax, $value, $operator);
+
+            case 'taxonomy_term_page':
+                $queried_object = get_queried_object();
+                $termId = isset($queried_object->term_id) ? $queried_object->term_id : '';
+                if (!$termId) {
+                    return false;
+                }
+                return $this->checkValues($termId, $value, $operator);
+
             case 'url':
                 // get current url
                 global $wp;
@@ -135,8 +144,8 @@ class FluentSnippetCondition
                 $currentDay = date('Y-m-d', current_time('timestamp'));
 
                 $value = [
-                    (int) date('His', strtotime($currentDay.' '.$value[0])),
-                    (int) date('His', strtotime($currentDay.' '.$value[1])),
+                    (int)date('His', strtotime($currentDay . ' ' . $value[0])),
+                    (int)date('His', strtotime($currentDay . ' ' . $value[1])),
                 ];
 
                 return $this->checkValues($currentTime, $value, $operator);

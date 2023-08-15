@@ -35,7 +35,8 @@ class Helper
     {
         $data = [
             'published' => [],
-            'draft'     => []
+            'draft'     => [],
+            'hooks'     => []
         ];
 
         $previousConfig = self::getIndexedConfig();
@@ -111,12 +112,33 @@ class Helper
             $meta['file_name'] = $fileName;
             $meta['status'] = $snippet['status'];
 
+            if ($meta['status'] == 'published') {
+                $runningHook = self::getRunAtHook($meta);
+                if (empty($data['hooks'][$runningHook])) {
+                    $data['hooks'][$runningHook] = [];
+                }
+
+                $data['hooks'][$runningHook][] = $fileName;
+            }
+
             $data[$snippet['status']][$fileName] = $meta;
         }
 
         $data['error_files'] = $errorFiles;
 
         return self::saveIndexedConfig($data);
+    }
+
+    public static function getRunAtHook($meta)
+    {
+        $runAt = $meta['run_at'];
+        switch ($runAt) {
+            case 'before_content':
+            case 'after_content':
+                return 'the_content';
+            default:
+                return $runAt;
+        }
     }
 
     public static function saveIndexedConfig($data, $cacheFile = '')
@@ -248,11 +270,11 @@ PHP;
 
     public static function sanitizeMetaValue($value)
     {
-        if(is_numeric($value)) {
+        if (is_numeric($value)) {
             return $value;
         }
 
-        if(str_contains($value, '*/')) {
+        if (str_contains($value, '*/')) {
             $value = str_replace('*/', '', $value); // we will not allow */ in meta values
         }
 

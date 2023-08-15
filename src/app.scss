@@ -1057,7 +1057,7 @@ span.fsn_label {
     border: 1px solid transparent;
     border-radius: 5px;
 
-    &:hover {
+    &:hover,&.selector_option_selected {
       transition: all 0.3s ease;
       background: white;
       border: 1px solid #e4e7ea;
@@ -1078,3 +1078,8 @@ span.fsn_label {
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
 }
 
+input.el-select__input {
+  box-shadow: none !important;
+  border: none;
+  outline: none !important;
+}

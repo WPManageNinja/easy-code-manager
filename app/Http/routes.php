@@ -14,4 +14,5 @@ $router->get('snippets', ['\FluentSnippets\App\Http\Controllers\SnippetsControll
     ->get('settings', ['\FluentSnippets\App\Http\Controllers\SettingsController', 'getSettings'], $permissions)
     ->post('settings', ['\FluentSnippets\App\Http\Controllers\SettingsController', 'saveSettings'], $permissions)
     ->post('settings/disable-safe-mode', ['\FluentSnippets\App\Http\Controllers\SettingsController', 'disableSafeMode'], $permissions)
-    ->post('settings/standalone', ['\FluentSnippets\App\Http\Controllers\SettingsController', 'configStandAloneSystem'], $permissions);
+    ->post('settings/standalone', ['\FluentSnippets\App\Http\Controllers\SettingsController', 'configStandAloneSystem'], $permissions)
+    ->get('settings/options', ['\FluentSnippets\App\Http\Controllers\SettingsController', 'getRestOptions'], $permissions);

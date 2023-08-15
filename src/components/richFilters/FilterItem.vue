@@ -74,6 +74,9 @@
                 <template v-else-if="itemConfig.type == 'time_range'">
                     <el-time-picker arrow-control is-range size="small" :value-format="itemConfig.value_format || 'HH:mm:ss'" v-model="item.value"></el-time-picker>
                 </template>
+                <template v-else-if="itemConfig.type == 'rest_selections'">
+                    <rest-selector  v-model="item.value" :field="itemConfig" />
+                </template>
             </template>
         </td>
         <td v-if="!view_only" style="width: 50px; text-align: right;">
@@ -91,7 +94,7 @@
 
 <script type="text/babel">
 import isArray from 'lodash/isArray';
-// import AjaxSelector from './Elements/_AjaxSelector';
+import RestSelector from './Elements/_RestSelector.vue';
 // import TaxonomyTermsSelector from './Elements/_TaxonomyTermsSelector';
 // import OptionSelector from './Elements/_OptionSelector';
 // import ItemTimesSelection from './_ItemTimesSelection';
@@ -106,7 +109,8 @@ export default {
         // AjaxSelector,
         // TaxonomyTermsSelector,
         // ItemTimesSelection,
-        DeleteIcon: markRaw(Delete)
+        DeleteIcon: markRaw(Delete),
+        RestSelector
     },
     data() {
         return {}
@@ -228,6 +232,13 @@ export default {
                     in: this.$t('includes in'),
                     not_in: this.$t('not includes in')
                 }
+            }
+
+            if(type == 'rest_selections') {
+                return {
+                    in: this.$t('includes in'),
+                    not_in: this.$t('not includes in')
+                };
             }
 
             return {}

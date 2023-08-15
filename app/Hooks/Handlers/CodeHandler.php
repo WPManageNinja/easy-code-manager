@@ -57,6 +57,19 @@ class CodeHandler
 
         $conditionalClass = new FluentSnippetCondition();
 
+        $filterMaps = [
+            'before_content' => [
+                'hook'      => 'the_content',
+                'insert'    => 'before',
+                'is_single' => true
+            ],
+            'after_content'  => [
+                'hook'      => 'the_content',
+                'insert'    => 'after',
+                'is_single' => true
+            ],
+        ];
+
         foreach ($snippets as $fileName => $snippet) {
             if (isset($_REQUEST['fluent_saving_snippet_name'])) {
                 if ($_REQUEST['fluent_saving_snippet_name'] === $fileName && current_user_can('manage_options')) {
@@ -134,7 +147,32 @@ class CodeHandler
                             require_once $file;
                         }, $snippet['priority']);
                     }
-                    break;
+                    if (isset($filterMaps[$runAt])) {
+                        $filter = $filterMaps[$runAt];
+                        add_filter($filter['hook'], function ($content) use ($file, $snippet, $conditionalClass, $filter) {
+                            if (!empty($filter['is_single'])) {
+                                if (!is_single() || !in_the_loop() || !is_main_query()) {
+                                    return $content;
+                                }
+                            }
+
+                            if (!$conditionalClass->evaluate($snippet['condition'])) {
+                                return $content;
+                            }
+
+                            ob_start();
+                            require_once $file;
+                            $result = ob_get_clean();
+                            if ($result) {
+                                if ($filter['insert'] == 'before') {
+                                    return $result . $content;
+                                } else {
+                                    return $content . $result;
+                                }
+                            }
+                            return $content;
+                        }, $snippet['priority']);
+                    }
                 default:
                     break;
             }

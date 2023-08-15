@@ -130,7 +130,7 @@ class SettingsController
         }
 
         return [
-            'message' => $message,
+            'message'       => $message,
             'is_standalone' => defined('FLUENT_SNIPPETS_RUNNING_MU'),
         ];
     }
@@ -142,5 +142,50 @@ class SettingsController
         }
 
         return new \WP_Error('invalid_request', 'You do not have permission to perform this action. Required Permission: unfiltered_html & manage_options');
+    }
+
+    public static function getRestOptions(\WP_REST_Request $request)
+    {
+        $optionKet = $request->get_param('rest_key');
+        $options = [];
+
+        if ($optionKet == 'tax_term_groups') {
+            // Get public taxonomies
+            $taxonomies = get_taxonomies([
+                'public' => true
+            ]);
+
+            $taxonomies = array_keys($taxonomies);
+            $terms = get_terms([
+                'taxonomy'        => $taxonomies,
+                'suppress_filter' => true,
+                'hide_empty'      => false,
+                'number'          => 9000
+            ]);
+
+            foreach ($terms as $term) {
+                if (!isset($formattedTaxGroups[$term->taxonomy])) {
+                    $options[$term->taxonomy] = [
+                        'label'   => $term->taxonomy,
+                        'options' => [],
+                    ];
+                }
+
+                $options[$term->taxonomy]['options'][] = [
+                    'id'    => $term->term_id,
+                    'title' => $term->name,
+                ];
+            }
+
+            return [
+                'options' => $options,
+                'is_cachable' => true,
+            ];
+        }
+
+        return [
+            'options' => $options
+        ];
+
     }
 }

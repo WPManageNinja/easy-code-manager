@@ -127,6 +127,14 @@ class AdminMenuHandler
                     'wp_footer'    => [
                         'label'       => __('Site Wide Footer', 'fluent-snippets'),
                         'description' => __('Insert snippet before the closing body tag of your website on all pages (frontend).', 'fluent-snippets')
+                    ],
+                    'before_content' => [
+                        'label'       => __('Before Content', 'fluent-snippets'),
+                        'description' => __('Insert snippet at the beginning of single post/page content.', 'fluent-snippets')
+                    ],
+                    'after_content' => [
+                        'label'       => __('After Content', 'fluent-snippets'),
+                        'description' => __('Insert snippet at the end of single post/page content.', 'fluent-snippets')
                     ]
                 ]
             ],
@@ -244,6 +252,15 @@ class AdminMenuHandler
                         'is_multiple'       => true,
                         'is_singular_value' => true,
                         'options'           => $formattedTaxonomies
+                    ],
+                    [
+                        'label'             => __('Taxonomy Term Page', 'fluent-snippets'),
+                        'value'             => 'taxonomy_term_page',
+                        'type'              => 'rest_selections',
+                        'is_multiple'       => true,
+                        'is_singular_value' => true,
+                        'rest_key'          => 'tax_term_groups',
+                        'is_grouped'        => true
                     ],
                     [
                         'label' => __('URL', 'fluent-snippets'),
