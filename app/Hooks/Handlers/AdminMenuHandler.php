@@ -261,6 +261,7 @@ class AdminMenuHandler
             [
                 'label'    => __('Date', 'fluent-snippets'),
                 'value'    => 'date',
+                'is_pro'   => true,
                 'children' => [
                     [
                         'label'        => __('Date Range', 'fluent-snippets'),

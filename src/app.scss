@@ -773,8 +773,20 @@ span.fsn_label {
       font-size: 14px;
       font-weight: 700;
 
+      > span {
+        cursor: pointer;
+        user-select: none;
+        &:hover {
+          color: #409eff;
+        }
+      }
+
       i {
         margin-right: 5px;
+        cursor: pointer;
+        &:hover {
+          color: #409eff;
+        }
       }
     }
   }

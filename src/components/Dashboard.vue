@@ -159,12 +159,13 @@
                 <div v-else-if="groupedSnippets" v-loading="loading" class="groups_snippets">
                     <div v-for="(group, groupName) in groupedSnippets.groups" :key="groupName" class="fsnip_group">
                         <div class="group_name">
-                            <el-icon>
-                                <FolderOpened/>
+                            <el-icon @click="toggleGroupView(groupName)">
+                                <FolderOpened v-if="!groupCollapsed[groupName]"/>
+                                <FolderClosed v-else/>
                             </el-icon>
-                            <span>{{ group.label }}</span>
+                            <span @click="toggleGroupView(groupName)">{{ group.label }}</span>
                         </div>
-                        <ul class="group_files">
+                        <ul v-if="!groupCollapsed[groupName]" class="group_files">
                             <li v-for="snippet in group.snippets" :class="'fsnip_status_'+snippet.status"
                                 :key="snippet.file_name" class="group_file">
                                 <div
@@ -274,7 +275,7 @@
 </template>
 
 <script type="text/babel">
-import {Search, FolderOpened, Document, Stopwatch, Sort} from '@element-plus/icons-vue';
+import {Search, FolderOpened, Folder, Document, Stopwatch, Sort} from '@element-plus/icons-vue';
 import {markRaw} from 'vue';
 import each from 'lodash/each';
 
@@ -318,19 +319,29 @@ export default {
                     label: this.$t('Priority')
                 }
             ],
-            showingPop: false
+            showingPop: false,
+            groupCollapsed: {}
         }
     },
     components: {
         FolderOpened: markRaw(FolderOpened),
         Document: markRaw(Document),
         Stopwatch: markRaw(Stopwatch),
-        SortIcon: markRaw(Sort)
+        SortIcon: markRaw(Sort),
+        FolderClosed: markRaw(Folder),
     },
     methods: {
         changePage(page) {
             this.paginate.page = page;
             this.getSnippets();
+        },
+        toggleGroupView(groupName) {
+            if (this.groupCollapsed[groupName]) {
+                delete this.groupCollapsed[groupName];
+            } else {
+                this.groupCollapsed[groupName] = true;
+            }
+            this.$storeLocalData('group_collapsed', this.groupCollapsed);
         },
         applySorting() {
             this.$storeLocalData('snippet_sorting', this.sorting);
@@ -470,7 +481,7 @@ export default {
             sortType: 'DESC',
             sortBy: 'created_at'
         });
-
+        this.groupCollapsed = this.$getLocalData('group_collapsed', {});
         this.getSnippets();
         this.tags = this.appVars.tags;
     }
