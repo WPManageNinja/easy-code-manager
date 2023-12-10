@@ -1,4 +1,4 @@
-=== FluentSnippets - The High-Performancen Custom Code Snippets Plugin ===
+=== FluentSnippets - The High-Performance Custom Code Snippets Plugin ===
 Contributors: techjewel
 Tags: header footer codes, snippets, custom codes
 Requires at least: 6.0
