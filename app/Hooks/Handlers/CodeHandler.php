@@ -5,6 +5,7 @@ namespace FluentSnippets\App\Hooks\Handlers;
 use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Model\Snippet;
+use FluentSnippets\App\Services\CodeRunner;
 use FluentSnippets\App\Services\FluentSnippetCondition;
 
 class CodeHandler
@@ -35,152 +36,16 @@ class CodeHandler
         add_action('fluent_snippets/snippet_created', [$this, 'rebuildCache']);
         add_action('fluent_snippets/snippet_updated', [$this, 'rebuildCache']);
         add_action('fluent_snippets/snippet_deleted', [$this, 'handleFileDelete']);
+
+        add_action('fluent_snippets/rebuild_index', function ($fileName, $isForced) {
+            Helper::cacheSnippetIndex($fileName, $isForced);
+        }, 10, 2);
+
     }
 
     public function runSnippets()
     {
-        $config = Helper::getIndexedConfig();
-        if (empty($config) || empty($config['published']) || !is_array($config['published'])) {
-            return; // No config exists
-        }
-
-        if ($config['meta']['force_disabled'] == 'yes') {
-            return; // this forcefully disabled via URL
-        }
-
-        $errorFiles = Arr::get($config, 'error_files', []);
-
-        $snippets = $config['published'];
-        $storageDir = Helper::getStorageDir();
-
-        $hasInvalidFiles = false;
-
-        $conditionalClass = new FluentSnippetCondition();
-
-        $filterMaps = [
-            'before_content' => [
-                'hook'      => 'the_content',
-                'insert'    => 'before',
-                'is_single' => true
-            ],
-            'after_content'  => [
-                'hook'      => 'the_content',
-                'insert'    => 'after',
-                'is_single' => true
-            ],
-        ];
-
-        foreach ($snippets as $fileName => $snippet) {
-            if (isset($_REQUEST['fluent_saving_snippet_name'])) {
-                if ($_REQUEST['fluent_saving_snippet_name'] === $fileName && current_user_can('manage_options')) {
-                    continue;
-                }
-            }
-
-            if ($errorFiles && isset($errorFiles[$fileName])) {
-                // There has an error. Skip this
-                continue;
-            }
-
-            $file = $storageDir . '/' . sanitize_file_name($fileName);
-            if (!file_exists($file)) {
-                $hasInvalidFiles = true;
-                continue;
-            }
-
-            $type = $snippet['type'];
-
-            switch ($type) {
-                case 'PHP':
-                    add_action('init', function () use ($file, $snippet, $conditionalClass) {
-                        if (!$conditionalClass->evaluate($snippet['condition'])) {
-                            return;
-                        }
-                        $runAt = Arr::get($snippet, 'run_at', 'all');
-                        if ($runAt == 'backend') {
-                            if (is_admin()) {
-                                require_once $file;
-                            }
-                            return;
-                        }
-                        require_once $file;
-                    }, $snippet['priority']);
-                    break;
-                case 'js':
-                    $runAt = Arr::get($snippet, 'run_at', 'wp_footer');
-                    if (in_array($runAt, ['wp_head', 'wp_footer'])) {
-                        add_action($runAt, function () use ($file, $snippet, $conditionalClass) {
-                            if (!$conditionalClass->evaluate($snippet['condition'])) {
-                                return;
-                            }
-                            $code = (new Snippet())->parseBlock(file_get_contents($file), true);
-                            ?>
-                            <script><?php echo Helper::escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></script>
-                            <?php
-                        }, 99);
-                    }
-                    break;
-                case 'css':
-                    if ($runAt == 'everywehere' && is_admin()) {
-                        $runAt = 'admin_head';
-                    } else {
-                        $runAt = 'wp_head';
-                    }
-
-                    add_action($runAt, function () use ($file, $snippet, $conditionalClass) {
-                        if (!$conditionalClass->evaluate($snippet['condition'])) {
-                            return;
-                        }
-                        $code = (new Snippet())->parseBlock(file_get_contents($file), true);
-                        ?>
-                        <style><?php echo Helper::escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></style>
-                        <?php
-                    }, $snippet['priority']);
-                    break;
-                case 'php_content':
-                    $runAt = $snippet['run_at'];
-                    if (in_array($runAt, ['wp_footer', 'wp_head', 'wp_body_open'])) {
-                        add_action($runAt, function () use ($file, $snippet, $conditionalClass) {
-                            if (!$conditionalClass->evaluate($snippet['condition'])) {
-                                return;
-                            }
-                            require_once $file;
-                        }, $snippet['priority']);
-                    }
-                    if (isset($filterMaps[$runAt])) {
-                        $filter = $filterMaps[$runAt];
-                        add_filter($filter['hook'], function ($content) use ($file, $snippet, $conditionalClass, $filter) {
-                            if (!empty($filter['is_single'])) {
-                                if (!is_single() || !in_the_loop() || !is_main_query()) {
-                                    return $content;
-                                }
-                            }
-
-                            if (!$conditionalClass->evaluate($snippet['condition'])) {
-                                return $content;
-                            }
-
-                            ob_start();
-                            require_once $file;
-                            $result = ob_get_clean();
-                            if ($result) {
-                                if ($filter['insert'] == 'before') {
-                                    return $result . $content;
-                                } else {
-                                    return $content . $result;
-                                }
-                            }
-                            return $content;
-                        }, $snippet['priority']);
-                    }
-                default:
-                    break;
-            }
-        }
-
-        if ($hasInvalidFiles) {
-            Helper::cacheSnippetIndex(false, true);
-        }
+        (new CodeRunner())->runSnippets();
     }
 
     public function handleShortcode($atts, $content = null)

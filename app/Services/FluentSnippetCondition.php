@@ -100,7 +100,7 @@ class FluentSnippetCondition
             }
             return $this->checkValues($listIds, $value, $operator);
         }
-        
+
         return false;
     }
 
@@ -147,9 +147,8 @@ class FluentSnippetCondition
                     return false;
                 }
 
-                $value = array_map(function ($item) {
-                    return intval(trim($item));
-                }, explode(',', $value));
+                $value = (array) $value;
+
                 $value = array_filter($value);
 
                 if (!$value) {

@@ -6,7 +6,6 @@
 (new \FluentSnippets\App\Hooks\Handlers\AdminMenuHandler())->register();
 (new \FluentSnippets\App\Hooks\Handlers\CodeHandler())->register();
 
-
 add_action('wp', function () {
     if(!isset($_REQUEST['t'])) {
         return;
