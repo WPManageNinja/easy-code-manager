@@ -76,7 +76,7 @@
             <div class="box_header" style="padding: 15px; font-size: 16px;">
                 <div style="padding-top: 5px;" class="box_head">
                     Standalone Mode (Must use mode)
-                    <el-tag v-if="is_standalone" type="success">{{t('Enabled')}}</el-tag>
+                    <el-tag v-if="is_standalone" type="success">{{$t('Enabled')}}</el-tag>
                 </div>
             </div>
             <div v-if="!fetching" style="padding: 15px 15px 25px;" class="box_body">
