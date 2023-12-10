@@ -62,12 +62,12 @@ class CodeHandler
         $config = Helper::getIndexedConfig();
 
         if ($config['meta']['force_disabled'] == 'yes') {
-            return $this->shortCodeError(__('Snippets are disabled', 'fluent-snippets'));
+            return $this->shortCodeError(__('Snippets are disabled', 'easy-code-manager'));
         }
 
         $fileName = sanitize_file_name($fileName . '.php');
         if (isset($config['error_files'][$fileName])) {
-            return $this->shortCodeError(__('Snippet has an error', 'fluent-snippets'));
+            return $this->shortCodeError(__('Snippet has an error', 'easy-code-manager'));
         }
 
         $snippet = (new Snippet())->findByFileName($fileName);
@@ -77,21 +77,21 @@ class CodeHandler
         }
 
         if (Arr::get($snippet, 'meta.type') !== 'php_content') {
-            return $this->shortCodeError(__('Snippet type is not PHP Content', 'fluent-snippets'));
+            return $this->shortCodeError(__('Snippet type is not PHP Content', 'easy-code-manager'));
         }
 
         if (Arr::get($snippet, 'meta.run_at') != 'shortcode') {
-            return $this->shortCodeError(__('Snippet run at is not shortcode', 'fluent-snippets'));
+            return $this->shortCodeError(__('Snippet run at is not shortcode', 'easy-code-manager'));
         }
 
         if (Arr::get($snippet, 'meta.status') != 'published') {
-            return $this->shortCodeError(__('Snippet status is not published', 'fluent-snippets'));
+            return $this->shortCodeError(__('Snippet status is not published', 'easy-code-manager'));
         }
 
         // check condition
         $conditionalClass = new FluentSnippetCondition();
         if (!$conditionalClass->evaluate($snippet['condition'])) {
-            return $this->shortCodeError(__('Snippet condition is not valid', 'fluent-snippets'));
+            return $this->shortCodeError(__('Snippet condition is not valid', 'easy-code-manager'));
         }
 
         ob_start();
@@ -108,7 +108,7 @@ class CodeHandler
             return $maybeReturn;
         }
 
-        return $this->shortCodeError(__('Return Data is not valid. Return data need to be string or number', 'fluent-snippets'));
+        return $this->shortCodeError(__('Return Data is not valid. Return data need to be string or number', 'easy-code-manager'));
     }
 
     private function shortCodeError($message)
@@ -119,9 +119,9 @@ class CodeHandler
         }
 
         if (!$message) {
-            $message = __('Shortcode could not be rendered', 'fluent-snippets');
+            $message = __('Shortcode could not be rendered', 'easy-code-manager');
         }
-        $message .= '. ' . __('This message is only visible to site admin role', 'fluent-snippets');
+        $message .= '. ' . __('This message is only visible to site admin role', 'easy-code-manager');
 
         return "<div class='fluent-snippet-error'>'.wp_kses_post($message).'</div>";
     }

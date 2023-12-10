@@ -200,7 +200,7 @@ class PhpValidator
             if ($this->end()) {
                 return new \WP_Error(
                     'parse_error',
-                    __('Parse error: syntax error, unexpected end of snippet.', 'fluent-snippets'),
+                    __('Parse error: syntax error, unexpected end of snippet.', 'easy-code-manager'),
                     array(
                         'line' => $token[2],
                     ));
@@ -214,19 +214,19 @@ class PhpValidator
                     switch ($structure_type) {
                         case T_FUNCTION:
                             /* translators: %s: PHP function name */
-                            $message = __('Cannot redeclare function %s.', 'fluent-snippets');
+                            $message = __('Cannot redeclare function %s.', 'easy-code-manager');
                             break;
                         case T_CLASS:
                             /* translators: %s: PHP class name */
-                            $message = __('Cannot redeclare class %s.', 'fluent-snippets');
+                            $message = __('Cannot redeclare class %s.', 'easy-code-manager');
                             break;
                         case T_INTERFACE:
                             /* translators: %s: PHP interface name */
-                            $message = __('Cannot redeclare interface %s.', 'fluent-snippets');
+                            $message = __('Cannot redeclare interface %s.', 'easy-code-manager');
                             break;
                         default:
                             /* translators: %s: PHP identifier name*/
-                            $message = __('Cannot redeclare %s.', 'fluent-snippets');
+                            $message = __('Cannot redeclare %s.', 'easy-code-manager');
                     }
 
                     return new \WP_Error(
@@ -267,7 +267,7 @@ class PhpValidator
             if ($depth > 0) {
                 return new \WP_Error(
                     'syntax_error',
-                    __('Parse error: syntax error, unexpected end of snippet', 'fluent-snippets'),
+                    __('Parse error: syntax error, unexpected end of snippet', 'easy-code-manager'),
                     array(
                         'line' => $token[2],
                     ));

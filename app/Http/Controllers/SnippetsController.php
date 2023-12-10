@@ -119,7 +119,7 @@ class SnippetsController
 
         return [
             'snippet' => $snippet,
-            'message' => __('Snippet created successfully', 'fluent-snippets')
+            'message' => __('Snippet created successfully', 'easy-code-manager')
         ];
     }
 
@@ -235,7 +235,7 @@ class SnippetsController
         do_action('fluent_snippets/snippet_deleted', $fileName);
 
         return [
-            'message' => __('Snippet has been deleted successfully', 'fluent-snippets')
+            'message' => __('Snippet has been deleted successfully', 'easy-code-manager')
         ];
     }
 

@@ -20,8 +20,8 @@ class AdminMenuHandler
         $permission = 'manage_options';
 
         add_menu_page(
-            __('Fluent Snippets', 'fluent-snippets'),
-            __('FluentSnippets', 'fluent-snippets'),
+            __('Fluent Snippets', 'easy-code-manager'),
+            __('FluentSnippets', 'easy-code-manager'),
             $permission,
             'fluent-snippets',
             array($this, 'render'),
@@ -86,7 +86,7 @@ class AdminMenuHandler
             'snippet_types'              => $this->getSnippetTypes(),
         ]);
 
-        echo '<div id="fluent_snippets_app"><h3 style="text-align: center; margin-top: 100px;">' . __('Loading Snippets..', 'fluent-snippets') . '</h3></div>';
+        echo '<div id="fluent_snippets_app"><h3 style="text-align: center; margin-top: 100px;">' . __('Loading Snippets..', 'easy-code-manager') . '</h3></div>';
     }
 
     public function getSafeModeInfo()
@@ -104,86 +104,86 @@ class AdminMenuHandler
     {
         return apply_filters('fluent_snippets/snippet_types', [
             'PHP'         => [
-                'label'             => __('Functions', 'fluent-snippets'),
+                'label'             => __('Functions', 'easy-code-manager'),
                 'value'             => 'PHP',
                 'inline_tag'        => 'PHP',
                 'running_locations' => [
                     'all'      => [
-                        'label'       => __('Run Everywhere', 'fluent-snippets'),
-                        'description' => __('Snippet gets executed everywhere (both frontend and admin area)', 'fluent-snippets')
+                        'label'       => __('Run Everywhere', 'easy-code-manager'),
+                        'description' => __('Snippet gets executed everywhere (both frontend and admin area)', 'easy-code-manager')
                     ],
                     'backend'  => [
-                        'label'       => __('Admin Only', 'fluent-snippets'),
-                        'description' => __('Snippet gets executed only in admin area (/wp-admin/)', 'fluent-snippets')
+                        'label'       => __('Admin Only', 'easy-code-manager'),
+                        'description' => __('Snippet gets executed only in admin area (/wp-admin/)', 'easy-code-manager')
                     ],
                     'frontend' => [
-                        'label'       => __('Frontend Only', 'fluent-snippets'),
-                        'description' => __('Snippet gets executed only in frontend area', 'fluent-snippets')
+                        'label'       => __('Frontend Only', 'easy-code-manager'),
+                        'description' => __('Snippet gets executed only in frontend area', 'easy-code-manager')
                     ]
                 ]
             ],
             'php_content' => [
-                'label'             => __('Content', 'fluent-snippets'),
+                'label'             => __('Content', 'easy-code-manager'),
                 'value'             => 'php_content',
                 'inline_tag'        => 'PHP + HTML',
                 'running_locations' => [
                     'shortcode'      => [
-                        'label'       => __('Shortcode', 'fluent-snippets'),
-                        'description' => __('Only display when inserted into a post or page using shortcode', 'fluent-snippets')
+                        'label'       => __('Shortcode', 'easy-code-manager'),
+                        'description' => __('Only display when inserted into a post or page using shortcode', 'easy-code-manager')
                     ],
                     'wp_head'        => [
-                        'label'       => __('Site Wide Header', 'fluent-snippets'),
-                        'description' => __('Insert snippet between the head tags of your website (frontend).', 'fluent-snippets')
+                        'label'       => __('Site Wide Header', 'easy-code-manager'),
+                        'description' => __('Insert snippet between the head tags of your website (frontend).', 'easy-code-manager')
                     ],
                     'wp_body_open'   => [
-                        'label'       => __('Site Wide Body Open', 'fluent-snippets'),
-                        'description' => __('Insert snippet after the opening body tag of your website (frontend).', 'fluent-snippets')
+                        'label'       => __('Site Wide Body Open', 'easy-code-manager'),
+                        'description' => __('Insert snippet after the opening body tag of your website (frontend).', 'easy-code-manager')
                     ],
                     'wp_footer'      => [
-                        'label'       => __('Site Wide Footer', 'fluent-snippets'),
-                        'description' => __('Insert snippet before the closing body tag of your website on all pages (frontend).', 'fluent-snippets')
+                        'label'       => __('Site Wide Footer', 'easy-code-manager'),
+                        'description' => __('Insert snippet before the closing body tag of your website on all pages (frontend).', 'easy-code-manager')
                     ],
                     'before_content' => [
-                        'label'       => __('Before Content', 'fluent-snippets'),
-                        'description' => __('Insert snippet at the beginning of single post/page content.', 'fluent-snippets')
+                        'label'       => __('Before Content', 'easy-code-manager'),
+                        'description' => __('Insert snippet at the beginning of single post/page content.', 'easy-code-manager')
                     ],
                     'after_content'  => [
-                        'label'       => __('After Content', 'fluent-snippets'),
-                        'description' => __('Insert snippet at the end of single post/page content.', 'fluent-snippets')
+                        'label'       => __('After Content', 'easy-code-manager'),
+                        'description' => __('Insert snippet at the end of single post/page content.', 'easy-code-manager')
                     ]
                 ]
             ],
             'css'         => [
-                'label'             => __('Styles', 'fluent-snippets'),
+                'label'             => __('Styles', 'easy-code-manager'),
                 'value'             => 'css',
                 'inline_tag'        => 'CSS',
                 'running_locations' => [
                     'wp_head'    => [
-                        'label'       => __('Frontend', 'fluent-snippets'),
-                        'description' => __('Add CSS on all pages (frontend).', 'fluent-snippets')
+                        'label'       => __('Frontend', 'easy-code-manager'),
+                        'description' => __('Add CSS on all pages (frontend).', 'easy-code-manager')
                     ],
                     'admin_head' => [
-                        'label'       => __('Backend', 'fluent-snippets'),
-                        'description' => __('Apply this snippet CSS to backend (/wp-admin/).', 'fluent-snippets')
+                        'label'       => __('Backend', 'easy-code-manager'),
+                        'description' => __('Apply this snippet CSS to backend (/wp-admin/).', 'easy-code-manager')
                     ],
                     'everywhere' => [
-                        'label'       => __('Both Backend and Frontend', 'fluent-snippets'),
-                        'description' => __('Apply this snippet CSS to both backend and frontend.', 'fluent-snippets')
+                        'label'       => __('Both Backend and Frontend', 'easy-code-manager'),
+                        'description' => __('Apply this snippet CSS to both backend and frontend.', 'easy-code-manager')
                     ]
                 ]
             ],
             'js'          => [
-                'label'             => __('Scripts', 'fluent-snippets'),
+                'label'             => __('Scripts', 'easy-code-manager'),
                 'value'             => 'js',
                 'inline_tag'        => 'JS',
                 'running_locations' => [
                     'wp_head'   => [
-                        'label'       => __('Site Wide Header', 'fluent-snippets'),
-                        'description' => __('Run Javascript between the head tags of your website on all pages (frontend).', 'fluent-snippets')
+                        'label'       => __('Site Wide Header', 'easy-code-manager'),
+                        'description' => __('Run Javascript between the head tags of your website on all pages (frontend).', 'easy-code-manager')
                     ],
                     'wp_footer' => [
-                        'label'       => __('Site Wide Footer', 'fluent-snippets'),
-                        'description' => __('Run Javascript before the closing body tag of your website on all pages (frontend).', 'fluent-snippets')
+                        'label'       => __('Site Wide Footer', 'easy-code-manager'),
+                        'description' => __('Run Javascript before the closing body tag of your website on all pages (frontend).', 'easy-code-manager')
                     ]
                 ]
             ],
@@ -210,11 +210,11 @@ class AdminMenuHandler
 
         $options = [
             'user' => [
-                'label'    => __('User', 'fluent-snippets'),
+                'label'    => __('User', 'easy-code-manager'),
                 'value'    => 'user',
                 'children' => [
                     [
-                        'label'       => __('Logged-in', 'fluent-snippets'),
+                        'label'       => __('Logged-in', 'easy-code-manager'),
                         'value'       => 'authenticated',
                         'type'        => 'single_assert_option',
                         'is_multiple' => false,
@@ -224,7 +224,7 @@ class AdminMenuHandler
                         ]
                     ],
                     [
-                        'label'             => __('User Role', 'fluent-snippets'),
+                        'label'             => __('User Role', 'easy-code-manager'),
                         'value'             => 'role',
                         'is_multiple'       => true,
                         'is_singular_value' => true,
@@ -234,40 +234,40 @@ class AdminMenuHandler
                 ],
             ],
             'page' => [
-                'label'    => __('Page', 'fluent-snippets'),
+                'label'    => __('Page', 'easy-code-manager'),
                 'value'    => 'page',
                 'children' => [
                     [
-                        'label'             => __('Type of page', 'fluent-snippets'),
+                        'label'             => __('Type of page', 'easy-code-manager'),
                         'value'             => 'page_type',
                         'type'              => 'selections',
                         'is_multiple'       => true,
                         'is_singular_value' => true,
                         'options'           => array(
-                            'is_front_page' => __('Homepage', 'fluent-snippets'),
-                            'is_archive'    => __('Archive', 'fluent-snippets'),
-                            'is_singular'   => __('Single Post/Page/CPT', 'fluent-snippets'),
-                            'is_search'     => __('Search page', 'fluent-snippets'),
-                            'is_404'        => __('404 page', 'fluent-snippets'),
-                            'is_author'     => __('Author page', 'fluent-snippets')
+                            'is_front_page' => __('Homepage', 'easy-code-manager'),
+                            'is_archive'    => __('Archive', 'easy-code-manager'),
+                            'is_singular'   => __('Single Post/Page/CPT', 'easy-code-manager'),
+                            'is_search'     => __('Search page', 'easy-code-manager'),
+                            'is_404'        => __('404 page', 'easy-code-manager'),
+                            'is_author'     => __('Author page', 'easy-code-manager')
                         )
                     ],
                     [
-                        'label'       => __('Post Type', 'fluent-snippets'),
+                        'label'       => __('Post Type', 'easy-code-manager'),
                         'value'       => 'post_type',
                         'type'        => 'selections',
                         'is_multiple' => true,
                         'options'     => $formattedPostTypes
                     ],
                     [
-                        'label'       => __('Taxonomy Page', 'fluent-snippets'),
+                        'label'       => __('Taxonomy Page', 'easy-code-manager'),
                         'value'       => 'taxonomy_page',
                         'type'        => 'selections',
                         'is_multiple' => true,
                         'options'     => $formattedTaxonomies
                     ],
                     [
-                        'label'       => __('Taxonomy Term Page', 'fluent-snippets'),
+                        'label'       => __('Taxonomy Term Page', 'easy-code-manager'),
                         'value'       => 'taxonomy_term_page',
                         'type'        => 'rest_selections',
                         'is_multiple' => true,
@@ -275,12 +275,12 @@ class AdminMenuHandler
                         'is_grouped'  => true
                     ],
                     [
-                        'label' => __('URL', 'fluent-snippets'),
+                        'label' => __('URL', 'easy-code-manager'),
                         'value' => 'url',
                         'type'  => 'text'
                     ],
                     [
-                        'label'       => __('Single Post/Page/CPT', 'fluent-snippets'),
+                        'label'       => __('Single Post/Page/CPT', 'easy-code-manager'),
                         'value'       => 'page_ids',
                         'type'        => 'rest_selections',
                         'is_multiple' => true,
@@ -291,12 +291,12 @@ class AdminMenuHandler
                 ]
             ],
             'date' => [
-                'label'    => __('Date', 'fluent-snippets'),
+                'label'    => __('Date', 'easy-code-manager'),
                 'value'    => 'date',
                 'is_pro'   => true,
                 'children' => [
                     [
-                        'label'        => __('Date Range', 'fluent-snippets'),
+                        'label'        => __('Date Range', 'easy-code-manager'),
                         'value'        => 'date_range',
                         'type'         => 'dates',
                         'date_type'    => 'datetimerange',
@@ -304,24 +304,24 @@ class AdminMenuHandler
                         'value_format' => 'YYYY-MM-DD HH:mm'
                     ],
                     [
-                        'label'        => __('Time Range', 'fluent-snippets'),
+                        'label'        => __('Time Range', 'easy-code-manager'),
                         'value'        => 'time_range',
                         'type'         => 'time_range',
                         'is_range'     => true,
                         'value_format' => 'HH:mm:ss'
                     ],
                     [
-                        'label'             => __('Day of the week', 'fluent-snippets'),
+                        'label'             => __('Day of the week', 'easy-code-manager'),
                         'value'             => 'day_of_week',
                         'type'              => 'selections',
                         'options'           => [
-                            'mon' => __('Monday', 'fluent-snippets'),
-                            'tue' => __('Tuesday', 'fluent-snippets'),
-                            'wed' => __('Wednesday', 'fluent-snippets'),
-                            'thu' => __('Thursday', 'fluent-snippets'),
-                            'fri' => __('Friday', 'fluent-snippets'),
-                            'sat' => __('Saturday', 'fluent-snippets'),
-                            'sun' => __('Sunday', 'fluent-snippets'),
+                            'mon' => __('Monday', 'easy-code-manager'),
+                            'tue' => __('Tuesday', 'easy-code-manager'),
+                            'wed' => __('Wednesday', 'easy-code-manager'),
+                            'thu' => __('Thursday', 'easy-code-manager'),
+                            'fri' => __('Friday', 'easy-code-manager'),
+                            'sat' => __('Saturday', 'easy-code-manager'),
+                            'sun' => __('Sunday', 'easy-code-manager'),
                         ],
                         'is_multiple'       => true,
                         'is_singular_value' => true,
@@ -332,11 +332,11 @@ class AdminMenuHandler
 
         if(defined('FLUENTCRM')) {
             $options['fluentcrm'] = [
-                'label'    => __('FluentCRM', 'fluent-snippets'),
+                'label'    => __('FluentCRM', 'easy-code-manager'),
                 'value'    => 'fluentcrm',
                 'children' => [
                     [
-                        'label'       => __('Is a CRM Contact?', 'fluent-snippets'),
+                        'label'       => __('Is a CRM Contact?', 'easy-code-manager'),
                         'value'       => 'exists',
                         'type'        => 'single_assert_option',
                         'is_multiple' => false,
@@ -346,7 +346,7 @@ class AdminMenuHandler
                         ]
                     ],
                     [
-                        'label'       => __('Contact Tags', 'fluent-snippets'),
+                        'label'       => __('Contact Tags', 'easy-code-manager'),
                         'value'       => 'tags_ids',
                         'type'        => 'rest_selections',
                         'is_multiple' => true,
@@ -355,7 +355,7 @@ class AdminMenuHandler
                         'show_id'     => false
                     ],
                     [
-                        'label'       => __('Contact Lists', 'fluent-snippets'),
+                        'label'       => __('Contact Lists', 'easy-code-manager'),
                         'value'       => 'tags_list_ids',
                         'type'        => 'rest_selections',
                         'is_multiple' => true,

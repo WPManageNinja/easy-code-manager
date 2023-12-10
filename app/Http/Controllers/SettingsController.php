@@ -83,7 +83,7 @@ class SettingsController
         }
 
         return [
-            'message'  => __('Settings has been successfully updated', 'fluent-snippets'),
+            'message'  => __('Settings has been successfully updated', 'easy-code-manager'),
             'settings' => $settings
         ];
     }
@@ -105,7 +105,7 @@ class SettingsController
         $config = Helper::saveIndexedConfig($config);
 
         return [
-            'message' => __('Safe mode has been disabled', 'fluent-snippets')
+            'message' => __('Safe mode has been disabled', 'easy-code-manager')
         ];
     }
 
@@ -119,9 +119,9 @@ class SettingsController
 
         if ($isEnable == 'yes') {
             $result = Helper::enableStandAlone();
-            $message = __('Standalone mode has been activated', 'fluent-snippets');
+            $message = __('Standalone mode has been activated', 'easy-code-manager');
         } else {
-            $message = __('Standalone mode has been deactivated', 'fluent-snippets');
+            $message = __('Standalone mode has been deactivated', 'easy-code-manager');
             $result = Helper::disableStandAlone();
         }
 
