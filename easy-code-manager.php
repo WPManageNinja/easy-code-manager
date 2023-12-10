@@ -12,7 +12,6 @@
  * Requires PHP: 7.3
  * Requires at least: 6.0
  * Domain Path:  /language
- *
  */
 
 // Exit if accessed directly.
