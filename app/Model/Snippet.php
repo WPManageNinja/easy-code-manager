@@ -300,7 +300,7 @@ class Snippet
             $fileTitle = implode(' ', $nameArr);
         }
 
-        $fileTitle = sanitize_title($fileTitle, 'snippet', 'display');
+        $fileTitle = sanitize_title($fileTitle, 'snippet');
 
         $fileName = $fileCount . '-' . $fileTitle . '.php';
 

@@ -8,9 +8,9 @@
  * License:      GPL-2.0-or-later
  * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:  fluent-snippets
- * Version:     1.0.0
- * Requires PHP: 7.1
- * Requires at least: 5.0
+ * Version:     10.1.0
+ * Requires PHP: 7.3
+ * Requires at least: 6.0
  * Domain Path:  /language
  *
  */
@@ -26,7 +26,7 @@ if (defined('FLUENT_SNIPPETS_PLUGIN_PATH')) {
 
 define('FLUENT_SNIPPETS_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('FLUENT_SNIPPETS_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('FLUENT_SNIPPETS_PLUGIN_VERSION', '1.0.0');
+define('FLUENT_SNIPPETS_PLUGIN_VERSION', '10.1.0');
 
 class FluentCodeSnippetsBoot
 {

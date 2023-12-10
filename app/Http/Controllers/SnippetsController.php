@@ -64,7 +64,6 @@ class SnippetsController
         ];
     }
 
-
     public static function createSnippet(\WP_REST_Request $request)
     {
         if ($restricted = self::isBlockedRequest()) {

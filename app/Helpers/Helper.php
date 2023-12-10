@@ -31,7 +31,7 @@ class Helper
         return true;
     }
 
-    public static function cacheSnippetIndex($fileName = '', $isForced = false)
+    public static function cacheSnippetIndex($fileName = '', $isForced = false, $extraArgs = [])
     {
         $data = [
             'published' => [],
@@ -48,6 +48,7 @@ class Helper
                     'auto_publish'        => 'no',
                     'remove_on_uninstall' => 'no',
                     'force_disabled'      => 'no',
+                    'legacy_status'       => 'new',
                     'secret_key'          => md5(wp_generate_uuid4() . time() . random_int(1000, 10000))
                 ],
                 'error_files' => []
@@ -64,10 +65,15 @@ class Helper
             'cached_at'           => date('Y-m-d H:i:s'),
             'cached_version'      => FLUENT_SNIPPETS_PLUGIN_VERSION,
             'cashed_domain'       => site_url(),
+            'legacy_status'       => Arr::get($previousConfig['meta'], 'legacy_status'),
             'auto_disable'        => $previousConfig['meta']['auto_disable'],
             'auto_publish'        => $previousConfig['meta']['auto_publish'],
             'remove_on_uninstall' => $previousConfig['meta']['remove_on_uninstall']
         ];
+
+        if ($extraArgs) {
+            $data['meta'] = wp_parse_args($extraArgs, $data['meta']);
+        }
 
         $errorFiles = $previousConfig['error_files'];
 
@@ -183,7 +189,8 @@ PHP;
         $defaults = [
             'auto_disable'        => 'yes',
             'auto_publish'        => 'no',
-            'remove_on_uninstall' => 'no'
+            'remove_on_uninstall' => 'no',
+            'legacy_status'       => 'new'
         ];
 
         if (!$config) {
@@ -212,7 +219,6 @@ PHP;
         $config = self::getIndexedConfig();
         return Arr::get($config, 'meta.secret_key');
     }
-
 
     public static function enableStandAlone($isForced = false)
     {
@@ -297,4 +303,3 @@ PHP;
         return preg_replace('/<\/style>/', '', $code);
     }
 }
-

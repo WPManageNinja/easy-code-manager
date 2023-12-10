@@ -146,10 +146,10 @@ class SettingsController
 
     public static function getRestOptions(\WP_REST_Request $request)
     {
-        $optionKet = $request->get_param('rest_key');
+        $optionKey = $request->get_param('rest_key');
         $options = [];
 
-        if ($optionKet == 'tax_term_groups') {
+        if ($optionKey == 'tax_term_groups') {
             // Get public taxonomies
             $taxonomies = get_taxonomies([
                 'public' => true
@@ -172,14 +172,84 @@ class SettingsController
                 }
 
                 $options[$term->taxonomy]['options'][] = [
-                    'id'    => $term->term_id,
+                    'id'    => (string) $term->term_id,
                     'title' => $term->name,
                 ];
             }
 
             return [
-                'options' => $options,
+                'options'     => $options,
                 'is_cachable' => true,
+            ];
+        }
+
+        if ($optionKey == 'post_cpt_groups') {
+
+            $publicPostTypes = get_post_types([
+                'public' => true
+            ]);
+
+            $posts = get_posts([
+                'post_type'   => array_keys($publicPostTypes),
+                'numberposts' => 200,
+                'post_status' => ['publish', 'draft', 'private'],
+                's'           => sanitize_text_field($request->get_param('search')),
+                'search_columns' => ['post_title']
+            ]);
+
+            $requestValues = $request->get_param('values');
+
+            if(empty($requestValues) || !is_array($requestValues)) {
+                $requestValues = [];
+            }
+
+            $includedIds = [];
+
+            foreach ($posts as $post) {
+                if (!isset($options[$post->post_type])) {
+                    $options[$post->post_type] = [
+                        'label'   => ucfirst($post->post_type),
+                        'options' => [],
+                    ];
+                }
+
+                $includedIds[] = $post->ID;
+
+                $options[$post->post_type]['options'][] = [
+                    'id'    => (string) $post->ID,
+                    'title' => $post->post_title,
+                ];
+            }
+
+            $restIds = array_diff($requestValues, $includedIds);
+
+            if($restIds) {
+                $restPosts = get_posts([
+                    'post_type' => 'any',
+                    'numberposts' => 200,
+                    'post_status' => ['publish', 'draft', 'private'],
+                    'post__in'    => $restIds
+                ]);
+
+                foreach ($restPosts as $post) {
+                    if (!isset($options[$post->post_type])) {
+                        $options[$post->post_type] = [
+                            'label'   => ucfirst($post->post_type),
+                            'options' => [],
+                        ];
+                    }
+
+                    $options[$post->post_type]['options'][] = [
+                        'id'    => (string) $post->ID,
+                        'title' => $post->post_title,
+                    ];
+                }
+            }
+
+
+            return [
+                'options'     => $options,
+                'is_cachable' => false,
             ];
         }
 

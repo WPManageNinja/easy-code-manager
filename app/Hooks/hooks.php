@@ -5,8 +5,6 @@
  */
 (new \FluentSnippets\App\Hooks\Handlers\AdminMenuHandler())->register();
 (new \FluentSnippets\App\Hooks\Handlers\CodeHandler())->register();
-//(new \FluentSnippets\App\Hooks\Handlers\RepoHandler())->register();
-
 
 
 add_action('wp', function () {

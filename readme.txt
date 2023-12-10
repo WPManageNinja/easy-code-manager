@@ -1,10 +1,10 @@
-=== Fluent Snippets ===
-Contributors: hasanuzzamanshamim
+=== FluentSnippets - The High-Performancen Custom Code Snippets Plugin ===
+Contributors: techjewel
 Tags: header footer codes, snippets, custom codes
 Requires at least: 6.0
-Tested up to: 6.2
-Stable tag: 1.0
-Requires PHP: 7.1
+Tested up to: 6.4
+Requires PHP: 7.3 or higher
+Stable tag: 10.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
