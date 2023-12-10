@@ -45,6 +45,8 @@ class FluentSnippetCondition
                 return $this->evaluatePageCondition($condition['source'][1], $condition['operator'], $condition['value']);
             case 'date':
                 return $this->evaluateDateCondition($condition['source'][1], $condition['operator'], $condition['value']);
+            case 'fluentcrm':
+                return $this->evaluateFluentCrmCondition($condition['source'][1], $condition['operator'], $condition['value']);
             default:
                 return false;
         }
@@ -66,6 +68,39 @@ class FluentSnippetCondition
             }
             return $this->checkValues($roles, $value, $operator);
         }
+        return false;
+    }
+
+    private function evaluateFluentCrmCondition($key, $operator, $value)
+    {
+        if (!defined('FLUENTCRM')) {
+            return false;
+        }
+
+        if ($key == 'exists') {
+            return !!fluentcrm_get_current_contact();
+        }
+
+        if ($key == 'tags_ids') {
+            $currentContact = fluentcrm_get_current_contact();
+            if (!$currentContact) {
+                $tagIds = [];
+            } else {
+                $tagIds = $currentContact->tags()->pluck('id')->toArray();
+            }
+            return $this->checkValues($tagIds, $value, $operator);
+        }
+
+        if ($key == 'list_ids') {
+            $currentContact = fluentcrm_get_current_contact();
+            if (!$currentContact) {
+                $listIds = [];
+            } else {
+                $listIds = $currentContact->lists()->pluck('id')->toArray();
+            }
+            return $this->checkValues($listIds, $value, $operator);
+        }
+        
         return false;
     }
 

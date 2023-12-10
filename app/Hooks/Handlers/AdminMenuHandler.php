@@ -208,8 +208,8 @@ class AdminMenuHandler
             $formattedTaxonomies[$taxonomy->name] = $taxonomy->labels->singular_name;
         }
 
-        return [
-            [
+        $options = [
+            'user' => [
                 'label'    => __('User', 'fluent-snippets'),
                 'value'    => 'user',
                 'children' => [
@@ -233,7 +233,7 @@ class AdminMenuHandler
                     ]
                 ],
             ],
-            [
+            'page' => [
                 'label'    => __('Page', 'fluent-snippets'),
                 'value'    => 'page',
                 'children' => [
@@ -290,7 +290,7 @@ class AdminMenuHandler
                     ]
                 ]
             ],
-            [
+            'date' => [
                 'label'    => __('Date', 'fluent-snippets'),
                 'value'    => 'date',
                 'is_pro'   => true,
@@ -329,6 +329,46 @@ class AdminMenuHandler
                 ]
             ]
         ];
+
+        if(defined('FLUENTCRM')) {
+            $options['fluentcrm'] = [
+                'label'    => __('FluentCRM', 'fluent-snippets'),
+                'value'    => 'fluentcrm',
+                'children' => [
+                    [
+                        'label'       => __('Is a CRM Contact?', 'fluent-snippets'),
+                        'value'       => 'exists',
+                        'type'        => 'single_assert_option',
+                        'is_multiple' => false,
+                        'options'     => [
+                            'yes' => 'True',
+                            'no'  => 'False'
+                        ]
+                    ],
+                    [
+                        'label'       => __('Contact Tags', 'fluent-snippets'),
+                        'value'       => 'tags_ids',
+                        'type'        => 'rest_selections',
+                        'is_multiple' => true,
+                        'rest_key'    => 'fluentcrm_tags',
+                        'is_grouped'  => false,
+                        'show_id'     => false
+                    ],
+                    [
+                        'label'       => __('Contact Lists', 'fluent-snippets'),
+                        'value'       => 'tags_list_ids',
+                        'type'        => 'rest_selections',
+                        'is_multiple' => true,
+                        'rest_key'    => 'fluentcrm_lists',
+                        'is_grouped'  => false,
+                        'show_id'     => false
+                    ]
+                ],
+            ];
+        }
+
+        return array_values($options);
+
     }
 
     private function getMenuIcon()

@@ -253,6 +253,52 @@ class SettingsController
             ];
         }
 
+        if($optionKey == 'fluentcrm_tags') {
+            if(!defined('FLUENTCRM')) {
+                return [
+                    'options' => [],
+                    'is_cachable' => true
+                ];
+            }
+
+            $tags = \FluentCrm\App\Models\Tag::orderBy('title', 'ASC')->get();
+            foreach ($tags as $tag) {
+                $options[] = [
+                    'id'    => (string) $tag->id,
+                    'title' => $tag->title,
+                ];
+            }
+
+            return [
+                'options' => $options,
+                'is_cachable' => true
+            ];
+
+        }
+
+        if($optionKey == 'fluentcrm_lists') {
+            if(!defined('FLUENTCRM')) {
+                return [
+                    'options' => [],
+                    'is_cachable' => true
+                ];
+            }
+
+            $tags = \FluentCrm\App\Models\Lists::orderBy('title', 'ASC')->get();
+            foreach ($tags as $tag) {
+                $options[] = [
+                    'id'    => (string) $tag->id,
+                    'title' => $tag->title,
+                ];
+            }
+
+            return [
+                'options' => $options,
+                'is_cachable' => true
+            ];
+
+        }
+
         return [
             'options' => $options
         ];

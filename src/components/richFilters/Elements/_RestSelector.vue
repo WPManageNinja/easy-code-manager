@@ -30,7 +30,7 @@
         </template>
         <template v-else>
             <el-option
-                v-for="item in group.options"
+                v-for="item in options"
                 :key="item.id"
                 :label="item.title"
                 :value="item.id"/>
