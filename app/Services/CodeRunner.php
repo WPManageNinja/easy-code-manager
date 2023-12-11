@@ -134,7 +134,7 @@ class CodeRunner
                         $filter = $filterMaps[$runAt];
                         add_filter($filter['hook'], function ($content) use ($file, $snippet, $conditionalClass, $filter) {
                             if (!empty($filter['is_single'])) {
-                                if (!is_single() || !in_the_loop() || !is_main_query()) {
+                                if (!is_singular() || !in_the_loop() || !is_main_query()) {
                                     return $content;
                                 }
                             }
