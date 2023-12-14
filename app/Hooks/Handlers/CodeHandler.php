@@ -207,9 +207,9 @@ class CodeHandler
             return true;
         }
 
-        if (isset($_REQUEST['fluent_snippets']) && isset($_REQUEST['snippet_secret'])) {
+        if (isset($_REQUEST['fluent_snippets'])) {
             $config = Helper::getIndexedConfig();
-            if (sanitize_text_field($_REQUEST['snippet_secret']) == $config['meta']['secret_key']) {
+            if ($config && hash_equals($_REQUEST['snippet_secret'], $config['meta']['secret_key'])) {
                 $config['meta']['force_disabled'] = 'yes';
                 Helper::saveIndexedConfig($config);
                 header('Location: ' . admin_url('admin.php?page=fluent-snippets'));
