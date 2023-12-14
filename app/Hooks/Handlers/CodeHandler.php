@@ -207,7 +207,7 @@ class CodeHandler
             return true;
         }
 
-        if (isset($_REQUEST['fluent_snippets'])) {
+        if (isset($_REQUEST['fluent_snippets']) && isset($_REQUEST['snippet_secret'])) {
             $config = Helper::getIndexedConfig();
             if ($config && hash_equals($_REQUEST['snippet_secret'], $config['meta']['secret_key'])) {
                 $config['meta']['force_disabled'] = 'yes';
