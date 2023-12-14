@@ -104,6 +104,7 @@ class CodeRunner
                     }
                     break;
                 case 'css':
+                    $runAt = $this->get($snippet, 'run_at', 'wp_footer');
                     if ($runAt == 'everywehere' && is_admin()) {
                         $runAt = 'admin_head';
                     } else {
