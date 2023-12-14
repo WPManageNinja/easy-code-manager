@@ -25,7 +25,7 @@
 </template>
 
 <script type="text/babel">
-import FsnipPromo from './Components/FsnipSafeModesWarning.vue';
+import FsnipPromo from './components/FsnipSafeModesWarning.vue';
 export default {
     name: 'FluentAuthApp',
     components: {
