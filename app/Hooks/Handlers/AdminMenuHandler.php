@@ -17,7 +17,7 @@ class AdminMenuHandler
 
     public function addMenu()
     {
-        $permission = 'manage_options';
+        $permission = 'install_plugins';
 
         add_menu_page(
             __('Fluent Snippets', 'easy-code-manager'),

@@ -2,7 +2,7 @@
 
 $router = new \FluentSnippets\App\Services\Router('fluent-snippets');
 
-$permissions = ['manage_options'];
+$permissions = ['install_plugins'];
 
 $router->get('snippets', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'getSnippets'], $permissions)
     ->post('snippets', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'createSnippet'], $permissions)
