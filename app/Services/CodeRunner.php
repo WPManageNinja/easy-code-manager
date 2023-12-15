@@ -9,9 +9,7 @@ class CodeRunner
 
     public function __construct()
     {
-        $upload_dir = wp_upload_dir();
-        $baseDir = $upload_dir['basedir'];
-        $this->storageDir = $baseDir . '/fluent-snippet-storage';
+        $this->storageDir = WP_CONTENT_DIR . '/fluent-snippet-storage';
     }
 
     public function runSnippets()

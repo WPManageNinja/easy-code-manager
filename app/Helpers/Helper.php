@@ -8,9 +8,7 @@ class Helper
 {
     public static function getStorageDir()
     {
-        $upload_dir = wp_upload_dir();
-        $baseDir = $upload_dir['basedir'];
-        return $baseDir . '/fluent-snippet-storage';
+        return WP_CONTENT_DIR . '/fluent-snippet-storage';
     }
 
     public static function validateCode($language, $code)
@@ -174,8 +172,58 @@ PHP;
 
     public static function getIndexedConfig()
     {
+        static $config = null;
+
+        if ($config) {
+            return $config;
+        }
+
+        $config = self::getConfigFromFile();
+
+        return $config;
+    }
+
+    private static function getConfigFromFile()
+    {
         $cachedFile = self::getStorageDir() . '/index.php';
+
         if (!file_exists($cachedFile)) {
+
+
+            // @todo: remove this migration at mid january 2024
+
+            // maybe we have files in uploads directory
+            $oldLocationIndex = wp_upload_dir()['basedir'] . '/fluent-snippet-storage/index.php';
+            if (!file_exists($oldLocationIndex)) {
+                return [];
+            }
+
+            if (!class_exists('\WP_Filesystem')) {
+                require_once(ABSPATH . 'wp-admin/includes/file.php');
+            }
+
+            // Initialize the WordPress filesystem
+            WP_Filesystem();
+            global $wp_filesystem;
+
+            // Define the source and destination paths
+            $source = wp_upload_dir()['basedir'] . '/fluent-snippet-storage';
+            $destination = self::getStorageDir();
+
+            // Check if the source directory exists
+            if ($wp_filesystem->is_dir($source)) {
+                // Create destination directory if it doesn't exist
+                if (!$wp_filesystem->is_dir($destination)) {
+                    $wp_filesystem->mkdir($destination);
+                }
+
+                // Move the folder
+                if (copy_dir($source, $destination)) {
+                    // Optionally, delete the original folder after copying
+                    $wp_filesystem->delete($source, true);
+                }
+            }
+
             return [];
         }
 
