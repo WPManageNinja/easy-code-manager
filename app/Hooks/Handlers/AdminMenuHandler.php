@@ -47,6 +47,8 @@ class AdminMenuHandler
             $indexConfig = Helper::getIndexedConfig();
         }
 
+        $this->maybeMuModeMigrate();
+
         add_filter('admin_footer_text', function ($content) use ($indexConfig) {
             $ext = '';
             if (defined('FLUENT_SNIPPETS_RUNNING_MU')) {
@@ -395,5 +397,18 @@ class AdminMenuHandler
             </p>
         </div>
         <?php
+    }
+
+    private function maybeMuModeMigrate()
+    {
+        if (!defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION')) {
+            return;
+        }
+
+        if (FLUENT_SNIPPETS_RUNNING_MU_VERSION == FLUENT_SNIPPETS_PLUGIN_VERSION) {
+            return;
+        }
+
+        Helper::enableStandAlone(true);
     }
 }
