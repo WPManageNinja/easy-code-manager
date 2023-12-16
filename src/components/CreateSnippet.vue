@@ -18,63 +18,18 @@
             </div>
             <div class="box_body">
                 <snippet-form :is_new="true" :snippet="snippet">
-                    <template v-slot:code_editor>
-                        <el-form-item label="Code" :class="'fsnip_code_lang_'+snippet.meta.type"
-                                      class="code_editor_wrap">
-                            <el-tabs @tabChange="tabChanged()" v-model="snippet.meta.type" type="border-card">
-                                <el-tab-pane v-if="appVars.snippet_types.PHP" name="PHP" label="Functions (PHP)">
-                                    <template #label>
-                                        <span class="custom-tabs-label">
-                                             <span>Functions</span>
-                                            <span class="fsn_label fsn_php">PHP</span>
+                    <template v-slot:code_editor_before>
+                        <el-form-item label="Snippet Type">
+                            <el-radio-group v-model="snippet.meta.type">
+                                <el-radio v-for="(snippetType, type) in appVars.snippet_types" :key="snippetType.value" :label="snippetType.value">
+                                    <span class="custom-tabs-label">
+                                              {{ snippetType.label }}
+                                        <span :class="'fsn_'+snippetType.value.toLowerCase()" class="fsn_label">
+                                            {{getLangLabelName(snippetType.value)}}
                                         </span>
-                                    </template>
-                                    <code-editor
-                                        v-if="snippet.meta.type == 'PHP'"
-                                        :langType="snippet.meta.type"
-                                        v-model="snippet.code"
-                                    />
-                                </el-tab-pane>
-                                <el-tab-pane v-if="appVars.snippet_types.php_content" name="php_content">
-                                    <template #label>
-                                        <span class="custom-tabs-label">
-                                             <span>Content</span>
-                                            <span class="fsn_label fsn_mixed">{{ appVars.snippet_types.php_content.inline_tag }}</span>
-                                        </span>
-                                    </template>
-                                    <code-editor
-                                        v-if="snippet.meta.type == 'php_content'"
-                                        :langType="snippet.meta.type"
-                                        v-model="snippet.code"
-                                    />
-                                </el-tab-pane>
-                                <el-tab-pane v-if="appVars.snippet_types.css" name="css">
-                                    <template #label>
-                                        <span class="custom-tabs-label">
-                                             <span>Styles</span>
-                                            <span class="fsn_label fsn_css">CSS</span>
-                                        </span>
-                                    </template>
-                                    <code-editor
-                                        v-if="snippet.meta.type == 'css'"
-                                        :langType="snippet.meta.type"
-                                        v-model="snippet.code"
-                                    />
-                                </el-tab-pane>
-                                <el-tab-pane v-if="appVars.snippet_types.js" name="js" label="Javascript">
-                                    <template #label>
-                                        <span class="custom-tabs-label">
-                                             <span>Scripts</span>
-                                            <span class="fsn_label fsn_js">JS</span>
-                                        </span>
-                                    </template>
-                                    <code-editor
-                                        v-if="snippet.meta.type == 'js'"
-                                        :langType="snippet.meta.type"
-                                        v-model="snippet.code"
-                                    />
-                                </el-tab-pane>
-                            </el-tabs>
+                                    </span>
+                                </el-radio>
+                            </el-radio-group>
                         </el-form-item>
                     </template>
                 </snippet-form>

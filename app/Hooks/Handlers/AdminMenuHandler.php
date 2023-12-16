@@ -5,6 +5,7 @@ namespace FluentSnippets\App\Hooks\Handlers;
 use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Model\Snippet;
+use FluentSnippets\App\Services\Trans;
 
 class AdminMenuHandler
 {
@@ -52,7 +53,7 @@ class AdminMenuHandler
                 $ext = '<b>Standalone (MU Mode) is activated</b> ';
             }
 
-            if(Arr::get($indexConfig, 'meta.legacy_status') == 'migrated') {
+            if (Arr::get($indexConfig, 'meta.legacy_status') == 'migrated') {
                 $ext .= 'FluentSnippets was known as Easy Code Manager.';
             }
 
@@ -75,9 +76,7 @@ class AdminMenuHandler
                 'full_name' => trim($currentUser->first_name . ' ' . $currentUser->last_name),
                 'email'     => $currentUser->user_email
             ],
-            'i18n'                       => [
-                'Dashboard' => __('Dashboard', 'fluent-security'),
-            ],
+            'i18n'                       => Trans::getStrings(),
             'tags'                       => $tags,
             'groups'                     => $groups,
             'safeModes'                  => $this->getSafeModeInfo(),
@@ -330,7 +329,7 @@ class AdminMenuHandler
             ]
         ];
 
-        if(defined('FLUENTCRM')) {
+        if (defined('FLUENTCRM')) {
             $options['fluentcrm'] = [
                 'label'    => __('FluentCRM', 'easy-code-manager'),
                 'value'    => 'fluentcrm',

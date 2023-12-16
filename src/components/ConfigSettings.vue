@@ -62,7 +62,7 @@
                     </template>
                 </el-input>
 
-                <h3>Enable Safe Mode Programmatically:</h3>
+                <h3>{{$t('Enable Safe Mode Programmatically:')}}</h3>
                 <p>If you want to enable safe mode programmatically, you can add the following code to your
                     wp-config.php file</p>
                 <code style="padding: 10px;">define('FLUENT_SNIPPETS_SAFE_MODE', true);</code>
@@ -75,7 +75,7 @@
         <div class="box dashboard_box box_narrow">
             <div class="box_header" style="padding: 15px; font-size: 16px;">
                 <div style="padding-top: 5px;" class="box_head">
-                    Standalone Mode (Must use mode)
+                    {{$t('Standalone Mode (Must use mode)')}}
                     <el-tag v-if="is_standalone" type="success">{{$t('Enabled')}}</el-tag>
                 </div>
             </div>
@@ -92,7 +92,8 @@
                 <template v-else>
                     <p>When using standalone mode your scripts will be executed from mu-plugins file.</p>
                     <el-button v-loading="saving" :disabled="saving" type="primary"
-                               @click="updateStandAloneMode('yes')">Enable Standalone Mode
+                               @click="updateStandAloneMode('yes')">
+                        {{$t('Enable Standalone Mode')}}
                     </el-button>
                 </template>
             </div>

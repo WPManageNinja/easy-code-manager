@@ -365,7 +365,6 @@ class CodeRunner
         $this->storageDir = WP_CONTENT_DIR . '/fluent-snippet-storage';
     }
 
-
     public function runSnippets()
     {
         if (!file_exists($this->storageDir . '/index.php')) {

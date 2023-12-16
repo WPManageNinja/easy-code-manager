@@ -2,6 +2,7 @@
     <el-form label-position="top" :model="snippet.meta">
         <el-row :gutter="20">
             <el-col :xs="24" :sm="15" :md="16" :lg="18">
+                <slot name="code_editor_before"></slot>
                 <slot name="code_editor">
                     <el-form-item :class="'fsnip_code_lang_'+snippet.meta.type" class="code_editor_wrap">
                         <template #label>
@@ -57,7 +58,19 @@
                     </template>
                     <el-input-number v-model="snippet.meta.priority" :min="1" />
                 </el-form-item>
-                <el-form-item class="snippet_tags_item" label="Tags">
+                <el-form-item class="snippet_tags_item">
+                    <template #label>
+                        <span>
+                            {{$t('Tags')}} <el-tooltip
+                            class="box-item"
+                            effect="dark"
+                            content="For easily filter your snippets."
+                            placement="top-start"
+                        >
+                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                          </el-tooltip>
+                        </span>
+                    </template>
                     <tag-creator v-model="snippet.meta.tags" />
                 </el-form-item>
             </el-col>

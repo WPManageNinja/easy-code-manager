@@ -6,11 +6,11 @@
                     {{ $t('Code Snippets') }}
                 </div>
                 <div style="display: flex;" class="box_actions">
-                    <el-input clearable @keyup.native.enter="getSnippets()"
+                    <el-input clearable
                               style="width: 200px; margin-left: 10px;"
                               size="small" type="text" v-model="search" placeholder="Search">
                         <template #append>
-                            <el-button @click="getSnippets()" :icon="SearchIcon"/>
+                            <el-button :icon="SearchIcon"/>
                         </template>
                     </el-input>
                     <el-button style="margin-left: 10px;" @click="createSnippet()" type="primary">{{
@@ -22,25 +22,38 @@
             <div v-if="loadingFirst" class="box_body">
                 <el-skeleton :rows="10" animated animation="wave"/>
             </div>
+            <div v-else-if="is_empty && !loading">
+                <div class="box_body">
+                    <div style="padding: 20px 0; text-align: center;">
+                        <h1 style="margin-bottom: 20px;">Thanks for installing FluentSnippets</h1>
+                        <p>The High-Performance Code Snippets Plugin for WP</p>
+                        <el-button @click="createSnippet()" size="large" type="primary">
+                            {{ $t('Create Your First Snippet') }}
+                        </el-button>
+                    </div>
+                </div>
+            </div>
             <div v-else style="padding: 15px 0;" class="box_body">
                 <div class="fsnip_secondary_menu">
                     <ul class="fsnip_menu">
                         <li :class="{active_item : 'all' == selectedLang}">
-                            <a @click.prevent="changeLang('all')" href="#">{{$t('All Snippets')}}</a>
+                            <a @click.prevent="changeLang('all')" href="#">{{ $t('All Snippets') }}</a>
                         </li>
                         <li v-for="(item, itemKey) in appVars.snippet_types" :key="itemKey"
                             :class="{active_item : itemKey == selectedLang}">
                             <a @click.prevent="changeLang(itemKey)" href="#">
-                                {{item.label}} <span class="fsn_label" :class="'fsn_'+itemKey">{{ item.inline_tag }}</span>
+                                {{ item.label }} <span class="fsn_label" :class="'fsn_'+itemKey">{{
+                                    item.inline_tag
+                                }}</span>
                             </a>
                         </li>
                     </ul>
                     <div class="snip_right_items">
                         <el-radio-group @change="$storeLocalData('view_type', viewType)" v-model="viewType">
-                            <el-radio-button label="table">{{ $t('Table') }}</el-radio-button>
                             <el-radio-button label="grouped">{{ $t('Grouped') }}</el-radio-button>
+                            <el-radio-button label="table">{{ $t('Table') }}</el-radio-button>
                         </el-radio-group>
-                        <el-select style="margin-right: 10px;" size="small" class="snip_ac_item" @change="getSnippets()"
+                        <el-select style="margin-right: 10px;" size="small" class="snip_ac_item"
                                    clearable placeholder="All tags"
                                    filterable v-model="selectedTag">
                             <el-option v-for="tag in tags" :key="tag" :label="tag" :value="tag"></el-option>
@@ -58,37 +71,37 @@
                                 </div>
                                 <hr/>
                                 <el-radio-group size="small" v-model="sorting.sortType">
-                                    <el-radio-button label="ASC">Ascending</el-radio-button>
-                                    <el-radio-button label="DESC">Descending</el-radio-button>
+                                    <el-radio-button label="ASC">{{ $t('Ascending') }}</el-radio-button>
+                                    <el-radio-button label="DESC">{{ $t('Descending') }}</el-radio-button>
                                 </el-radio-group>
                                 <span style="display: block; width: 100%; margin-bottom: 20px;"></span>
-                                <el-button @click="applySorting()" type="success">Apply</el-button>
+                                <el-button @click="applySorting()" type="success">{{ $t('Apply') }}</el-button>
                             </div>
                             <template #reference>
                                 <el-button @click="showingPop = true" type="default">
                                     <el-icon style="margin-right: 5px;">
                                         <SortIcon/>
                                     </el-icon>
-                                    Sort
+                                    {{ $t('Sort') }}
                                 </el-button>
                             </template>
                         </el-popover>
                     </div>
                 </div>
-
                 <el-table
                     v-if="viewType == 'table'"
                     v-loading="loading"
                     :data="snippets"
                     :row-class-name="tableRowClassName"
                     style="width: 100%"
+                    :empty-text="$t('No Snippets Found based on your filter')"
                 >
                     <el-table-column width="80">
                         <template #default="scope">
                             <el-switch v-if="!scope.row.error" v-model="scope.row.status" active-value="published"
                                        inactive-value="draft"
                                        active-color="#13ce66" @change="updateSnippetStatus(scope.row)"></el-switch>
-                            <span v-else>Paused</span>
+                            <span v-else>{{ $t('Paused') }}</span>
                         </template>
                     </el-table-column>
 
@@ -103,18 +116,19 @@
                                         :type="(scope.row.status == 'published') ? 'success' : 'warning'">
                                     {{ scope.row.status }}
                                 </el-tag>
-                                <el-tag v-else style="margin-left: 10px;" size="small" type="danger">ERROR</el-tag>
+                                <el-tag v-else style="margin-left: 10px;" size="small" type="danger">{{ $t('ERROR') }}
+                                </el-tag>
                             </div>
                             <div class="snippet_actions">
                                 <router-link class="edit_snippet_link"
                                              :to="{ name: 'edit_snippet', params: { snippet_name: scope.row.file_name } }">
-                                    {{$t('edit')}}
+                                    {{ $t('edit') }}
                                 </router-link>
                                 <span class="fc_middot">|</span>
                                 <el-popconfirm width="220" @confirm="confirmDeleteSnippet(scope.row)"
                                                title="Are you sure to delete this?">
                                     <template #reference>
-                                        <span class="fsnip_delete">{{$t('delete')}}</span>
+                                        <span class="fsnip_delete">{{ $t('delete') }}</span>
                                     </template>
                                 </el-popconfirm>
                                 <template v-if="scope.row.group">
@@ -126,7 +140,7 @@
                     </el-table-column>
                     <el-table-column :label="$t('Description')" min-width="200">
                         <template #default="scope">
-                            <span v-if="scope.row.error">ERROR: {{ scope.row.error }}</span>
+                            <span v-if="scope.row.error">{{ $t('ERROR:') }} {{ scope.row.error }}</span>
                             <span v-else>
                                 {{ limitChars(scope.row.description, 100) }}
                             </span>
@@ -134,7 +148,7 @@
                     </el-table-column>
                     <el-table-column :label="$t('Type')" width="120">
                         <template #default="scope">
-                            <span class="fsn_label" :class="'fsn_'+scope.row.type.toLowerCase()">
+                            <span v-if="scope.row.type" class="fsn_label" :class="'fsn_'+scope.row.type.toLowerCase()">
                                 {{ getLangLabelName(scope.row.type) }}
                             </span>
                         </template>
@@ -178,7 +192,9 @@
                                     <template v-if="snippet.error">
                                         <span style="background: red; color: white;" class="fsn_label">Error: </span>
                                         <span
-                                            style="margin-right: 10px; color: red;">{{ limitChars(snippet.error, 100) }}</span>
+                                            style="margin-right: 10px; color: red;">{{
+                                                limitChars(snippet.error, 100)
+                                            }}</span>
                                     </template>
                                     <span v-else class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
                                         {{ getLangLabelName(snippet.type) }}
@@ -193,7 +209,7 @@
                                         <el-popconfirm width="220" @confirm="confirmDeleteSnippet(snippet)"
                                                        title="Are you sure to delete this?">
                                             <template #reference>
-                                                <span class="fsnip_delete">{{$t('delete')}}</span>
+                                                <span class="fsnip_delete">{{ $t('delete') }}</span>
                                             </template>
                                         </el-popconfirm>
                                         <span class="fc_middot">|</span>
@@ -201,7 +217,9 @@
                                             <el-switch size="small" v-model="snippet.status" active-value="published"
                                                        inactive-value="draft"
                                                        active-color="#13ce66"
-                                                       @change="updateSnippetStatus(snippet)"></el-switch> {{ snippet.status }}
+                                                       @change="updateSnippetStatus(snippet)"></el-switch> {{
+                                                snippet.status
+                                            }}
                                         </span>
                                     </div>
                                 </div>
@@ -219,9 +237,12 @@
                                 </el-icon>
                                 {{ snippet.name }}
                                 <template v-if="snippet.error">
-                                    <span style="background: red; color: white;" class="fsn_label">Error: </span>
+                                    <span style="background: red; color: white;"
+                                          class="fsn_label">{{ t('Error:') }} </span>
                                     <span
-                                        style="margin-right: 10px; color: red;">{{ limitChars(snippet.error, 100) }}</span>
+                                        style="margin-right: 10px; color: red;">{{
+                                            limitChars(snippet.error, 100)
+                                        }}</span>
                                 </template>
                                 <span v-else class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
                                         {{ getLangLabelName(snippet.type) }}
@@ -238,7 +259,7 @@
                                     <el-popconfirm width="220" @confirm="confirmDeleteSnippet(snippet)"
                                                    :title="$t('Are you sure to delete this?')">
                                         <template #reference>
-                                            <span class="fsnip_delete">{{$t('delete')}}</span>
+                                            <span class="fsnip_delete">{{ $t('delete') }}</span>
                                         </template>
                                     </el-popconfirm>
                                     <span class="fc_middot">|</span>
@@ -246,12 +267,21 @@
                                         <el-switch v-if="!snippet.error" size="small" v-model="snippet.status"
                                                    active-value="published" inactive-value="draft"
                                                    active-color="#13ce66"
-                                                   @change="updateSnippetStatus(snippet)"></el-switch> {{ snippet.status }}
+                                                   @change="updateSnippetStatus(snippet)"></el-switch> {{
+                                            snippet.status
+                                        }}
                                     </span>
                                 </div>
                             </div>
                         </li>
                     </ul>
+                    <div v-if="!snippets || !snippets.length">
+                        <div class="box_body">
+                            <div style="padding: 20px 0; text-align: center;">
+                                <p style="margin-bottom: 20px;">Sorry, no snippets found based on your filter.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <el-row style="margin-top: 20px; padding: 0 15px;" :gutter="30">
                     <el-col :md="12" :xs="24">
@@ -269,6 +299,7 @@
                         </div>
                     </el-col>
                 </el-row>
+
             </div>
         </div>
     </div>
@@ -278,16 +309,18 @@
 import {Search, FolderOpened, Folder, Document, Stopwatch, Sort} from '@element-plus/icons-vue';
 import {markRaw} from 'vue';
 import each from 'lodash/each';
+import Fuse from 'fuse.js'
+
 
 export default {
     name: 'Dashboard',
     data() {
         return {
-            snippets: [],
+            rawSnippets: [],
             SearchIcon: markRaw(Search),
             paginate: {
                 page: 1,
-                per_page: 100,
+                per_page: 200,
                 total: 0
             },
             sorting: {
@@ -300,7 +333,7 @@ export default {
             loadingFirst: true,
             tags: [],
             selectedTag: '',
-            viewType: 'table',
+            viewType: 'grouped',
             sortingOrderColumns: [
                 {
                     value: 'name',
@@ -361,14 +394,12 @@ export default {
             this.$get('snippets', {
                 per_page: this.paginate.per_page,
                 page: this.paginate.page,
-                search: this.search,
                 type: this.selectedLang,
-                tag: this.selectedTag,
                 sort_by: this.sorting.sortBy,
                 sort_order: this.sorting.sortType
             })
                 .then(response => {
-                    this.snippets = response.snippets.data;
+                    this.rawSnippets = response.snippets.data;
                     this.paginate.total = response.snippets.total;
                 })
                 .catch((errors) => {
@@ -473,10 +504,45 @@ export default {
                 groups: groupArray,
                 roots: roots
             };
+        },
+        is_empty() {
+            return (!this.snippets || !this.snippets.length) && (!this.search && !this.selectedTag && this.selectedLang == 'all');
+        },
+        snippets() {
+            if (!this.search && !this.selectedTag) {
+                return this.rawSnippets;
+            }
+
+            let snippets = this.rawSnippets;
+
+            if (this.selectedTag) {
+                snippets = snippets.filter((snippet) => {
+                    const tags = snippet.tags || '';
+                    if (!tags) {
+                        return false;
+                    }
+                    const tagsArr = tags.split(',');
+                    return tagsArr.includes(this.selectedTag);
+                });
+            }
+
+            if (!this.search) {
+                return snippets;
+            }
+
+            const fuse = new Fuse(snippets, {
+                keys: ['name', 'description', 'tags']
+            });
+
+            snippets = fuse.search(this.search);
+
+            return snippets.map((snippet) => {
+                return snippet.item;
+            });
         }
     },
     created() {
-        this.viewType = this.$getLocalData('view_type', 'table');
+        this.viewType = this.$getLocalData('view_type', 'grouped');
         this.sorting = this.$getLocalData('snippet_sorting', {
             sortType: 'DESC',
             sortBy: 'created_at'
