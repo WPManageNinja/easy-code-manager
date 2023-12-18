@@ -4,9 +4,6 @@ namespace FluentSnippets\App\Helpers;
 
 use FluentSnippets\App\Services\PhpValidator;
 
-use function bin2hex;
-use function random_bytes;
-
 class Helper
 {
     public static function getStorageDir()
@@ -153,7 +150,7 @@ class Helper
         if (!$cacheFile) {
             $cacheFile = self::getStorageDir() . '/index.php';
 
-            if (!file_exists($cacheFile)) {
+            if (!is_file($cacheFile)) {
                 wp_mkdir_p(dirname($cacheFile));
             }
         }
@@ -190,14 +187,14 @@ PHP;
     {
         $cachedFile = self::getStorageDir() . '/index.php';
 
-        if (!file_exists($cachedFile)) {
+        if (!is_file($cachedFile)) {
 
 
             // @todo: remove this migration at mid january 2024
 
             // maybe we have files in uploads directory
             $oldLocationIndex = wp_upload_dir()['basedir'] . '/fluent-snippet-storage/index.php';
-            if (!file_exists($oldLocationIndex)) {
+            if (!is_file($oldLocationIndex)) {
                 return [];
             }
 
@@ -291,7 +288,7 @@ PHP;
             file_get_contents(FLUENT_SNIPPETS_PLUGIN_PATH . 'app/Services/mu.stub')
         );
 
-        if (!file_exists($muDir . '/fluent-snippets-mu.php')) {
+        if (!is_file($muDir . '/fluent-snippets-mu.php')) {
             return new \WP_Error('failed', 'file could not be moved to mu-plugins directory');
         }
 
@@ -302,7 +299,7 @@ PHP;
     {
         $muDir = WPMU_PLUGIN_DIR;
 
-        if (!file_exists($muDir . '/fluent-snippets-mu.php')) {
+        if (!is_file($muDir . '/fluent-snippets-mu.php')) {
             return true;
         }
 
