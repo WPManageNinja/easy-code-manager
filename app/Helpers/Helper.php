@@ -4,6 +4,9 @@ namespace FluentSnippets\App\Helpers;
 
 use FluentSnippets\App\Services\PhpValidator;
 
+use function bin2hex;
+use function random_bytes;
+
 class Helper
 {
     public static function getStorageDir()
@@ -47,14 +50,14 @@ class Helper
                     'remove_on_uninstall' => 'no',
                     'force_disabled'      => 'no',
                     'legacy_status'       => 'new',
-                    'secret_key'          => md5(wp_generate_uuid4() . time() . random_int(1000, 10000))
+                    'secret_key'          => bin2hex(random_bytes(16))
                 ],
                 'error_files' => []
             ];
         }
 
         if (empty($previousConfig['meta']['secret_key'])) {
-            $previousConfig['meta']['secret_key'] = md5(wp_generate_uuid4() . time() . random_int(1000, 10000));
+            $previousConfig['meta']['secret_key'] = bin2hex(random_bytes(16));
         }
 
         $data['meta'] = [
