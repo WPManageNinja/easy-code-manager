@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Fluent Snippets\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-10 11:22+0000\n"
+"POT-Creation-Date: 2023-12-18 15:39+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -16,47 +16,91 @@ msgstr ""
 "X-Loco-Version: 2.6.6; wp-6.4.2\n"
 "X-Domain: easy-code-manager"
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:251
+#: app/Hooks/Handlers/AdminMenuHandler.php:257
 msgid "404 page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:163
+#: trans.php:87 app/Services/Trans.php:92
+msgid "Activate"
+msgstr ""
+
+#: trans.php:72 app/Services/Trans.php:77
+msgid "Add"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:169
 msgid "Add CSS on all pages (frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:116
+#: app/Hooks/Handlers/AdminMenuHandler.php:122
 msgid "Admin Only"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:151
+#: trans.php:99 app/Services/Trans.php:104
+msgid "Advanced Conditional Logic"
+msgstr ""
+
+#: trans.php:66 app/Services/Trans.php:71
+msgid "after"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:157
 msgid "After Content"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:167
+#: trans.php:15 app/Services/Trans.php:20
+msgid "All Snippets"
+msgstr ""
+
+#: trans.php:74 app/Services/Trans.php:79
+msgid "And"
+msgstr ""
+
+#: trans.php:20 app/Services/Trans.php:25
+msgid "Apply"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:173
 msgid "Apply this snippet CSS to backend (/wp-admin/)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:171
+#: app/Hooks/Handlers/AdminMenuHandler.php:177
 msgid "Apply this snippet CSS to both backend and frontend."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:248
+#: app/Hooks/Handlers/AdminMenuHandler.php:254
 msgid "Archive"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:252
+#: trans.php:33 app/Services/Trans.php:38
+msgid "Are you sure to delete this?"
+msgstr ""
+
+#: trans.php:18 app/Services/Trans.php:23
+msgid "Ascending"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:258
 msgid "Author page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:166
+#: app/Hooks/Handlers/AdminMenuHandler.php:172
 msgid "Backend"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:147
+#: trans.php:65 app/Services/Trans.php:70
+msgid "before"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:153
 msgid "Before Content"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:170
+#: trans.php:68 app/Services/Trans.php:73
+msgid "before days"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:176
 msgid "Both Backend and Frontend"
 msgstr ""
 
@@ -84,61 +128,193 @@ msgstr ""
 msgid "Cannot redeclare interface %s."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:358
+#: trans.php:77 app/Services/Trans.php:82
+msgid "Code"
+msgstr ""
+
+#: trans.php:13 app/Services/Trans.php:18
+msgid "Code Snippets"
+msgstr ""
+
+#: trans.php:44 app/Services/Trans.php:49
+msgid "Condition Value"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:364
 msgid "Contact Lists"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:349
+#: app/Hooks/Handlers/AdminMenuHandler.php:355
 msgid "Contact Tags"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:126
+#: app/Hooks/Handlers/AdminMenuHandler.php:132
 msgid "Content"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:294
+#: trans.php:97 app/Services/Trans.php:102
+msgid "Create New"
+msgstr ""
+
+#: trans.php:81 app/Services/Trans.php:86
+msgid "Create new group"
+msgstr ""
+
+#: trans.php:96 app/Services/Trans.php:101
+msgid "Create new tag"
+msgstr ""
+
+#: trans.php:98 app/Services/Trans.php:103
+msgid "Create Snippet"
+msgstr ""
+
+#: trans.php:35 app/Services/Trans.php:40
+msgid "Created At"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:300
 msgid "Date"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:299
+#: app/Hooks/Handlers/AdminMenuHandler.php:305
 msgid "Date Range"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:314
+#: app/Hooks/Handlers/AdminMenuHandler.php:320
 msgid "Day of the week"
+msgstr ""
+
+#: trans.php:46 app/Services/Trans.php:51
+msgid "Days"
+msgstr ""
+
+#: trans.php:86 app/Services/Trans.php:91
+msgid "Deactivate"
+msgstr ""
+
+#: trans.php:26 app/Services/Trans.php:31
+msgid "delete"
+msgstr ""
+
+#: trans.php:19 app/Services/Trans.php:24
+msgid "Descending"
+msgstr ""
+
+#: trans.php:27 app/Services/Trans.php:32
+msgid "Description"
+msgstr ""
+
+#: trans.php:76 app/Services/Trans.php:81
+msgid "Disable Safe Mode"
+msgstr ""
+
+#: trans.php:11 app/Services/Trans.php:16
+msgid "Disable Standalone Mode"
+msgstr ""
+
+#: trans.php:50 app/Services/Trans.php:55
+msgid "does not equal"
+msgstr ""
+
+#: trans.php:59 app/Services/Trans.php:64
+msgid "Does not include (in any)"
+msgstr ""
+
+#: trans.php:48 app/Services/Trans.php:53
+msgid "does not includes"
+msgstr ""
+
+#: trans.php:25 app/Services/Trans.php:30
+msgid "edit"
+msgstr ""
+
+#: trans.php:57 app/Services/Trans.php:62
+msgid "Empty"
+msgstr ""
+
+#: trans.php:100 app/Services/Trans.php:105
+msgid "Enable Conditional Logic"
+msgstr ""
+
+#: trans.php:8 app/Services/Trans.php:13
+msgid "Enable Safe Mode Programmatically:"
+msgstr ""
+
+#: trans.php:12 app/Services/Trans.php:17
+msgid "Enable Standalone Mode"
+msgstr ""
+
+#: trans.php:10 app/Services/Trans.php:15
+msgid "Enabled"
+msgstr ""
+
+#: trans.php:52 app/Services/Trans.php:57
+msgid "ends with"
+msgstr ""
+
+#: trans.php:49 app/Services/Trans.php:54
+msgid "equal"
+msgstr ""
+
+#: trans.php:24 app/Services/Trans.php:29
+msgid "ERROR"
+msgstr ""
+
+#: trans.php:90 app/Services/Trans.php:95
+msgid "Error Message:"
+msgstr ""
+
+#: trans.php:28 app/Services/Trans.php:33
+msgid "ERROR:"
+msgstr ""
+
+#: trans.php:42 app/Services/Trans.php:47
+msgid "Failed to copy shortcode"
 msgstr ""
 
 #. Name of the plugin
 #. Author of the plugin
-#: app/Hooks/Handlers/AdminMenuHandler.php:23
+#: app/Hooks/Handlers/AdminMenuHandler.php:24
 msgid "Fluent Snippets"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:335
+#: app/Hooks/Handlers/AdminMenuHandler.php:341
 msgid "FluentCRM"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:24
+#: app/Hooks/Handlers/AdminMenuHandler.php:25
 msgid "FluentSnippets"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:322
+#: app/Hooks/Handlers/AdminMenuHandler.php:328
 msgid "Friday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:162
+#: app/Hooks/Handlers/AdminMenuHandler.php:168
 msgid "Frontend"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:120
+#: app/Hooks/Handlers/AdminMenuHandler.php:126
 msgid "Frontend Only"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:107
+#: app/Hooks/Handlers/AdminMenuHandler.php:113
 msgid "Functions"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:247
+#: trans.php:6 app/Services/Trans.php:11
+msgid "General Settings"
+msgstr ""
+
+#: trans.php:53 app/Services/Trans.php:58
+msgid "Greater Than"
+msgstr ""
+
+#: trans.php:17 app/Services/Trans.php:22
+msgid "Grouped"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:253
 msgid "Homepage"
 msgstr ""
 
@@ -147,49 +323,101 @@ msgstr ""
 msgid "https://fluentsnippets.com"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:140
+#: trans.php:67 app/Services/Trans.php:72
+msgid "in the date"
+msgstr ""
+
+#: trans.php:47 app/Services/Trans.php:52
+msgid "includes"
+msgstr ""
+
+#: trans.php:60 app/Services/Trans.php:65
+msgid "includes all of"
+msgstr ""
+
+#: trans.php:55 app/Services/Trans.php:60
+msgid "includes in"
+msgstr ""
+
+#: trans.php:61 app/Services/Trans.php:66
+msgid "includes none of (match all)"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:146
 msgid "Insert snippet after the opening body tag of your website (frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:148
+#: app/Hooks/Handlers/AdminMenuHandler.php:154
 msgid "Insert snippet at the beginning of single post/page content."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:152
+#: app/Hooks/Handlers/AdminMenuHandler.php:158
 msgid "Insert snippet at the end of single post/page content."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:144
+#: app/Hooks/Handlers/AdminMenuHandler.php:150
 msgid ""
 "Insert snippet before the closing body tag of your website on all pages "
 "(frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:136
+#: app/Hooks/Handlers/AdminMenuHandler.php:142
 msgid "Insert snippet between the head tags of your website (frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:339
+#: app/Hooks/Handlers/AdminMenuHandler.php:345
 msgid "Is a CRM Contact?"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:89
+#: trans.php:54 app/Services/Trans.php:59
+msgid "Less Than"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:95
 msgid "Loading Snippets.."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:217
+#: app/Hooks/Handlers/AdminMenuHandler.php:223
 msgid "Logged-in"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:318
+#: app/Hooks/Handlers/AdminMenuHandler.php:324
 msgid "Monday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:132
+#: trans.php:34 app/Services/Trans.php:39
+msgid "Name"
+msgstr ""
+
+#: trans.php:14 app/Services/Trans.php:19
+msgid "New Snippet"
+msgstr ""
+
+#: trans.php:58 app/Services/Trans.php:63
+msgid "Not Empty"
+msgstr ""
+
+#: trans.php:62 app/Services/Trans.php:67
+msgid "not equal"
+msgstr ""
+
+#: trans.php:56 app/Services/Trans.php:61
+msgid "not includes in"
+msgstr ""
+
+#: trans.php:64 app/Services/Trans.php:69
+msgid "not within"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:138
 msgid "Only display when inserted into a post or page using shortcode"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:237
+#: trans.php:70 app/Services/Trans.php:75
+msgid "OR"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:243
 msgid "Page"
 msgstr ""
 
@@ -201,77 +429,145 @@ msgstr ""
 msgid "Parse error: syntax error, unexpected end of snippet."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:256
+#: trans.php:83 app/Services/Trans.php:88
+msgid "PAUSED"
+msgstr ""
+
+#: trans.php:22 app/Services/Trans.php:27
+msgid "Paused"
+msgstr ""
+
+#: trans.php:73 app/Services/Trans.php:78
+msgid "Please enter a keyword"
+msgstr ""
+
+#: trans.php:92 app/Services/Trans.php:97
+msgid "Please enter some code to save"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:262
 msgid "Post Type"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:111
+#: trans.php:32 app/Services/Trans.php:37
+msgid "Priority"
+msgstr ""
+
+#: trans.php:71 app/Services/Trans.php:76
+msgid "Provide Name"
+msgstr ""
+
+#: app/Hooks/Handlers/CodeHandler.php:114
 msgid "Return Data is not valid. Return data need to be string or number"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:112
+#: app/Hooks/Handlers/AdminMenuHandler.php:118
 msgid "Run Everywhere"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:186
+#: app/Hooks/Handlers/AdminMenuHandler.php:192
 msgid ""
 "Run Javascript before the closing body tag of your website on all pages "
 "(frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:182
+#: app/Hooks/Handlers/AdminMenuHandler.php:188
 msgid ""
 "Run Javascript between the head tags of your website on all pages (frontend)."
+msgstr ""
+
+#: trans.php:7 app/Services/Trans.php:12
+msgid "Safe Mode"
 msgstr ""
 
 #: app/Http/Controllers/SettingsController.php:108
 msgid "Safe mode has been disabled"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:323
+#: trans.php:75 app/Services/Trans.php:80
+msgid "Safe Mode is Enabled"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:329
 msgid "Saturday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:176
+#: trans.php:5 app/Services/Trans.php:10
+msgid "Save Settings"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:182
 msgid "Scripts"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:250
+#: app/Hooks/Handlers/AdminMenuHandler.php:256
 msgid "Search page"
+msgstr ""
+
+#: trans.php:43 app/Services/Trans.php:48
+msgid "Select Operator"
+msgstr ""
+
+#: trans.php:45 app/Services/Trans.php:50
+msgid "Select Option"
+msgstr ""
+
+#: trans.php:82 app/Services/Trans.php:87
+msgid "Select Snippet Group"
+msgstr ""
+
+#: trans.php:37 app/Services/Trans.php:42
+msgid "Select Snippet Run Location"
+msgstr ""
+
+#: trans.php:95 app/Services/Trans.php:100
+msgid "Select Snippet Tags"
+msgstr ""
+
+#: trans.php:38 app/Services/Trans.php:43
+msgid "selected"
+msgstr ""
+
+#: trans.php:4 app/Services/Trans.php:9
+msgid "Settings"
 msgstr ""
 
 #: app/Http/Controllers/SettingsController.php:86
 msgid "Settings has been successfully updated"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:131
+#: app/Hooks/Handlers/AdminMenuHandler.php:137
 msgid "Shortcode"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:122
+#: trans.php:41 app/Services/Trans.php:46
+msgid "Shortcode copied to clipboard"
+msgstr ""
+
+#: app/Hooks/Handlers/CodeHandler.php:125
 msgid "Shortcode could not be rendered"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:249
-#: app/Hooks/Handlers/AdminMenuHandler.php:283
+#: app/Hooks/Handlers/AdminMenuHandler.php:255
+#: app/Hooks/Handlers/AdminMenuHandler.php:289
 msgid "Single Post/Page/CPT"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:139
+#: app/Hooks/Handlers/AdminMenuHandler.php:145
 msgid "Site Wide Body Open"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:143
-#: app/Hooks/Handlers/AdminMenuHandler.php:185
+#: app/Hooks/Handlers/AdminMenuHandler.php:149
+#: app/Hooks/Handlers/AdminMenuHandler.php:191
 msgid "Site Wide Footer"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:135
-#: app/Hooks/Handlers/AdminMenuHandler.php:181
+#: app/Hooks/Handlers/AdminMenuHandler.php:141
+#: app/Hooks/Handlers/AdminMenuHandler.php:187
 msgid "Site Wide Header"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:94
+#: app/Hooks/Handlers/CodeHandler.php:97
 msgid "Snippet condition is not valid"
 msgstr ""
 
@@ -279,19 +575,27 @@ msgstr ""
 msgid "Snippet created successfully"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:113
+#: trans.php:84 app/Services/Trans.php:89
+msgid "Snippet details"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:119
 msgid "Snippet gets executed everywhere (both frontend and admin area)"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:117
+#: app/Hooks/Handlers/AdminMenuHandler.php:123
 msgid "Snippet gets executed only in admin area (/wp-admin/)"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:121
+#: app/Hooks/Handlers/AdminMenuHandler.php:127
 msgid "Snippet gets executed only in frontend area"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:70
+#: trans.php:80 app/Services/Trans.php:85
+msgid "Snippet Group"
+msgstr ""
+
+#: app/Hooks/Handlers/CodeHandler.php:73
 msgid "Snippet has an error"
 msgstr ""
 
@@ -299,20 +603,40 @@ msgstr ""
 msgid "Snippet has been deleted successfully"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:84
+#: trans.php:94 app/Services/Trans.php:99
+msgid "Snippet has been updated successfully"
+msgstr ""
+
+#: trans.php:78 app/Services/Trans.php:83
+msgid "Snippet Name"
+msgstr ""
+
+#: app/Hooks/Handlers/CodeHandler.php:87
 msgid "Snippet run at is not shortcode"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:88
+#: app/Hooks/Handlers/CodeHandler.php:91
 msgid "Snippet status is not published"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:80
+#: app/Hooks/Handlers/CodeHandler.php:83
 msgid "Snippet type is not PHP Content"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:65
+#: app/Hooks/Handlers/CodeHandler.php:68
 msgid "Snippets are disabled"
+msgstr ""
+
+#: trans.php:88 app/Services/Trans.php:93
+msgid "Sorry Snippet could not be loaded"
+msgstr ""
+
+#: trans.php:21 app/Services/Trans.php:26
+msgid "Sort"
+msgstr ""
+
+#: trans.php:9 app/Services/Trans.php:14
+msgid "Standalone Mode (Must use mode)"
 msgstr ""
 
 #: app/Http/Controllers/SettingsController.php:122
@@ -323,11 +647,15 @@ msgstr ""
 msgid "Standalone mode has been deactivated"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:157
+#: trans.php:51 app/Services/Trans.php:56
+msgid "starts with"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:163
 msgid "Styles"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:324
+#: app/Hooks/Handlers/AdminMenuHandler.php:330
 msgid "Sunday"
 msgstr ""
 
@@ -337,46 +665,108 @@ msgid ""
 "for WordPress"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:263
+#: trans.php:16 app/Services/Trans.php:21
+msgid "Table"
+msgstr ""
+
+#: trans.php:30 app/Services/Trans.php:35
+msgid "Tags"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:269
 msgid "Taxonomy Page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:270
+#: app/Hooks/Handlers/AdminMenuHandler.php:276
 msgid "Taxonomy Term Page"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:124
+#: trans.php:93 app/Services/Trans.php:98
+msgid "The code should not starts with <?php"
+msgstr ""
+
+#: trans.php:89 app/Services/Trans.php:94
+msgid ""
+"The snippet encountered an fatal error and It has been deactivated "
+"automatically. Please review your code, fix the issues and reactive."
+msgstr ""
+
+#: app/Hooks/Handlers/CodeHandler.php:127
 msgid "This message is only visible to site admin role"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:321
+#: app/Hooks/Handlers/AdminMenuHandler.php:327
 msgid "Thursday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:307
+#: app/Hooks/Handlers/AdminMenuHandler.php:313
 msgid "Time Range"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:319
+#: trans.php:23 app/Services/Trans.php:28
+msgid "Title"
+msgstr ""
+
+#: trans.php:91 app/Services/Trans.php:96
+msgid "Try Reactivate"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:325
 msgid "Tuesday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:241
+#: trans.php:29 app/Services/Trans.php:34
+msgid "Type"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:247
 msgid "Type of page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:278
+#: trans.php:85 app/Services/Trans.php:90
+msgid "Update Snippet"
+msgstr ""
+
+#: trans.php:31 app/Services/Trans.php:36
+msgid "Updated At"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:284
 msgid "URL"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:213
+#: trans.php:40 app/Services/Trans.php:45
+msgid "Use Shortcode to display the return or print content of this snippet:"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:219
 msgid "User"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:227
+#: app/Hooks/Handlers/AdminMenuHandler.php:233
 msgid "User Role"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:320
+#: app/Hooks/Handlers/AdminMenuHandler.php:326
 msgid "Wednesday"
+msgstr ""
+
+#: trans.php:36 app/Services/Trans.php:41
+msgid "Where to Run?"
+msgstr ""
+
+#: trans.php:63 app/Services/Trans.php:68
+msgid "within"
+msgstr ""
+
+#: trans.php:69 app/Services/Trans.php:74
+msgid "within days"
+msgstr ""
+
+#: trans.php:39 app/Services/Trans.php:44
+msgid "You can view the shortcode after save this snippet"
+msgstr ""
+
+#: trans.php:79 app/Services/Trans.php:84
+msgid "Your Snippet Name"
 msgstr ""
