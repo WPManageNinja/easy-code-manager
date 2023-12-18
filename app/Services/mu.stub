@@ -9,7 +9,7 @@ if (defined('FLUENT_SNIPPETS_RUNNING_MU')) {
 }
 
 define('FLUENT_SNIPPETS_RUNNING_MU', true);
-define('FLUENT_SNIPPETS_RUNNING_MU_VERSION', '10.3');
+define('FLUENT_SNIPPETS_RUNNING_MU_VERSION', '10.31');
 
 class FluentSnippetCondition
 {

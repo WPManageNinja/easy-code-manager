@@ -7,7 +7,7 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 6.0 or higher
 Requires PHP: 7.3 or higher
 Tested up to: 6.4
-Stable tag: 10.3
+Stable tag: 10.31
 
 Add high-performance Code Snippets in your WordPress. Add header and footer scripts, PHP Snippets, Custom CSS /JS snippets with advanced conditional logic, and more...
 
@@ -17,6 +17,8 @@ Experience unmatched speed and security with a unique file-based code snippet pl
 
 FluentSnippets is the **Most Secure and Performance-Focused** Code Snippet Plugin for WordPress. FluentSnippets store your snippets in flat files, so it does not run SQL queries for your snippets. It is the **Fastest Code Snippet Plugin** for WordPress.
 Our mission is to streamline the process of integrating custom code snippets in WordPress, making it safe, secure, fast, and hassle-free.
+
+[youtube https://www.youtube.com/watch?v=kUuW4sY8m7o]
 
 ### Why FluentSnippets?
 
@@ -134,6 +136,10 @@ Absolutely not. Unlike other code snippets plugin, FluentSnippets does not use t
 4. Architectural Design Comparison
 
 == Changelog ==
+
+= 10.31 - December 18, 2023 =
+- Fixed a typo in the conditional logic
+- Added Video Tutorial
 
 = 10.3 - December 18, 2023 =
 - New design and Branding
