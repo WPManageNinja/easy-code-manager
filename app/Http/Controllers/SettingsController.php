@@ -172,7 +172,7 @@ class SettingsController
                 }
 
                 $options[$term->taxonomy]['options'][] = [
-                    'id'    => (string) $term->term_id,
+                    'id'    => (string)$term->term_id,
                     'title' => $term->name,
                 ];
             }
@@ -190,16 +190,16 @@ class SettingsController
             ]);
 
             $posts = get_posts([
-                'post_type'   => array_keys($publicPostTypes),
-                'numberposts' => 200,
-                'post_status' => ['publish', 'draft', 'private'],
-                's'           => sanitize_text_field($request->get_param('search')),
+                'post_type'      => array_keys($publicPostTypes),
+                'numberposts'    => 200,
+                'post_status'    => ['publish', 'draft', 'private'],
+                's'              => sanitize_text_field($request->get_param('search')),
                 'search_columns' => ['post_title']
             ]);
 
             $requestValues = $request->get_param('values');
 
-            if(empty($requestValues) || !is_array($requestValues)) {
+            if (empty($requestValues) || !is_array($requestValues)) {
                 $requestValues = [];
             }
 
@@ -216,16 +216,16 @@ class SettingsController
                 $includedIds[] = $post->ID;
 
                 $options[$post->post_type]['options'][] = [
-                    'id'    => (string) $post->ID,
+                    'id'    => (string)$post->ID,
                     'title' => $post->post_title,
                 ];
             }
 
             $restIds = array_diff($requestValues, $includedIds);
 
-            if($restIds) {
+            if ($restIds) {
                 $restPosts = get_posts([
-                    'post_type' => 'any',
+                    'post_type'   => 'any',
                     'numberposts' => 200,
                     'post_status' => ['publish', 'draft', 'private'],
                     'post__in'    => $restIds
@@ -240,7 +240,7 @@ class SettingsController
                     }
 
                     $options[$post->post_type]['options'][] = [
-                        'id'    => (string) $post->ID,
+                        'id'    => (string)$post->ID,
                         'title' => $post->post_title,
                     ];
                 }
@@ -253,10 +253,10 @@ class SettingsController
             ];
         }
 
-        if($optionKey == 'fluentcrm_tags') {
-            if(!defined('FLUENTCRM')) {
+        if ($optionKey == 'fluentcrm_tags') {
+            if (!defined('FLUENTCRM')) {
                 return [
-                    'options' => [],
+                    'options'     => [],
                     'is_cachable' => true
                 ];
             }
@@ -264,22 +264,22 @@ class SettingsController
             $tags = \FluentCrm\App\Models\Tag::orderBy('title', 'ASC')->get();
             foreach ($tags as $tag) {
                 $options[] = [
-                    'id'    => (string) $tag->id,
+                    'id'    => (string)$tag->id,
                     'title' => $tag->title,
                 ];
             }
 
             return [
-                'options' => $options,
+                'options'     => $options,
                 'is_cachable' => true
             ];
 
         }
 
-        if($optionKey == 'fluentcrm_lists') {
-            if(!defined('FLUENTCRM')) {
+        if ($optionKey == 'fluentcrm_lists') {
+            if (!defined('FLUENTCRM')) {
                 return [
-                    'options' => [],
+                    'options'     => [],
                     'is_cachable' => true
                 ];
             }
@@ -287,13 +287,13 @@ class SettingsController
             $tags = \FluentCrm\App\Models\Lists::orderBy('title', 'ASC')->get();
             foreach ($tags as $tag) {
                 $options[] = [
-                    'id'    => (string) $tag->id,
+                    'id'    => (string)$tag->id,
                     'title' => $tag->title,
                 ];
             }
 
             return [
-                'options' => $options,
+                'options'     => $options,
                 'is_cachable' => true
             ];
 
@@ -303,5 +303,171 @@ class SettingsController
             'options' => $options
         ];
 
+    }
+
+    public static function installPlugin(\WP_REST_Request $request)
+    {
+        $pluginSlug = $request->get_param('plugin_slug');
+        $plugin = [
+            'name'      => $pluginSlug,
+            'repo-slug' => $pluginSlug,
+            'file'      => $pluginSlug . '.php'
+        ];
+
+        $UrlMaps = [
+            'fluent-smtp'  => [
+                'admin_url' => admin_url('options-general.php?page=fluent-mail#/'),
+                'title'     => __('Go to FluentSMTP Dashboard', 'fluent-smtp')
+            ],
+            'fluentform'   => [
+                'admin_url' => admin_url('admin.php?page=fluent_forms'),
+                'title'     => __('Go to Fluent Forms Dashboard', 'fluent-smtp')
+            ],
+            'fluent-crm'   => [
+                'admin_url' => admin_url('admin.php?page=fluentcrm-admin'),
+                'title'     => __('Go to FluentCRM Dashboard', 'fluent-smtp')
+            ],
+            'ninja-tables' => [
+                'admin_url' => admin_url('admin.php?page=ninja_tables#/'),
+                'title'     => __('Go to Ninja Tables Dashboard', 'fluent-smtp')
+            ]
+        ];
+
+        if (!isset($UrlMaps[$pluginSlug]) || (defined('DISALLOW_FILE_MODS') && DISALLOW_FILE_MODS)) {
+
+            return new \WP_Error('permission_error', 'Sorry, You can not install this plugin');
+        }
+
+        try {
+            self::backgroundInstaller($plugin);
+            return [
+                'message' => __('Plugin has been successfully installed.', 'fluent-smtp'),
+                'info'    => $UrlMaps[$pluginSlug]
+            ];
+        } catch (\Exception $exception) {
+            return new \WP_Error('install_error', $exception->getMessage());
+        }
+    }
+
+    private static function backgroundInstaller($plugin_to_install)
+    {
+        if (!empty($plugin_to_install['repo-slug'])) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+            require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+
+            WP_Filesystem();
+
+            $skin = new \Automatic_Upgrader_Skin();
+            $upgrader = new \WP_Upgrader($skin);
+            $installed_plugins = array_reduce(array_keys(\get_plugins()), array(__CLASS__, 'associate_plugin_file'), array());
+            $plugin_slug = $plugin_to_install['repo-slug'];
+            $plugin_file = isset($plugin_to_install['file']) ? $plugin_to_install['file'] : $plugin_slug . '.php';
+            $installed = false;
+            $activate = false;
+
+            // See if the plugin is installed already.
+            if (isset($installed_plugins[$plugin_file])) {
+                $installed = true;
+                $activate = !is_plugin_active($installed_plugins[$plugin_file]);
+            }
+
+            // Install this thing!
+            if (!$installed) {
+                // Suppress feedback.
+                ob_start();
+
+                try {
+                    $plugin_information = plugins_api(
+                        'plugin_information',
+                        array(
+                            'slug'   => $plugin_slug,
+                            'fields' => array(
+                                'short_description' => false,
+                                'sections'          => false,
+                                'requires'          => false,
+                                'rating'            => false,
+                                'ratings'           => false,
+                                'downloaded'        => false,
+                                'last_updated'      => false,
+                                'added'             => false,
+                                'tags'              => false,
+                                'homepage'          => false,
+                                'donate_link'       => false,
+                                'author_profile'    => false,
+                                'author'            => false,
+                            ),
+                        )
+                    );
+
+                    if (is_wp_error($plugin_information)) {
+                        throw new \Exception($plugin_information->get_error_message());
+                    }
+
+                    $package = $plugin_information->download_link;
+                    $download = $upgrader->download_package($package);
+
+                    if (is_wp_error($download)) {
+                        throw new \Exception($download->get_error_message());
+                    }
+
+                    $working_dir = $upgrader->unpack_package($download, true);
+
+                    if (is_wp_error($working_dir)) {
+                        throw new \Exception($working_dir->get_error_message());
+                    }
+
+                    $result = $upgrader->install_package(
+                        array(
+                            'source'                      => $working_dir,
+                            'destination'                 => WP_PLUGIN_DIR,
+                            'clear_destination'           => false,
+                            'abort_if_destination_exists' => false,
+                            'clear_working'               => true,
+                            'hook_extra'                  => array(
+                                'type'   => 'plugin',
+                                'action' => 'install',
+                            ),
+                        )
+                    );
+
+                    if (is_wp_error($result)) {
+                        throw new \Exception($result->get_error_message());
+                    }
+
+                    $activate = true;
+
+                } catch (\Exception $e) {
+                    throw new \Exception($e->getMessage());
+                }
+
+                // Discard feedback.
+                ob_end_clean();
+            }
+
+            wp_clean_plugins_cache();
+
+            // Activate this thing.
+            if ($activate) {
+                try {
+                    $result = activate_plugin($installed ? $installed_plugins[$plugin_file] : $plugin_slug . '/' . $plugin_file);
+
+                    if (is_wp_error($result)) {
+                        throw new \Exception($result->get_error_message());
+                    }
+                } catch (\Exception $e) {
+                    throw new \Exception($e->getMessage());
+                }
+            }
+        }
+    }
+
+    public static function associate_plugin_file($plugins, $key)
+    {
+        $path = explode('/', $key);
+        $filename = end($path);
+        $plugins[$filename] = $key;
+        return $plugins;
     }
 }

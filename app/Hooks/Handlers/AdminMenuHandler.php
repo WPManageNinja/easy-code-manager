@@ -52,7 +52,7 @@ class AdminMenuHandler
         add_filter('admin_footer_text', function ($content) use ($indexConfig) {
             $ext = '';
             if (defined('FLUENT_SNIPPETS_RUNNING_MU')) {
-                $ext = '<b>Standalone (MU Mode) is activated</b> ';
+                $ext = '<b>Standalone (MU Mode) is active</b> ';
             }
 
             if (Arr::get($indexConfig, 'meta.legacy_status') == 'migrated') {
@@ -85,6 +85,11 @@ class AdminMenuHandler
             'is_standalone'              => defined('FLUENT_SNIPPETS_RUNNING_MU'),
             'advanced_condition_options' => $this->getAdvancedConditionOptions(),
             'snippet_types'              => $this->getSnippetTypes(),
+            'has_fluentsmtp'           => defined('FLUENTMAIL_PLUGIN_FILE'),
+            'has_fluentcrm'           => defined('FLUENTCRM'),
+            'has_fluentform'          => defined('FLUENTFORM'),
+            'has_ninja_tables'       => defined('NINJA_TABLES_VERSION'),
+            'disable_recommendation' => apply_filters('fluentmail_disable_recommendation', false),
         ]);
 
         echo '<div id="fluent_snippets_app"><h3 style="text-align: center; margin-top: 100px;">' . __('Loading Snippets..', 'easy-code-manager') . '</h3></div>';

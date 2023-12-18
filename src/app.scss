@@ -1083,3 +1083,34 @@ input.el-select__input {
   border: none;
   outline: none !important;
 }
+
+.fss_about {
+  margin-bottom: 20px;
+  .fss_header {
+    background-color: #f7fafc;
+    border-bottom: 1px solid #e3e8ee;
+    clear: both;
+    color: #697386;
+    display: block;
+    font-weight: 700;
+    margin: 0;
+    overflow: hidden;
+    padding: 15px;
+    width: auto;
+  }
+  .fss_content {
+    background-color: #fff;
+    padding: 20px;
+  }
+  .fss_plugin_title {
+    text-align: center;
+    h3 {
+      color: #697386;
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+  }
+  .fss_install_btn {
+    text-align: center;
+  }
+}

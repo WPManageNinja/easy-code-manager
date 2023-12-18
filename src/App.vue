@@ -41,6 +41,10 @@ export default {
                 {
                     route: 'settings',
                     title: this.$t('Settings')
+                },
+                {
+                    route: 'about',
+                    title: this.$t('About')
                 }
             ]
         }
