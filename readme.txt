@@ -88,7 +88,7 @@ With this native design, FluentSnippets is native, secure by design, and the mos
 
 
 == CONTRIBUTE ==
-If you want to contribute to this project or just report a bug, you are more than welcome. Please check repository from <a href="https://github.com/WPManageNinja/easy-code-manager">Github</a>.
+If you want to contribute to this project or just report a bug, you are more than welcome. Please check repository from <a href="https://github.com/WPManageNinja/easy-code-manager">Github</a>. FluentSnippets was known as Easy Code Manager before. We have rebuild & rebranded it to FluentSnippets.
 
 
 == Installation ==
