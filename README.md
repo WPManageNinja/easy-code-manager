@@ -8,7 +8,7 @@
 ### Features
 - File-based Snippets (0 Database Query) 🚀
 - Custom Code Snippets (PHP/HTML/CSS/JS)
-- Advanced Conditional Logics
+- Advanced Conditional Logic
 - Automatic Error Handling
 - Custom Shortcode
 - Stand-alone Mode (keep running your snippets in stand-alone mode. No lock-in, use it whenever you want.)

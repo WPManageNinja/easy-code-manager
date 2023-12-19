@@ -29,8 +29,8 @@ With this native design, FluentSnippets is native, secure by design, and the mos
 
 - **File-based Snippets:** Your snippets are safely saved in your file system and load natively with zero database queries, so it’s safe, secure, and ultra-fast.
 - **Custom Code Snippets:** Write your custom code snippets including PHP, JS, CSS, HTML, and more. Categorize your snippets with groups, tags, etc
-- **Advanced Conditional Logics:** Execute code snippets solely under specified conditions like post type, date, URL, user type, and many more.
-- **Automatic Error Handling:** The automatic error hander prevents common errors when adding custom snippets to ensure it never breaks your site.
+- **Advanced Conditional Logic:** Execute code snippets solely under specified conditions like post type, date, URL, user type, and many more.
+- **Automatic Error Handling:** The automatic error hander prevents common errors when adding custom snippets to ensure they never break your site.
 - **Custom Shortcode:** With custom shortcode of your snippets, you can create custom dynamic content blocks and use them across your site and manage them.
 - **Stand-alone Mode:** The most interesting feature is the Stand-alone Mode. With this feature, you can add your snippets, activate the standalone mode, and then you can uninstall and delete the plugin and your snippets will still run via mu-plugins architecture and when you reactivate the plugin you can manage your snippets as before.
 
@@ -99,13 +99,6 @@ This section describes how to install the plugin and get it working.
 
 0. Just search for FluentSnippets in WordPress Plugins and click install and activate.
 
-
-== Installation ==
-
-1. If you're upgrading from older versions its highly recommended to backup your database before upgrading.
-2. Upload the ‘easy-code-manager’ folder to the '/wp-content/plugins/' directory
-3. Activate the plugin through the 'Plugins' menu in WordPress
-4. Click ‘Easy Code Manager’ link in the main navigation (left side of your Dashboard).
 
 == Frequently Asked Questions ==
 = What are the differences between FluentSnippets & other code snippets plugins? =
