@@ -14,7 +14,7 @@ class CodeRunner
 
     public function runSnippets()
     {
-        if (!file_exists($this->storageDir . '/index.php')) {
+        if (!is_file($this->storageDir . '/index.php')) {
             return;
         }
 
@@ -63,7 +63,7 @@ class CodeRunner
             }
 
             $file = $storageDir . '/' . sanitize_file_name($fileName);
-            if (!file_exists($file)) {
+            if (!is_file($file)) {
                 $hasInvalidFiles = true;
                 continue;
             }

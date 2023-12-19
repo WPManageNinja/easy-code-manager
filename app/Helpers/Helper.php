@@ -47,14 +47,14 @@ class Helper
                     'remove_on_uninstall' => 'no',
                     'force_disabled'      => 'no',
                     'legacy_status'       => 'new',
-                    'secret_key'          => md5(wp_generate_uuid4() . time() . random_int(1000, 10000))
+                    'secret_key'          => bin2hex(random_bytes(16))
                 ],
                 'error_files' => []
             ];
         }
 
         if (empty($previousConfig['meta']['secret_key'])) {
-            $previousConfig['meta']['secret_key'] = md5(wp_generate_uuid4() . time() . random_int(1000, 10000));
+            $previousConfig['meta']['secret_key'] = bin2hex(random_bytes(16));
         }
 
         $data['meta'] = [
@@ -150,7 +150,7 @@ class Helper
         if (!$cacheFile) {
             $cacheFile = self::getStorageDir() . '/index.php';
 
-            if (!file_exists($cacheFile)) {
+            if (!is_file($cacheFile)) {
                 wp_mkdir_p(dirname($cacheFile));
             }
         }
@@ -187,14 +187,14 @@ PHP;
     {
         $cachedFile = self::getStorageDir() . '/index.php';
 
-        if (!file_exists($cachedFile)) {
+        if (!is_file($cachedFile)) {
 
 
             // @todo: remove this migration at mid january 2024
 
             // maybe we have files in uploads directory
             $oldLocationIndex = wp_upload_dir()['basedir'] . '/fluent-snippet-storage/index.php';
-            if (!file_exists($oldLocationIndex)) {
+            if (!is_file($oldLocationIndex)) {
                 return [];
             }
 
@@ -288,7 +288,7 @@ PHP;
             file_get_contents(FLUENT_SNIPPETS_PLUGIN_PATH . 'app/Services/mu.stub')
         );
 
-        if (!file_exists($muDir . '/fluent-snippets-mu.php')) {
+        if (!is_file($muDir . '/fluent-snippets-mu.php')) {
             return new \WP_Error('failed', 'file could not be moved to mu-plugins directory');
         }
 
@@ -299,7 +299,7 @@ PHP;
     {
         $muDir = WPMU_PLUGIN_DIR;
 
-        if (!file_exists($muDir . '/fluent-snippets-mu.php')) {
+        if (!is_file($muDir . '/fluent-snippets-mu.php')) {
             return true;
         }
 

@@ -222,7 +222,8 @@ class SettingsController
             }
 
             $restIds = array_diff($requestValues, $includedIds);
-
+            $restIds = array_filter($restIds, 'is_int');
+            
             if ($restIds) {
                 $restPosts = get_posts([
                     'post_type'   => 'any',
