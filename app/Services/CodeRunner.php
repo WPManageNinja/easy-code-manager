@@ -72,10 +72,17 @@ class CodeRunner
 
             switch ($type) {
                 case 'PHP':
-                    add_action('init', function () use ($file, $snippet, $conditionalClass) {
+                    $conditionSettings = $snippet['condition'];
+                    $hookName = 'init';
+                    if (empty($conditionSettings) || empty($conditionSettings['status']) || $conditionSettings['status'] != 'yes' || empty($conditionSettings['items'])) {
+                        $hookName = 'after_setup_theme';
+                    }
+
+                    add_action($hookName, function () use ($file, $snippet, $conditionalClass) {
                         if (!$conditionalClass->evaluate($snippet['condition'])) {
                             return;
                         }
+
                         $runAt = $this->get($snippet, 'run_at', 'all');
                         if ($runAt == 'backend') {
                             if (is_admin()) {
@@ -83,8 +90,10 @@ class CodeRunner
                             }
                             return;
                         }
+
                         require_once $file;
                     }, $snippet['priority']);
+
                     break;
                 case 'js':
                     $runAt = $this->get($snippet, 'run_at', 'wp_footer');
@@ -163,6 +172,8 @@ class CodeRunner
         if ($hasInvalidFiles) {
             do_action('fluent_snippets/rebuild_index', false, true);
         }
+
+        do_action('fluent_snippets/after_run_snippets');
     }
 
 
