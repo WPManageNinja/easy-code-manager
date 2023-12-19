@@ -248,7 +248,7 @@ class Snippet
         $snippetDir = Helper::getStorageDir();
         $file = $snippetDir . '/' . $fileName;
 
-        if (!file_exists($file) || $fileName === 'index.php') {
+        if (!is_file($file) || $fileName === 'index.php') {
             return new \WP_Error('file_not_found', 'File not found');
         }
 
@@ -269,7 +269,7 @@ class Snippet
 
         $file = Helper::getStorageDir() . '/' . $fileName;
 
-        if (!file_exists($file)) {
+        if (!is_file($file)) {
             return new \WP_Error('file_not_found', 'File not found');
         }
 
@@ -308,7 +308,7 @@ class Snippet
 
         $file = $storageDir . '/' . $fileName;
 
-        if (file_exists($file)) {
+        if (is_file($file)) {
             return new \WP_Error('file_exists', 'Please try a different name');
         }
 
@@ -326,7 +326,7 @@ class Snippet
         $snippetDir = Helper::getStorageDir();
         $file = $snippetDir . '/' . $fileName;
 
-        if (!file_exists($file) && $fileName === 'index.php') {
+        if (!is_file($file) && $fileName === 'index.php') {
             return new \WP_Error('file_not_found', 'File not found');
         }
 
