@@ -95,7 +95,7 @@ class Trans
             'Error Message:' => __('Error Message:', 'easy-code-manager'),
             'Try Reactivate' => __('Try Reactivate', 'easy-code-manager'),
             'Please enter some code to save' => __('Please enter some code to save', 'easy-code-manager'),
-            'The code should not starts with <?php' => __('The code should not starts with <?php', 'easy-code-manager'),
+            'The code should not start with <?php' => __('The code should not start with <?php', 'easy-code-manager'),
             'Snippet has been updated successfully' => __('Snippet has been updated successfully', 'easy-code-manager'),
             'Select Snippet Tags' => __('Select Snippet Tags', 'easy-code-manager'),
             'Create new tag' => __('Create new tag', 'easy-code-manager'),
