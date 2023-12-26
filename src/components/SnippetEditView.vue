@@ -85,7 +85,7 @@ export default {
             }
             // check if snippet starts with <?php
             if (this.snippet.meta.type == 'PHP' && this.snippet.code.trim().startsWith('<?php')) {
-                this.$notify.error(this.$t('The code should not starts with <?php'));
+                this.$notify.error(this.$t('The code should not start with <?php'));
                 return;
             }
 

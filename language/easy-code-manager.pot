@@ -682,7 +682,7 @@ msgid "Taxonomy Term Page"
 msgstr ""
 
 #: trans.php:93 app/Services/Trans.php:98
-msgid "The code should not starts with <?php"
+msgid "The code should not start with <?php"
 msgstr ""
 
 #: trans.php:89 app/Services/Trans.php:94
