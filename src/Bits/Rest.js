@@ -18,7 +18,7 @@ const request = function (method, route, data = {}) {
             headers: headers
         })
             .then(response => resolve(response))
-            .fail(errors => reject(errors.responseJSON));
+            .fail(errors => reject(errors.responseJSON || errors.responseText));
     });
 }
 

@@ -2,6 +2,7 @@
 
 namespace FluentSnippets\App\Http\Controllers;
 
+use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Model\Snippet;
 
@@ -88,7 +89,9 @@ class SnippetsController
         if ($meta['type'] == 'PHP') {
             // Check if the code starts with <?php
             if (preg_match('/^<\?php/', $code)) {
-                return new \WP_Error('invalid_code', 'Please remove <?php from the beginning of the code');
+                return new \WP_Error('invalid_code', 'Please remove <?php from the beginning of the code', [
+                    'code' => 'Please remove <?php from the beginning of the code'
+                ]);
             }
             $code = rtrim($code, '?>');
             $code = '<?php' . PHP_EOL . $code;
@@ -103,7 +106,23 @@ class SnippetsController
         $validated = Helper::validateCode($meta['type'], $code);
 
         if (is_wp_error($validated)) {
-            return $validated;
+
+            $message = $validated->get_error_message();
+            $additionalData = $validated->get_error_data();
+
+            if ($lineNumber = Arr::get($additionalData, 'line')) {
+                if (is_numeric($lineNumber) && $lineNumber > 1) {
+                    $lineNumber = $lineNumber - 1;
+                    $additionalData['line'] = $lineNumber;
+                }
+
+                $message .= ' on line ' . $lineNumber;
+            }
+
+            return new \WP_Error('code', $message, [
+                'code'             => $message,
+                'code_explanation' => $additionalData
+            ]);
         }
 
         $settings = Helper::getConfigSettings();
@@ -141,6 +160,13 @@ class SnippetsController
         }
 
         if ($meta['type'] == 'PHP') {
+            // Check if the code starts with <?php
+            if (preg_match('/^<\?php/', $code)) {
+                return new \WP_Error('invalid_code', 'Please remove <?php from the beginning of the code', [
+                    'code' => 'Please remove <?php from the beginning of the code'
+                ]);
+            }
+
             $code = rtrim($code, '?>');
             $code = '<?php' . PHP_EOL . $code;
         } else if ($meta['type'] == 'php_content') {
@@ -159,7 +185,23 @@ class SnippetsController
         $validated = Helper::validateCode($meta['type'], $code);
 
         if (is_wp_error($validated)) {
-            return $validated;
+
+            $message = $validated->get_error_message();
+            $additionalData = $validated->get_error_data();
+
+            if ($lineNumber = Arr::get($additionalData, 'line')) {
+                if (is_numeric($lineNumber) && $lineNumber > 1) {
+                    $lineNumber = $lineNumber - 1;
+                    $additionalData['line'] = $lineNumber;
+                }
+
+                $message .= ' on line ' . $lineNumber;
+            }
+
+            return new \WP_Error('code', $message, [
+                'code'             => $message,
+                'code_explanation' => $additionalData
+            ]);
         }
 
         // check if the $code which is a php snippet is valid or not
@@ -245,7 +287,9 @@ class SnippetsController
 
         foreach ($required as $key) {
             if (empty($meta[$key])) {
-                return new \WP_Error('invalid_meta', sprintf('%s is required', $key));
+                return new \WP_Error($key, sprintf(__('%s is required', 'easy-code-manager'), $key), [
+                    $key => sprintf(__('%s is required', 'easy-code-manager'), $key)
+                ]);
             }
         }
 

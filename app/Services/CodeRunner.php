@@ -24,13 +24,18 @@ class CodeRunner
             return; // No config or published scripts exist exists
         }
 
-        if ($config['meta']['force_disabled'] == 'yes') {
+        if (isset($config['meta']['force_disabled']) && $config['meta']['force_disabled'] == 'yes') {
             return; // this forcefully disabled via URL
         }
 
         $errorFiles = $this->get($config, 'error_files', []);
 
         $snippets = $config['published'];
+
+        if (!$snippets) {
+            return;
+        }
+
         $storageDir = $this->storageDir;
 
         $hasInvalidFiles = false;
@@ -68,14 +73,14 @@ class CodeRunner
                 continue;
             }
 
-            $type = $snippet['type'];
+            $type = $this->get($snippet, 'type');
 
             switch ($type) {
                 case 'PHP':
                     $conditionSettings = $snippet['condition'];
                     $hookName = 'init';
                     if (empty($conditionSettings) || empty($conditionSettings['status']) || $conditionSettings['status'] != 'yes' || empty($conditionSettings['items'])) {
-                        $hookName = 'after_setup_theme';
+                        $hookName = 'setup_theme';
                     }
 
                     add_action($hookName, function () use ($file, $snippet, $conditionalClass) {
@@ -92,12 +97,12 @@ class CodeRunner
                         }
 
                         require_once $file;
-                    }, $snippet['priority']);
+                    }, $this->get($snippet, 'priority', 10));
 
                     break;
                 case 'js':
                     $runAt = $this->get($snippet, 'run_at', 'wp_footer');
-                    if (in_array($runAt, ['wp_head', 'wp_footer'])) {
+                    if (in_array($runAt, ['wp_head', 'wp_footer', 'admin_head', 'admin_footer'])) {
                         add_action($runAt, function () use ($file, $snippet, $conditionalClass) {
                             if (!$conditionalClass->evaluate($snippet['condition'])) {
                                 return;
@@ -107,12 +112,12 @@ class CodeRunner
                             ?>
                             <script><?php echo $this->escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></script>
                             <?php
-                        }, 99);
+                        }, $this->get($snippet, 'priority', 10));
                     }
                     break;
                 case 'css':
-                    $runAt = $this->get($snippet, 'run_at', 'wp_footer');
-                    if ($runAt == 'everywehere' && is_admin()) {
+                    $runAt = $this->get($snippet, 'run_at', 'wp_head');
+                    if (($runAt == 'everywehere' && is_admin()) || $runAt == 'admin_head') {
                         $runAt = 'admin_head';
                     } else {
                         $runAt = 'wp_head';
@@ -126,7 +131,7 @@ class CodeRunner
                         ?>
                         <style><?php echo $this->escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></style>
                         <?php
-                    }, $snippet['priority']);
+                    }, $this->get($snippet, 'priority', 10));
                     break;
                 case 'php_content':
                     $runAt = $snippet['run_at'];
@@ -162,7 +167,7 @@ class CodeRunner
                                 return $content . $result;
                             }
                             return $content;
-                        }, $snippet['priority']);
+                        }, $this->get($snippet, 'priority', 10));
                     }
                 default:
                     break;

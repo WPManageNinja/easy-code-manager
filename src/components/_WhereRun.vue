@@ -9,6 +9,7 @@
             <div style="border: 1px solid red !important;" v-else class="run_selected run_box">
                 <p style="font-weight: bold;">{{$t('Select Snippet Run Location')}}</p>
             </div>
+            <slot></slot>
         </div>
 
         <div v-show="showSelector" class="run_selector_options">

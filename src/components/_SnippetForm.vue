@@ -13,6 +13,10 @@
                             :langType="snippet.meta.type"
                             v-model="snippet.code"
                         />
+                        <div v-if="errors.has('code')" class="code_error_block">
+                            <p>{{ errors.get('code') }}</p>
+                            <pre class="el-form-item__error_explained">{{ errors.get('code_explanation') }}</pre>
+                        </div>
                     </el-form-item>
                 </slot>
 
@@ -24,6 +28,7 @@
             <el-col :xs="24" :sm="9" :md="8" :lg="6">
                 <el-form-item :label="$t('Snippet Name')">
                     <el-input :placeholder="$t('Your Snippet Name')" size="large" type="text" v-model="snippet.meta.name" />
+                    <div class="el-form-item__error">{{ errors.get('name') }}</div>
                 </el-form-item>
                 <el-form-item :label="$t('Description')">
                     <el-input placeholder="Internal Description for this snippet" :rows="3" type="textarea" v-model="snippet.meta.description" />
@@ -101,6 +106,6 @@ export default {
             InfoField: markRaw(InfoFilled)
         }
     },
-    props: ['snippet', 'is_new']
+    props: ['snippet', 'is_new', 'errors']
 }
 </script>

@@ -39,7 +39,7 @@
                     <p><strong>{{$t('Error Message:')}}</strong> {{snippet.error}}</p>
                     <el-button @click="saveCode(true)" :disabled="loading || saving" type="primary">{{$t('Try Reactivate')}}</el-button>
                 </div>
-                <snippet-form :snippet="snippet"></snippet-form>
+                <snippet-form :errors="errors" :snippet="snippet"></snippet-form>
             </div>
         </div>
     </div>
@@ -47,6 +47,7 @@
 
 <script type="text/babel">
 import SnippetForm from './_SnippetForm.vue'
+import Errors from '../Bits/Errors.js'
 
 export default {
     name: 'SnippetEditView',
@@ -58,7 +59,8 @@ export default {
         return {
             loading: false,
             snippet: null,
-            saving: false
+            saving: false,
+            errors: new Errors()
         }
     },
     methods: {
@@ -102,6 +104,17 @@ export default {
                     }
                 })
                 .catch((errors) => {
+
+                    if (typeof errors == 'string') {
+                        this.$notify.error('Something went wrong. Please check the errors.');
+                        this.$eventBus.emit("server_error", errors);
+                        return;
+                    }
+
+                    if (errors && errors.data) {
+                        this.errors.record(errors.data);
+                    }
+
                     this.$handleError(errors);
                 })
                 .finally(() => {

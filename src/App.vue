@@ -18,6 +18,10 @@
             </ul>
         </div>
         <fsnip-promo :config="appVars.safeModes" />
+        <el-button @click="hideErrors()" type="text" v-if="hasServerError">Hide Errors</el-button>
+        <div :class="{fluent_snip_server_error : hasServerError}" id="fsnip_shadow_wrapper">
+            <div id="fluent_snip_500_error"></div>
+        </div>
         <div class="ff_app_body">
             <router-view></router-view>
         </div>
@@ -26,6 +30,7 @@
 
 <script type="text/babel">
 import FsnipPromo from './components/FsnipSafeModesWarning.vue';
+import eventBus from "./Bits/event-bus";
 export default {
     name: 'FluentAuthApp',
     components: {
@@ -46,7 +51,42 @@ export default {
                     route: 'about',
                     title: this.$t('About')
                 }
-            ]
+            ],
+            hasServerError: false
+        }
+    },
+    methods: {
+        initShadowDomIframe(error) {
+            let host = document.querySelector("#fluent_snip_500_error");
+
+            // Remove the existing host element
+            if (host) {
+                host.parentNode.removeChild(host);
+            }
+
+            // Create a new host element
+            host = document.createElement('div');
+            host.id = "fluent_snip_500_error";
+            document.getElementById('fsnip_shadow_wrapper').appendChild(host); // Append it where it needs to be in the DOM
+
+            // Attach a new shadow DOM and add content
+            const shadow = host.attachShadow({mode: "closed"});
+            const div = document.createElement("div");
+            div.classList.add("fsnip_500_error_wrap");
+            div.innerHTML = error;
+            shadow.appendChild(div);
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+        },
+        hideErrors() {
+            this.hasServerError = false;
+            let host = document.querySelector("#fluent_snip_500_error");
+
+            // Remove the existing host element
+            if (host) {
+                host.parentNode.removeChild(host);
+            }
         }
     },
     created() {
@@ -55,6 +95,12 @@ export default {
     mounted() {
         jQuery('.fsnip_handheld span').on('click', function () {
             jQuery('ul.fsnip_menu').toggle('show');
+        });
+
+        this.$eventBus.on("server_error", (error) => {
+            console.log(error);
+            this.initShadowDomIframe(error);
+            this.hasServerError = true;
         });
     }
 }

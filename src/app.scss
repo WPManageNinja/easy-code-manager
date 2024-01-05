@@ -1114,3 +1114,28 @@ input.el-select__input {
     text-align: center;
   }
 }
+
+
+.code_error_block {
+  background: yellow;
+  padding: 10px 20px;
+  margin-top: 10px;
+  p {
+    margin: 0;
+    font-weight: bold;
+  }
+  pre {
+    margin: 0;
+    text-wrap: unset;
+  }
+}
+
+.fluent_snip_server_error {
+  padding: 20px;
+  background: #ffff35;
+  margin: 0 20px 20px 0;
+}
+
+.fsnin_run_selector {
+  position: relative;
+}

@@ -19,9 +19,15 @@ class Router
             'methods'  => $method,
             'callback' => function($request) use ($callback) {
                 $result = call_user_func($callback, $request);
+
                 if(is_wp_error($result)) {
-                    return $result;
+                    return new \WP_REST_Response([
+                        'code' => $result->get_error_code(),
+                        'message' => $result->get_error_message(),
+                        'data' => $result->get_error_data()
+                    ], 422);
                 }
+
                 return rest_ensure_response( $result );
             },
             'permission_callback' => function($request) use ($permissions) {

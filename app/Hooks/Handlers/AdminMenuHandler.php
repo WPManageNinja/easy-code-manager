@@ -190,6 +190,14 @@ class AdminMenuHandler
                     'wp_footer' => [
                         'label'       => __('Site Wide Footer', 'easy-code-manager'),
                         'description' => __('Run Javascript before the closing body tag of your website on all pages (frontend).', 'easy-code-manager')
+                    ],
+                    'admin_head' => [
+                        'label'       => __('Admin Area Header', 'easy-code-manager'),
+                        'description' => __('Run Javascript in admin area (/wp-admin/).', 'easy-code-manager')
+                    ],
+                    'admin_footer' => [
+                        'label'       => __('Admin Area Footer', 'easy-code-manager'),
+                        'description' => __('Run Javascript in admin area (/wp-admin/) before the closing body tag.', 'easy-code-manager')
                     ]
                 ]
             ],

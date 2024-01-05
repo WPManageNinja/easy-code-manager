@@ -5,6 +5,7 @@ import Rest from './Bits/Rest.js';
 import {ElNotification, ElLoading, ElMessageBox} from 'element-plus'
 import Storage from '@/Bits/Storage';
 import App from './App.vue';
+import eventBus from './Bits/event-bus';
 require('./app.scss');
 
 const dayjs = require('dayjs');
@@ -52,7 +53,7 @@ app.mixin({
         $put: Rest.put,
         $del: Rest.delete,
         changeTitle(title) {
-            jQuery('head title').text(title + ' - Fluent Auth');
+            jQuery('head title').text(title + ' - FluentSnippets');
         },
         $handleError(response) {
             let errorMessage = '';
@@ -116,6 +117,8 @@ app.mixin({
 
 app.config.globalProperties.$notify = ElNotification;
 app.config.globalProperties.$confirm = ElMessageBox.confirm;
+
+app.use(eventBus);
 
 const router = createRouter({
     routes,
