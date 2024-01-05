@@ -73,6 +73,12 @@ export default {
                     this.snippet = response.snippet
                 })
                 .catch((errors) => {
+                    if (typeof errors == 'string') {
+                        this.$notify.error('Something went wrong. Please check the errors.');
+                        this.$eventBus.emit("server_error", errors);
+                        return;
+                    }
+
                     this.$handleError(errors);
                 })
                 .finally(() => {
@@ -90,6 +96,8 @@ export default {
                 this.$notify.error(this.$t('The code should not start with <?php'));
                 return;
             }
+
+            this.$eventBus.emit("server_error", null);
 
             this.saving = true;
             this.$post('snippets/update', {

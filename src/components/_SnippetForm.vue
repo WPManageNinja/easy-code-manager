@@ -12,6 +12,7 @@
                         <code-editor
                             :langType="snippet.meta.type"
                             v-model="snippet.code"
+                            :conditions="snippet.meta.condition"
                         />
                         <div v-if="errors.has('code')" class="code_error_block">
                             <p>{{ errors.get('code') }}</p>

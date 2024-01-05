@@ -17,7 +17,7 @@
                 </div>
             </div>
             <div class="box_body">
-                <snippet-form :errors="errors" :is_new="true" :snippet="snippet">
+                <snippet-form v-if="appLoaded" :errors="errors" :is_new="true" :snippet="snippet">
                     <template v-slot:code_editor_before>
                         <el-form-item label="Snippet Type">
                             <el-radio-group @change="snippetTypeChanged()" v-model="snippet.meta.type">
@@ -65,6 +65,7 @@ export default {
                     priority: 10
                 }
             },
+            appLoaded: true,
             saving: false,
             errors: new Errors()
         }
@@ -110,19 +111,6 @@ export default {
         toggleStatus() {
             this.snippet.meta.status = (this.snippet.meta.status == 'published') ? 'draft' : 'published';
             this.saveCode();
-        },
-        tabChanged() {
-            this.snippet.code = '';
-            const type = this.snippet.meta.type;
-            if (type == 'PHP') {
-                this.snippet.meta.run_at = 'all';
-            } else if (type == 'php_content') {
-                this.snippet.meta.run_at = '';
-            } else if (type == 'css') {
-                this.snippet.meta.run_at = 'wp_head';
-            } else if (type == 'js') {
-                this.snippet.meta.run_at = 'wp_footer';
-            }
         },
         snippetTypeChanged() {
             const type = this.snippet.meta.type;

@@ -22,6 +22,7 @@ class CodeHandler
         if (!$this->isDisabled()) {
             add_action('shutdown', function () {
                 $error = error_get_last();
+
                 if ($error && $error['type'] === 1) {
                     $this->maybeHandleFatalError([
                         'response' => 500
@@ -154,6 +155,7 @@ class CodeHandler
 
     public function maybeHandleFatalError($args, $error)
     {
+        error_log('OK');
 
         if (empty($args['response']) || $args['response'] != 500) {
             return $args;

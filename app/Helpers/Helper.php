@@ -37,7 +37,7 @@ class Helper
             'hooks'     => []
         ];
 
-        $previousConfig = self::getIndexedConfig();
+        $previousConfig = self::getIndexedConfig(false);
 
         if (!$previousConfig || empty($previousConfig['meta'])) {
             $previousConfig = [
@@ -170,11 +170,11 @@ PHP;
         return file_put_contents($cacheFile, $code);
     }
 
-    public static function getIndexedConfig()
+    public static function getIndexedConfig($cached = true)
     {
         static $config = null;
 
-        if ($config) {
+        if ($config && $cached) {
             return $config;
         }
 

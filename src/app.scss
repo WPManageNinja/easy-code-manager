@@ -1116,7 +1116,7 @@ input.el-select__input {
 }
 
 
-.code_error_block {
+.code_error_block, .fsnip_error_hooks {
   background: yellow;
   padding: 10px 20px;
   margin-top: 10px;
@@ -1127,6 +1127,11 @@ input.el-select__input {
   pre {
     margin: 0;
     text-wrap: unset;
+  }
+  ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style: disc;
   }
 }
 

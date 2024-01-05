@@ -18,9 +18,11 @@
             </ul>
         </div>
         <fsnip-promo :config="appVars.safeModes" />
-        <el-button @click="hideErrors()" type="text" v-if="hasServerError">Hide Errors</el-button>
-        <div :class="{fluent_snip_server_error : hasServerError}" id="fsnip_shadow_wrapper">
-            <div id="fluent_snip_500_error"></div>
+        <div v-show="hasServerError">
+            <el-button @click="hideErrors()" v-if="hasServerError">Hide Errors</el-button>
+            <div :class="{fluent_snip_server_error : hasServerError}" id="fsnip_shadow_wrapper">
+                <div id="fluent_snip_500_error"></div>
+            </div>
         </div>
         <div class="ff_app_body">
             <router-view></router-view>
@@ -57,7 +59,12 @@ export default {
     },
     methods: {
         initShadowDomIframe(error) {
-            let host = document.querySelector("#fluent_snip_500_error");
+            if(!error) {
+                this.hideErrors();
+                return false;
+            }
+
+            let host = document.getElementById("fluent_snip_500_error");
 
             // Remove the existing host element
             if (host) {
@@ -75,18 +82,21 @@ export default {
             div.classList.add("fsnip_500_error_wrap");
             div.innerHTML = error;
             shadow.appendChild(div);
+            this.hasServerError = true;
 
             // Scroll to top
             window.scrollTo(0, 0);
         },
         hideErrors() {
-            this.hasServerError = false;
-            let host = document.querySelector("#fluent_snip_500_error");
+            let host = document.getElementById("fluent_snip_500_error");
+
+            console.log(host);
 
             // Remove the existing host element
             if (host) {
                 host.parentNode.removeChild(host);
             }
+            this.hasServerError = false;
         }
     },
     created() {
@@ -100,7 +110,6 @@ export default {
         this.$eventBus.on("server_error", (error) => {
             console.log(error);
             this.initShadowDomIframe(error);
-            this.hasServerError = true;
         });
     }
 }

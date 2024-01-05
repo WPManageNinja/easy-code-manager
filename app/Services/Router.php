@@ -28,6 +28,8 @@ class Router
                     ], 422);
                 }
 
+                ob_get_clean();
+
                 return rest_ensure_response( $result );
             },
             'permission_callback' => function($request) use ($permissions) {
