@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Fluent Snippets\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-05 10:20+0000\n"
+"POT-Creation-Date: 2024-01-05 14:28+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -26,11 +26,11 @@ msgstr ""
 msgid "404 page"
 msgstr ""
 
-#: trans.php:87 app/Services/Trans.php:92
+#: trans.php:99 app/Services/Trans.php:104
 msgid "Activate"
 msgstr ""
 
-#: trans.php:72 app/Services/Trans.php:77
+#: trans.php:84 app/Services/Trans.php:89
 msgid "Add"
 msgstr ""
 
@@ -50,11 +50,15 @@ msgstr ""
 msgid "Admin Only"
 msgstr ""
 
-#: trans.php:99 app/Services/Trans.php:104
+#: trans.php:39 app/Services/Trans.php:44
+msgid "Admin only"
+msgstr ""
+
+#: trans.php:111 app/Services/Trans.php:116
 msgid "Advanced Conditional Logic"
 msgstr ""
 
-#: trans.php:66 app/Services/Trans.php:71
+#: trans.php:78 app/Services/Trans.php:83
 msgid "after"
 msgstr ""
 
@@ -62,15 +66,19 @@ msgstr ""
 msgid "After Content"
 msgstr ""
 
-#: trans.php:15 app/Services/Trans.php:20
+#: trans.php:45 app/Services/Trans.php:50
+msgid "After post content"
+msgstr ""
+
+#: trans.php:16 app/Services/Trans.php:21
 msgid "All Snippets"
 msgstr ""
 
-#: trans.php:74 app/Services/Trans.php:79
+#: trans.php:86 app/Services/Trans.php:91
 msgid "And"
 msgstr ""
 
-#: trans.php:20 app/Services/Trans.php:25
+#: trans.php:21 app/Services/Trans.php:26
 msgid "Apply"
 msgstr ""
 
@@ -86,11 +94,11 @@ msgstr ""
 msgid "Archive"
 msgstr ""
 
-#: trans.php:33 app/Services/Trans.php:38
+#: trans.php:35 app/Services/Trans.php:40
 msgid "Are you sure to delete this?"
 msgstr ""
 
-#: trans.php:18 app/Services/Trans.php:23
+#: trans.php:19 app/Services/Trans.php:24
 msgid "Ascending"
 msgstr ""
 
@@ -102,7 +110,15 @@ msgstr ""
 msgid "Backend"
 msgstr ""
 
-#: trans.php:65 app/Services/Trans.php:70
+#: trans.php:47 app/Services/Trans.php:52
+msgid "Backend footer"
+msgstr ""
+
+#: trans.php:46 app/Services/Trans.php:51
+msgid "Backend Head"
+msgstr ""
+
+#: trans.php:77 app/Services/Trans.php:82
 msgid "before"
 msgstr ""
 
@@ -110,8 +126,12 @@ msgstr ""
 msgid "Before Content"
 msgstr ""
 
-#: trans.php:68 app/Services/Trans.php:73
+#: trans.php:80 app/Services/Trans.php:85
 msgid "before days"
+msgstr ""
+
+#: trans.php:44 app/Services/Trans.php:49
+msgid "Before post content"
 msgstr ""
 
 #: app/Hooks/Handlers/AdminMenuHandler.php:176
@@ -142,7 +162,7 @@ msgstr ""
 msgid "Cannot redeclare interface %s."
 msgstr ""
 
-#: trans.php:77 app/Services/Trans.php:82
+#: trans.php:89 app/Services/Trans.php:94
 msgid "Code"
 msgstr ""
 
@@ -150,7 +170,7 @@ msgstr ""
 msgid "Code Snippets"
 msgstr ""
 
-#: trans.php:44 app/Services/Trans.php:49
+#: trans.php:56 app/Services/Trans.php:61
 msgid "Condition Value"
 msgstr ""
 
@@ -166,23 +186,27 @@ msgstr ""
 msgid "Content"
 msgstr ""
 
-#: trans.php:97 app/Services/Trans.php:102
+#: trans.php:109 app/Services/Trans.php:114
 msgid "Create New"
 msgstr ""
 
-#: trans.php:81 app/Services/Trans.php:86
+#: trans.php:93 app/Services/Trans.php:98
 msgid "Create new group"
 msgstr ""
 
-#: trans.php:96 app/Services/Trans.php:101
+#: trans.php:108 app/Services/Trans.php:113
 msgid "Create new tag"
 msgstr ""
 
-#: trans.php:98 app/Services/Trans.php:103
+#: trans.php:110 app/Services/Trans.php:115
 msgid "Create Snippet"
 msgstr ""
 
-#: trans.php:35 app/Services/Trans.php:40
+#: trans.php:15 app/Services/Trans.php:20
+msgid "Create Your First Snippet"
+msgstr ""
+
+#: trans.php:37 app/Services/Trans.php:42
 msgid "Created At"
 msgstr ""
 
@@ -198,27 +222,27 @@ msgstr ""
 msgid "Day of the week"
 msgstr ""
 
-#: trans.php:46 app/Services/Trans.php:51
+#: trans.php:58 app/Services/Trans.php:63
 msgid "Days"
 msgstr ""
 
-#: trans.php:86 app/Services/Trans.php:91
+#: trans.php:98 app/Services/Trans.php:103
 msgid "Deactivate"
 msgstr ""
 
-#: trans.php:26 app/Services/Trans.php:31
+#: trans.php:28 app/Services/Trans.php:33
 msgid "delete"
 msgstr ""
 
-#: trans.php:19 app/Services/Trans.php:24
+#: trans.php:20 app/Services/Trans.php:25
 msgid "Descending"
 msgstr ""
 
-#: trans.php:27 app/Services/Trans.php:32
+#: trans.php:29 app/Services/Trans.php:34
 msgid "Description"
 msgstr ""
 
-#: trans.php:76 app/Services/Trans.php:81
+#: trans.php:88 app/Services/Trans.php:93
 msgid "Disable Safe Mode"
 msgstr ""
 
@@ -226,27 +250,27 @@ msgstr ""
 msgid "Disable Standalone Mode"
 msgstr ""
 
-#: trans.php:50 app/Services/Trans.php:55
+#: trans.php:62 app/Services/Trans.php:67
 msgid "does not equal"
 msgstr ""
 
-#: trans.php:59 app/Services/Trans.php:64
+#: trans.php:71 app/Services/Trans.php:76
 msgid "Does not include (in any)"
 msgstr ""
 
-#: trans.php:48 app/Services/Trans.php:53
+#: trans.php:60 app/Services/Trans.php:65
 msgid "does not includes"
 msgstr ""
 
-#: trans.php:25 app/Services/Trans.php:30
+#: trans.php:27 app/Services/Trans.php:32
 msgid "edit"
 msgstr ""
 
-#: trans.php:57 app/Services/Trans.php:62
+#: trans.php:69 app/Services/Trans.php:74
 msgid "Empty"
 msgstr ""
 
-#: trans.php:100 app/Services/Trans.php:105
+#: trans.php:112 app/Services/Trans.php:117
 msgid "Enable Conditional Logic"
 msgstr ""
 
@@ -262,27 +286,31 @@ msgstr ""
 msgid "Enabled"
 msgstr ""
 
-#: trans.php:52 app/Services/Trans.php:57
+#: trans.php:64 app/Services/Trans.php:69
 msgid "ends with"
 msgstr ""
 
-#: trans.php:49 app/Services/Trans.php:54
+#: trans.php:61 app/Services/Trans.php:66
 msgid "equal"
 msgstr ""
 
-#: trans.php:24 app/Services/Trans.php:29
+#: trans.php:26 app/Services/Trans.php:31
 msgid "ERROR"
 msgstr ""
 
-#: trans.php:90 app/Services/Trans.php:95
+#: trans.php:102 app/Services/Trans.php:107
 msgid "Error Message:"
 msgstr ""
 
-#: trans.php:28 app/Services/Trans.php:33
+#: trans.php:30 app/Services/Trans.php:35
 msgid "ERROR:"
 msgstr ""
 
-#: trans.php:42 app/Services/Trans.php:47
+#: trans.php:38 app/Services/Trans.php:43
+msgid "Everywhere"
+msgstr ""
+
+#: trans.php:54 app/Services/Trans.php:59
 msgid "Failed to copy shortcode"
 msgstr ""
 
@@ -308,8 +336,24 @@ msgstr ""
 msgid "Frontend"
 msgstr ""
 
+#: trans.php:43 app/Services/Trans.php:48
+msgid "Frontend body open"
+msgstr ""
+
+#: trans.php:42 app/Services/Trans.php:47
+msgid "Frontend footer"
+msgstr ""
+
+#: trans.php:41 app/Services/Trans.php:46
+msgid "Frontend head"
+msgstr ""
+
 #: app/Hooks/Handlers/AdminMenuHandler.php:126
 msgid "Frontend Only"
+msgstr ""
+
+#: trans.php:40 app/Services/Trans.php:45
+msgid "Frontend only"
 msgstr ""
 
 #: app/Hooks/Handlers/AdminMenuHandler.php:113
@@ -320,7 +364,7 @@ msgstr ""
 msgid "General Settings"
 msgstr ""
 
-#: trans.php:53 app/Services/Trans.php:58
+#: trans.php:65 app/Services/Trans.php:70
 msgid "Greater Than"
 msgstr ""
 
@@ -337,23 +381,23 @@ msgstr ""
 msgid "https://fluentsnippets.com"
 msgstr ""
 
-#: trans.php:67 app/Services/Trans.php:72
+#: trans.php:79 app/Services/Trans.php:84
 msgid "in the date"
 msgstr ""
 
-#: trans.php:47 app/Services/Trans.php:52
+#: trans.php:59 app/Services/Trans.php:64
 msgid "includes"
 msgstr ""
 
-#: trans.php:60 app/Services/Trans.php:65
+#: trans.php:72 app/Services/Trans.php:77
 msgid "includes all of"
 msgstr ""
 
-#: trans.php:55 app/Services/Trans.php:60
+#: trans.php:67 app/Services/Trans.php:72
 msgid "includes in"
 msgstr ""
 
-#: trans.php:61 app/Services/Trans.php:66
+#: trans.php:73 app/Services/Trans.php:78
 msgid "includes none of (match all)"
 msgstr ""
 
@@ -383,7 +427,7 @@ msgstr ""
 msgid "Is a CRM Contact?"
 msgstr ""
 
-#: trans.php:54 app/Services/Trans.php:59
+#: trans.php:66 app/Services/Trans.php:71
 msgid "Less Than"
 msgstr ""
 
@@ -399,7 +443,7 @@ msgstr ""
 msgid "Monday"
 msgstr ""
 
-#: trans.php:34 app/Services/Trans.php:39
+#: trans.php:36 app/Services/Trans.php:41
 msgid "Name"
 msgstr ""
 
@@ -407,19 +451,23 @@ msgstr ""
 msgid "New Snippet"
 msgstr ""
 
-#: trans.php:58 app/Services/Trans.php:63
+#: trans.php:23 app/Services/Trans.php:28
+msgid "No Snippets Found based on your filter"
+msgstr ""
+
+#: trans.php:70 app/Services/Trans.php:75
 msgid "Not Empty"
 msgstr ""
 
-#: trans.php:62 app/Services/Trans.php:67
+#: trans.php:74 app/Services/Trans.php:79
 msgid "not equal"
 msgstr ""
 
-#: trans.php:56 app/Services/Trans.php:61
+#: trans.php:68 app/Services/Trans.php:73
 msgid "not includes in"
 msgstr ""
 
-#: trans.php:64 app/Services/Trans.php:69
+#: trans.php:76 app/Services/Trans.php:81
 msgid "not within"
 msgstr ""
 
@@ -427,7 +475,7 @@ msgstr ""
 msgid "Only display when inserted into a post or page using shortcode"
 msgstr ""
 
-#: trans.php:70 app/Services/Trans.php:75
+#: trans.php:82 app/Services/Trans.php:87
 msgid "OR"
 msgstr ""
 
@@ -443,19 +491,19 @@ msgstr ""
 msgid "Parse error: syntax error, unexpected end of snippet."
 msgstr ""
 
-#: trans.php:83 app/Services/Trans.php:88
+#: trans.php:95 app/Services/Trans.php:100
 msgid "PAUSED"
 msgstr ""
 
-#: trans.php:22 app/Services/Trans.php:27
+#: trans.php:24 app/Services/Trans.php:29
 msgid "Paused"
 msgstr ""
 
-#: trans.php:73 app/Services/Trans.php:78
+#: trans.php:85 app/Services/Trans.php:90
 msgid "Please enter a keyword"
 msgstr ""
 
-#: trans.php:92 app/Services/Trans.php:97
+#: trans.php:104 app/Services/Trans.php:109
 msgid "Please enter some code to save"
 msgstr ""
 
@@ -463,11 +511,11 @@ msgstr ""
 msgid "Post Type"
 msgstr ""
 
-#: trans.php:32 app/Services/Trans.php:37
+#: trans.php:34 app/Services/Trans.php:39
 msgid "Priority"
 msgstr ""
 
-#: trans.php:71 app/Services/Trans.php:76
+#: trans.php:83 app/Services/Trans.php:88
 msgid "Provide Name"
 msgstr ""
 
@@ -506,7 +554,7 @@ msgstr ""
 msgid "Safe mode has been disabled"
 msgstr ""
 
-#: trans.php:75 app/Services/Trans.php:80
+#: trans.php:87 app/Services/Trans.php:92
 msgid "Safe Mode is Enabled"
 msgstr ""
 
@@ -526,27 +574,27 @@ msgstr ""
 msgid "Search page"
 msgstr ""
 
-#: trans.php:43 app/Services/Trans.php:48
+#: trans.php:55 app/Services/Trans.php:60
 msgid "Select Operator"
 msgstr ""
 
-#: trans.php:45 app/Services/Trans.php:50
+#: trans.php:57 app/Services/Trans.php:62
 msgid "Select Option"
 msgstr ""
 
-#: trans.php:82 app/Services/Trans.php:87
+#: trans.php:94 app/Services/Trans.php:99
 msgid "Select Snippet Group"
 msgstr ""
 
-#: trans.php:37 app/Services/Trans.php:42
+#: trans.php:49 app/Services/Trans.php:54
 msgid "Select Snippet Run Location"
 msgstr ""
 
-#: trans.php:95 app/Services/Trans.php:100
+#: trans.php:107 app/Services/Trans.php:112
 msgid "Select Snippet Tags"
 msgstr ""
 
-#: trans.php:38 app/Services/Trans.php:43
+#: trans.php:50 app/Services/Trans.php:55
 msgid "selected"
 msgstr ""
 
@@ -562,7 +610,7 @@ msgstr ""
 msgid "Shortcode"
 msgstr ""
 
-#: trans.php:41 app/Services/Trans.php:46
+#: trans.php:53 app/Services/Trans.php:58
 msgid "Shortcode copied to clipboard"
 msgstr ""
 
@@ -597,7 +645,7 @@ msgstr ""
 msgid "Snippet created successfully"
 msgstr ""
 
-#: trans.php:84 app/Services/Trans.php:89
+#: trans.php:96 app/Services/Trans.php:101
 msgid "Snippet details"
 msgstr ""
 
@@ -613,7 +661,7 @@ msgstr ""
 msgid "Snippet gets executed only in frontend area"
 msgstr ""
 
-#: trans.php:80 app/Services/Trans.php:85
+#: trans.php:92 app/Services/Trans.php:97
 msgid "Snippet Group"
 msgstr ""
 
@@ -625,11 +673,11 @@ msgstr ""
 msgid "Snippet has been deleted successfully"
 msgstr ""
 
-#: trans.php:94 app/Services/Trans.php:99
+#: trans.php:106 app/Services/Trans.php:111
 msgid "Snippet has been updated successfully"
 msgstr ""
 
-#: trans.php:78 app/Services/Trans.php:83
+#: trans.php:90 app/Services/Trans.php:95
 msgid "Snippet Name"
 msgstr ""
 
@@ -649,11 +697,11 @@ msgstr ""
 msgid "Snippets are disabled"
 msgstr ""
 
-#: trans.php:88 app/Services/Trans.php:93
+#: trans.php:100 app/Services/Trans.php:105
 msgid "Sorry Snippet could not be loaded"
 msgstr ""
 
-#: trans.php:21 app/Services/Trans.php:26
+#: trans.php:22 app/Services/Trans.php:27
 msgid "Sort"
 msgstr ""
 
@@ -669,7 +717,7 @@ msgstr ""
 msgid "Standalone mode has been deactivated"
 msgstr ""
 
-#: trans.php:51 app/Services/Trans.php:56
+#: trans.php:63 app/Services/Trans.php:68
 msgid "starts with"
 msgstr ""
 
@@ -687,11 +735,11 @@ msgid ""
 "for WordPress"
 msgstr ""
 
-#: trans.php:16 app/Services/Trans.php:21
+#: trans.php:18 app/Services/Trans.php:23
 msgid "Table"
 msgstr ""
 
-#: trans.php:30 app/Services/Trans.php:35
+#: trans.php:32 app/Services/Trans.php:37
 msgid "Tags"
 msgstr ""
 
@@ -703,15 +751,11 @@ msgstr ""
 msgid "Taxonomy Term Page"
 msgstr ""
 
-#: app/Services/Trans.php:98
+#: trans.php:105 app/Services/Trans.php:110
 msgid "The code should not start with <?php"
 msgstr ""
 
-#: trans.php:93
-msgid "The code should not starts with <?php"
-msgstr ""
-
-#: trans.php:89 app/Services/Trans.php:94
+#: trans.php:101 app/Services/Trans.php:106
 msgid ""
 "The snippet encountered an fatal error and It has been deactivated "
 "automatically. Please review your code, fix the issues and reactive."
@@ -729,11 +773,11 @@ msgstr ""
 msgid "Time Range"
 msgstr ""
 
-#: trans.php:23 app/Services/Trans.php:28
+#: trans.php:25 app/Services/Trans.php:30
 msgid "Title"
 msgstr ""
 
-#: trans.php:91 app/Services/Trans.php:96
+#: trans.php:103 app/Services/Trans.php:108
 msgid "Try Reactivate"
 msgstr ""
 
@@ -741,7 +785,7 @@ msgstr ""
 msgid "Tuesday"
 msgstr ""
 
-#: trans.php:29 app/Services/Trans.php:34
+#: trans.php:31 app/Services/Trans.php:36
 msgid "Type"
 msgstr ""
 
@@ -749,11 +793,11 @@ msgstr ""
 msgid "Type of page"
 msgstr ""
 
-#: trans.php:85 app/Services/Trans.php:90
+#: trans.php:97 app/Services/Trans.php:102
 msgid "Update Snippet"
 msgstr ""
 
-#: trans.php:31 app/Services/Trans.php:36
+#: trans.php:33 app/Services/Trans.php:38
 msgid "Updated At"
 msgstr ""
 
@@ -761,7 +805,7 @@ msgstr ""
 msgid "URL"
 msgstr ""
 
-#: trans.php:40 app/Services/Trans.php:45
+#: trans.php:52 app/Services/Trans.php:57
 msgid "Use Shortcode to display the return or print content of this snippet:"
 msgstr ""
 
@@ -777,22 +821,22 @@ msgstr ""
 msgid "Wednesday"
 msgstr ""
 
-#: trans.php:36 app/Services/Trans.php:41
+#: trans.php:48 app/Services/Trans.php:53
 msgid "Where to Run?"
 msgstr ""
 
-#: trans.php:63 app/Services/Trans.php:68
+#: trans.php:75 app/Services/Trans.php:80
 msgid "within"
 msgstr ""
 
-#: trans.php:69 app/Services/Trans.php:74
+#: trans.php:81 app/Services/Trans.php:86
 msgid "within days"
 msgstr ""
 
-#: trans.php:39 app/Services/Trans.php:44
+#: trans.php:51 app/Services/Trans.php:56
 msgid "You can view the shortcode after save this snippet"
 msgstr ""
 
-#: trans.php:79 app/Services/Trans.php:84
+#: trans.php:91 app/Services/Trans.php:96
 msgid "Your Snippet Name"
 msgstr ""

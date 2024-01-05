@@ -94,10 +94,10 @@ class CodeHandler
 
         // check condition
         $conditionalClass = new FluentSnippetCondition();
-        if (!$conditionalClass->evaluate($snippet['condition'])) {
+        if (!$conditionalClass->evaluate(Arr::get($snippet, 'condition', []))) {
             return $this->shortCodeError(__('Snippet condition is not valid', 'easy-code-manager'));
         }
-
+        
         ob_start();
 
         $maybeReturn = include $snippet['file'];

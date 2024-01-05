@@ -135,6 +135,14 @@
                                     <span class="fc_middot">|</span>
                                     <span><el-icon><FolderOpened/></el-icon> {{ scope.row.group }}</span>
                                 </template>
+                                <span class="fc_middot">|</span>
+                                <span>
+                                    <el-icon>
+                                        <svg viewBox="0 0 8 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path
+                                            d="M3 0l-3 5h2v3l3-5h-2v-3z" transform="translate(1)"></path></svg>
+                                    </el-icon>
+                                    {{ getRunAtName(scope.row.run_at) }}
+                                </span>
                             </div>
                         </template>
                     </el-table-column>
@@ -197,8 +205,15 @@
                                             }}</span>
                                     </template>
                                     <span v-else class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
-                                        {{ getLangLabelName(snippet.type) }}
-                                </span>
+                                            {{ getLangLabelName(snippet.type) }}
+                                    </span>
+                                    <span class="fsn_label">
+                                        <el-icon>
+                                                <svg viewBox="0 0 8 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path
+                                                d="M3 0l-3 5h2v3l3-5h-2v-3z" transform="translate(1)"></path></svg>
+                                        </el-icon>
+                                        {{ getRunAtName(snippet.run_at) }}
+                                    </span>
                                 </div>
                                 <div class="group_file_meta">
                                     <div class="snippet_actions">
@@ -246,6 +261,13 @@
                                 </template>
                                 <span v-else class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
                                         {{ getLangLabelName(snippet.type) }}
+                                </span>
+                                <span class="fsn_label">
+                                    <el-icon>
+                                            <svg viewBox="0 0 8 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path
+                                                d="M3 0l-3 5h2v3l3-5h-2v-3z" transform="translate(1)"></path></svg>
+                                    </el-icon>
+                                    {{ getRunAtName(snippet.run_at) }}
                                 </span>
                             </div>
                             <div class="group_file_meta">
@@ -454,6 +476,23 @@ export default {
                 .finally(() => {
                     this.getSnippets();
                 })
+        },
+        getRunAtName(runAt) {
+            const trans = {
+                'all': this.$t('Everywhere'),
+                'backend': this.$t('Admin only'),
+                'frontend': this.$t('Frontend only'),
+                'wp_head': this.$t('Frontend head'),
+                'wp_footer': this.$t('Frontend footer'),
+                'wp_body_open': this.$t('Frontend body open'),
+                'before_content': this.$t('Before post content'),
+                'after_content': this.$t('After post content'),
+                'admin_head': this.$t('Backend Head'),
+                'admin_footer': this.$t('Backend footer'),
+                'everywhere': this.$t('Everywhere')
+            };
+
+            return trans[runAt] || runAt;
         }
     },
     computed: {

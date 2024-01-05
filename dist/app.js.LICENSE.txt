@@ -21,6 +21,8 @@
 
 /*! Element Plus Icons Vue v2.1.0 */
 
+/*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */
+
 /**
  * Checks if an event is supported in the current execution environment.
  *

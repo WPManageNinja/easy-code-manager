@@ -6,8 +6,10 @@
                     <div class="fss_header">About</div>
                     <div class="fss_content">
                         <p>
-                            <a href="https://fluentsnippets.com" target="_blank" rel="noopener">FluentSnippets</a> is The High-Performance Code Snippets Plugin for WordPress.
-                            It is built for speed and security. All code snippets are stored in the file system and load just like a regular feature plugin. No database query, it’s secure and native.
+                            <a href="https://fluentsnippets.com" target="_blank" rel="noopener">FluentSnippets</a> is
+                            The High-Performance Code Snippets Plugin for WordPress.
+                            It is built for speed and security. All code snippets are stored in the file system and load
+                            just like a regular feature plugin. No database query, it’s secure and native.
                         </p>
                         <div>
                             <p>FluentSMTP is built using the following open-sorce libraries and software</p>
@@ -25,12 +27,35 @@
                                                                                     href="https://github.com/WPManageNinja/easy-code-manager/issues">open
                                 an issue on GitHub</a>.
                                 <br/>If you are a developer and would like to contribute to the project, Please <a
-                                target="_blank" rel="nofollow" href="https://github.com/WPManageNinja/easy-code-manager/">contribute
+                                target="_blank" rel="nofollow"
+                                href="https://github.com/WPManageNinja/easy-code-manager/">contribute
                                 on GitHub</a>.
                             </p>
                             <p>Please <a target="_blank" rel="noopener" href="http://fluentsnippets.com/docs">read the
                                 documentation here</a></p>
                         </div>
+                    </div>
+                </div>
+                <div class="fss_about">
+                    <div class="fss_header">Contributors</div>
+                    <div class="fss_content">
+                        <p>FluentSnippets is powered by it's users like you. Feel free to contribute on Github. Thanks
+                            to
+                            all of our contributors.</p>
+
+                        <a target="_blank"
+                           href="https://github.com/WPManageNinja/easy-code-manager/graphs/contributors">
+
+                            <ul v-if="contributors.length > 0" v-loading="contributorsLoading"
+                                style="list-style: none; display: flex; flex-direction: row; flex-wrap: wrap; ">
+                                <li v-for="contributor in contributors" :key="contributor.id" class="">
+                                    <p :title="contributor.login">
+                                        <img :src="contributor.avatar_url" :alt="contributor.login"
+                                             style="width: 60px; height: 60px; border-radius: 50%;"/>
+                                    </p>
+                                </li>
+                            </ul>
+                        </a>
                     </div>
                 </div>
             </el-col>
@@ -69,7 +94,8 @@
                 <div class="fss_about">
                     <div class="fss_header">Community</div>
                     <div class="fss_content">
-                        <p>FluentSnippets is powered by community. We listen to our community users and build products that
+                        <p>FluentSnippets is powered by community. We listen to our community users and build products
+                            that
                             add values to businesses and save time.</p>
                         <p>Join our communities and participate in great conversations.</p>
                         <ul style="list-style: disc;margin-left: 30px;">
@@ -83,7 +109,8 @@
                             </li>
                             <li>
                                 <a target="_blank" rel="nofollow"
-                                   href="https://wordpress.org/support/plugin/easy-code-manager/reviews/?filter=5">Write a
+                                   href="https://wordpress.org/support/plugin/easy-code-manager/reviews/?filter=5">Write
+                                    a
                                     review (really appreciate 😊)</a>
                             </li>
                             <li>
@@ -193,7 +220,23 @@ export default {
                 .finally(() => {
                     this.installing = false;
                 });
+        },
+        async fetchContributors() {
+            this.contributorsLoading = true;
+            try {
+                await fetch('https://api.github.com/repos/WPManageNinja/easy-code-manager/contributors')
+                    .then(response => response.json())
+                    .then(data => {
+                        this.contributors = data.slice(0, 20);
+                        this.contributorsLoading = false;
+                    })
+            } catch (e) {
+                this.contributorsLoading = false;
+            }
         }
+    },
+    mounted() {
+        this.fetchContributors();
     }
 }
 </script>
