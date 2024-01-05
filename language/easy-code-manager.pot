@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Fluent Snippets\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-18 15:39+0000\n"
+"POT-Creation-Date: 2024-01-05 10:20+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -16,7 +16,13 @@ msgstr ""
 "X-Loco-Version: 2.6.6; wp-6.4.2\n"
 "X-Domain: easy-code-manager"
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:257
+#: app/Http/Controllers/SnippetsController.php:290
+#: app/Http/Controllers/SnippetsController.php:291
+#, php-format
+msgid "%s is required"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:265
 msgid "404 page"
 msgstr ""
 
@@ -30,6 +36,14 @@ msgstr ""
 
 #: app/Hooks/Handlers/AdminMenuHandler.php:169
 msgid "Add CSS on all pages (frontend)."
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:199
+msgid "Admin Area Footer"
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:195
+msgid "Admin Area Header"
 msgstr ""
 
 #: app/Hooks/Handlers/AdminMenuHandler.php:122
@@ -68,7 +82,7 @@ msgstr ""
 msgid "Apply this snippet CSS to both backend and frontend."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:254
+#: app/Hooks/Handlers/AdminMenuHandler.php:262
 msgid "Archive"
 msgstr ""
 
@@ -80,7 +94,7 @@ msgstr ""
 msgid "Ascending"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:258
+#: app/Hooks/Handlers/AdminMenuHandler.php:266
 msgid "Author page"
 msgstr ""
 
@@ -140,11 +154,11 @@ msgstr ""
 msgid "Condition Value"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:364
+#: app/Hooks/Handlers/AdminMenuHandler.php:372
 msgid "Contact Lists"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:355
+#: app/Hooks/Handlers/AdminMenuHandler.php:363
 msgid "Contact Tags"
 msgstr ""
 
@@ -172,15 +186,15 @@ msgstr ""
 msgid "Created At"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:300
+#: app/Hooks/Handlers/AdminMenuHandler.php:308
 msgid "Date"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:305
+#: app/Hooks/Handlers/AdminMenuHandler.php:313
 msgid "Date Range"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:320
+#: app/Hooks/Handlers/AdminMenuHandler.php:328
 msgid "Day of the week"
 msgstr ""
 
@@ -278,7 +292,7 @@ msgstr ""
 msgid "Fluent Snippets"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:341
+#: app/Hooks/Handlers/AdminMenuHandler.php:349
 msgid "FluentCRM"
 msgstr ""
 
@@ -286,7 +300,7 @@ msgstr ""
 msgid "FluentSnippets"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:328
+#: app/Hooks/Handlers/AdminMenuHandler.php:336
 msgid "Friday"
 msgstr ""
 
@@ -314,7 +328,7 @@ msgstr ""
 msgid "Grouped"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:253
+#: app/Hooks/Handlers/AdminMenuHandler.php:261
 msgid "Homepage"
 msgstr ""
 
@@ -365,7 +379,7 @@ msgstr ""
 msgid "Insert snippet between the head tags of your website (frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:345
+#: app/Hooks/Handlers/AdminMenuHandler.php:353
 msgid "Is a CRM Contact?"
 msgstr ""
 
@@ -377,11 +391,11 @@ msgstr ""
 msgid "Loading Snippets.."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:223
+#: app/Hooks/Handlers/AdminMenuHandler.php:231
 msgid "Logged-in"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:324
+#: app/Hooks/Handlers/AdminMenuHandler.php:332
 msgid "Monday"
 msgstr ""
 
@@ -417,7 +431,7 @@ msgstr ""
 msgid "OR"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:243
+#: app/Hooks/Handlers/AdminMenuHandler.php:251
 msgid "Page"
 msgstr ""
 
@@ -445,7 +459,7 @@ msgstr ""
 msgid "Please enter some code to save"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:262
+#: app/Hooks/Handlers/AdminMenuHandler.php:270
 msgid "Post Type"
 msgstr ""
 
@@ -457,7 +471,7 @@ msgstr ""
 msgid "Provide Name"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:114
+#: app/Hooks/Handlers/CodeHandler.php:115
 msgid "Return Data is not valid. Return data need to be string or number"
 msgstr ""
 
@@ -476,6 +490,14 @@ msgid ""
 "Run Javascript between the head tags of your website on all pages (frontend)."
 msgstr ""
 
+#: app/Hooks/Handlers/AdminMenuHandler.php:200
+msgid "Run Javascript in admin area (/wp-admin/) before the closing body tag."
+msgstr ""
+
+#: app/Hooks/Handlers/AdminMenuHandler.php:196
+msgid "Run Javascript in admin area (/wp-admin/)."
+msgstr ""
+
 #: trans.php:7 app/Services/Trans.php:12
 msgid "Safe Mode"
 msgstr ""
@@ -488,7 +510,7 @@ msgstr ""
 msgid "Safe Mode is Enabled"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:329
+#: app/Hooks/Handlers/AdminMenuHandler.php:337
 msgid "Saturday"
 msgstr ""
 
@@ -500,7 +522,7 @@ msgstr ""
 msgid "Scripts"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:256
+#: app/Hooks/Handlers/AdminMenuHandler.php:264
 msgid "Search page"
 msgstr ""
 
@@ -544,12 +566,12 @@ msgstr ""
 msgid "Shortcode copied to clipboard"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:125
+#: app/Hooks/Handlers/CodeHandler.php:126
 msgid "Shortcode could not be rendered"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:255
-#: app/Hooks/Handlers/AdminMenuHandler.php:289
+#: app/Hooks/Handlers/AdminMenuHandler.php:263
+#: app/Hooks/Handlers/AdminMenuHandler.php:297
 msgid "Single Post/Page/CPT"
 msgstr ""
 
@@ -567,11 +589,11 @@ msgstr ""
 msgid "Site Wide Header"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:97
+#: app/Hooks/Handlers/CodeHandler.php:98
 msgid "Snippet condition is not valid"
 msgstr ""
 
-#: app/Http/Controllers/SnippetsController.php:122
+#: app/Http/Controllers/SnippetsController.php:141
 msgid "Snippet created successfully"
 msgstr ""
 
@@ -595,11 +617,11 @@ msgstr ""
 msgid "Snippet Group"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:73
+#: app/Hooks/Handlers/CodeHandler.php:74
 msgid "Snippet has an error"
 msgstr ""
 
-#: app/Http/Controllers/SnippetsController.php:238
+#: app/Http/Controllers/SnippetsController.php:280
 msgid "Snippet has been deleted successfully"
 msgstr ""
 
@@ -611,19 +633,19 @@ msgstr ""
 msgid "Snippet Name"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:87
+#: app/Hooks/Handlers/CodeHandler.php:88
 msgid "Snippet run at is not shortcode"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:91
+#: app/Hooks/Handlers/CodeHandler.php:92
 msgid "Snippet status is not published"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:83
+#: app/Hooks/Handlers/CodeHandler.php:84
 msgid "Snippet type is not PHP Content"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:68
+#: app/Hooks/Handlers/CodeHandler.php:69
 msgid "Snippets are disabled"
 msgstr ""
 
@@ -655,7 +677,7 @@ msgstr ""
 msgid "Styles"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:330
+#: app/Hooks/Handlers/AdminMenuHandler.php:338
 msgid "Sunday"
 msgstr ""
 
@@ -673,16 +695,20 @@ msgstr ""
 msgid "Tags"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:269
+#: app/Hooks/Handlers/AdminMenuHandler.php:277
 msgid "Taxonomy Page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:276
+#: app/Hooks/Handlers/AdminMenuHandler.php:284
 msgid "Taxonomy Term Page"
 msgstr ""
 
-#: trans.php:93 app/Services/Trans.php:98
+#: app/Services/Trans.php:98
 msgid "The code should not start with <?php"
+msgstr ""
+
+#: trans.php:93
+msgid "The code should not starts with <?php"
 msgstr ""
 
 #: trans.php:89 app/Services/Trans.php:94
@@ -691,15 +717,15 @@ msgid ""
 "automatically. Please review your code, fix the issues and reactive."
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:127
+#: app/Hooks/Handlers/CodeHandler.php:128
 msgid "This message is only visible to site admin role"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:327
+#: app/Hooks/Handlers/AdminMenuHandler.php:335
 msgid "Thursday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:313
+#: app/Hooks/Handlers/AdminMenuHandler.php:321
 msgid "Time Range"
 msgstr ""
 
@@ -711,7 +737,7 @@ msgstr ""
 msgid "Try Reactivate"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:325
+#: app/Hooks/Handlers/AdminMenuHandler.php:333
 msgid "Tuesday"
 msgstr ""
 
@@ -719,7 +745,7 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:247
+#: app/Hooks/Handlers/AdminMenuHandler.php:255
 msgid "Type of page"
 msgstr ""
 
@@ -731,7 +757,7 @@ msgstr ""
 msgid "Updated At"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:284
+#: app/Hooks/Handlers/AdminMenuHandler.php:292
 msgid "URL"
 msgstr ""
 
@@ -739,15 +765,15 @@ msgstr ""
 msgid "Use Shortcode to display the return or print content of this snippet:"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:219
+#: app/Hooks/Handlers/AdminMenuHandler.php:227
 msgid "User"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:233
+#: app/Hooks/Handlers/AdminMenuHandler.php:241
 msgid "User Role"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:326
+#: app/Hooks/Handlers/AdminMenuHandler.php:334
 msgid "Wednesday"
 msgstr ""
 
