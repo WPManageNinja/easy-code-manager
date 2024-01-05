@@ -86,7 +86,7 @@ class FluentSnippetCondition
             if (!$currentContact) {
                 $tagIds = [];
             } else {
-                $tagIds = $currentContact->tags()->pluck('id')->toArray();
+                $tagIds = $currentContact->tags->pluck('id')->toArray();
             }
             return $this->checkValues($tagIds, $value, $operator);
         }
@@ -96,7 +96,7 @@ class FluentSnippetCondition
             if (!$currentContact) {
                 $listIds = [];
             } else {
-                $listIds = $currentContact->lists()->pluck('id')->toArray();
+                $listIds = $currentContact->lists->pluck('id')->toArray();
             }
             return $this->checkValues($listIds, $value, $operator);
         }
