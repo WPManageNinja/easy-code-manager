@@ -7,7 +7,7 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 6.0 or higher
 Requires PHP: 7.3 or higher
 Tested up to: 6.4
-Stable tag: 10.31
+Stable tag: 10.32
 
 Add high-performance Code Snippets in your WordPress. Add header and footer scripts, PHP Snippets, Custom CSS /JS snippets with advanced conditional logic, and more...
 
@@ -129,6 +129,12 @@ Absolutely not. Unlike other code snippets plugin, FluentSnippets does not use t
 4. Architectural Design Comparison
 
 == Changelog ==
+
+= 10.32 - Jan 05, 2024 =
+- Fixed FluentCRM Integration
+- Added Detailed Error Message on Code Snippets
+- Improvement on REST API
+- Improved UI & UX
 
 = 10.31 - December 18, 2023 =
 - Fixed a typo in the conditional logic
