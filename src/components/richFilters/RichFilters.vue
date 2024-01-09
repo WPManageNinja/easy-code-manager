@@ -67,7 +67,7 @@ export default {
         add_label: {
             type: String,
             default() {
-                return 'Add new filter to apply conditions for this snippet';
+                return this.$t('Add new filter to apply conditions for this snippet');
             }
         },
         filterOptions: {

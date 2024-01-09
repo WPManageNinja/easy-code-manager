@@ -89,8 +89,8 @@ class SnippetsController
         if ($meta['type'] == 'PHP') {
             // Check if the code starts with <?php
             if (preg_match('/^<\?php/', $code)) {
-                return new \WP_Error('invalid_code', 'Please remove <?php from the beginning of the code', [
-                    'code' => 'Please remove <?php from the beginning of the code'
+                return new \WP_Error('invalid_code', __('Please remove <?php from the beginning of the code', 'easy-code-manager'), [
+                    'code' => __('Please remove <?php from the beginning of the code', 'easy-code-manager')
                 ]);
             }
             $code = rtrim($code, '?>');
@@ -162,8 +162,8 @@ class SnippetsController
         if ($meta['type'] == 'PHP') {
             // Check if the code starts with <?php
             if (preg_match('/^<\?php/', $code)) {
-                return new \WP_Error('invalid_code', 'Please remove <?php from the beginning of the code', [
-                    'code' => 'Please remove <?php from the beginning of the code'
+                return new \WP_Error('invalid_code', __('Please remove <?php from the beginning of the code', 'easy-code-manager'), [
+                    'code' => __('Please remove <?php from the beginning of the code', 'easy-code-manager')
                 ]);
             }
 
@@ -177,7 +177,7 @@ class SnippetsController
         } else {
             $sanitizedCode = Helper::escCssJs($code);
             if ($sanitizedCode !== $code) {
-                return new \WP_Error('invalid_code', 'Please remove any any style or script tag from the code');
+                return new \WP_Error('invalid_code', __('Please remove any any style or script tag from the code', 'easy-code-manager'));
             }
         }
 
@@ -253,7 +253,7 @@ class SnippetsController
 
         return [
             'snippet' => $snippet,
-            'message' => 'Snippet status updated successfully'
+            'message' => __('Snippet status updated successfully', 'easy-code-manager')
         ];
     }
 
@@ -302,6 +302,6 @@ class SnippetsController
             return false;
         }
 
-        return new \WP_Error('invalid_request', 'You do not have permission to perform this action. Required Permission: unfiltered_html');
+        return new \WP_Error('invalid_request', __('You do not have permission to perform this action. Required Permission: unfiltered_html', 'easy-code-manager'));
     }
 }

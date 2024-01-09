@@ -69,7 +69,7 @@ class SettingsController
         $config = Helper::getIndexedConfig();
 
         if (!$config) {
-            return new \WP_Error('invalid_config', 'Config file could not be generated');
+            return new \WP_Error('invalid_config', __('Config file could not be generated', 'easy-code-manager'));
         }
 
         $config['meta']['auto_disable'] = sanitize_text_field($settings['auto_disable']);
@@ -141,7 +141,7 @@ class SettingsController
             return false;
         }
 
-        return new \WP_Error('invalid_request', 'You do not have permission to perform this action. Required Permission: unfiltered_html & manage_options');
+        return new \WP_Error('invalid_request', __('You do not have permission to perform this action. Required Permission: unfiltered_html & manage_options', 'easy-code-manager'));
     }
 
     public static function getRestOptions(\WP_REST_Request $request)
@@ -336,13 +336,13 @@ class SettingsController
 
         if (!isset($UrlMaps[$pluginSlug]) || (defined('DISALLOW_FILE_MODS') && DISALLOW_FILE_MODS)) {
 
-            return new \WP_Error('permission_error', 'Sorry, You can not install this plugin');
+            return new \WP_Error('permission_error', __('Sorry, You can not install this plugin', 'easy-code-manager'));
         }
 
         try {
             self::backgroundInstaller($plugin);
             return [
-                'message' => __('Plugin has been successfully installed.', 'fluent-smtp'),
+                'message' => __('Plugin has been successfully installed.', 'easy-code-manager'),
                 'info'    => $UrlMaps[$pluginSlug]
             ];
         } catch (\Exception $exception) {

@@ -4,7 +4,7 @@
             <el-collapse-item name="condition">
                 <template #title>
                     <h3 style="margin-right: 10px;">{{$t('Advanced Conditional Logic')}}</h3>
-                    <el-tooltip placement="top-start" class="box-item" effect="dark" content="Enable logic to add rules and limit where your snippet will be executed. Use multiple groups for different sets of rules.">
+                    <el-tooltip placement="top-start" class="box-item" effect="dark" :content="$t('Enable logic to add rules and limit where your snippet will be executed. Use multiple groups for different sets of rules.')">
                         <el-icon class="header-icon">
                             <el-icon><InfoFilled /></el-icon>
                         </el-icon>

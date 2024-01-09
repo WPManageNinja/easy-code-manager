@@ -16,20 +16,20 @@
                 <el-form v-model="settings" label-position="top">
                     <el-form-item>
                         <el-checkbox true-label="yes" false-label="no" v-model="settings.auto_publish">
-                            Activate Snippets as default action. If disabled then it will be saved as "Draft"
+                            {{ $t('Activate Snippets as default action. If disabled then it will be saved as "Draft"') }}
                         </el-checkbox>
                     </el-form-item>
                     <el-form-item>
                         <el-checkbox true-label="yes" false-label="no" v-model="settings.auto_disable">
-                            Automatically Disable Script on fatal error
+                            {{ $t('Automatically Disable Script on fatal error') }}
                         </el-checkbox>
                         <div style="color: red;" v-if="settings.auto_disable != 'yes'">
-                            We highly recommend to enable this option. If disabled, then your site may go down if there has any error on the scripts.
+                            {{ $t('We highly recommend to enable this option. If disabled, then your site may go down if there has any error on the scripts.') }}
                         </div>
                     </el-form-item>
                     <el-form-item>
                         <el-checkbox :disabled="true" true-label="yes" false-label="no" v-model="settings.remove_on_uninstall">
-                            Remove all data including <b>All Scripts</b> completely on plugin delete (coming soon)
+                            {{ $t('Remove all data including ') }} <b>{{ $t('All Scripts') }}</b> {{ $t(' completely on plugin delete (coming soon)') }}
                         </el-checkbox>
                     </el-form-item>
                 </el-form>
@@ -46,25 +46,25 @@
             </div>
             <div v-if="!fetching" style="padding: 15px 15px 25px;" class="box_body">
                 <p>
-                    FluentSnippets always try to deactivate any script if fatal error encountered. There are still
-                    situations when you might get locked due to any fatal error from your snippets.
+                    {{ $t('FluentSnippets always try to deactivate any script if fatal error encountered.There are still situations when you might get locked due to any fatal error from your snippets.') }}
                 </p>
                 <p>
-                    This doesn't happen often, but if it does, or if you just want to turn off all code snippets for a
-                    while, you can use a thing called safe mode.
+                    {{ $t('This doesn\'t happen often, but if it does, or if you just want to turn off all code snippets for a while, you can use a thing called safe mode.') }}
                 </p>
-                <p><b>To use safe mode</b>, use the following URL and once you visit the URL, FluentSnippets will
-                    disable all scripts temporarily.</p>
-                <b>Safe Mode URL</b>
+                <p>
+                    <b>{{ $t('To use safe mode') }}</b>{{ $t(', use the following URL and once you visit the URL, FluentSnippets will disable all scripts temporarily.') }}.
+                </p>
+                <b>{{ $t('Safe Mode URL') }}</b>
                 <el-input style="margin-top: 5px;" size="large" v-model="secret_url" :disabled="true">
                     <template #append>
-                        <el-button @click="copyItem(secret_url)">Copy</el-button>
+                        <el-button @click="copyItem(secret_url)">{{ $t('Copy') }}</el-button>
                     </template>
                 </el-input>
 
                 <h3>{{$t('Enable Safe Mode Programmatically:')}}</h3>
-                <p>If you want to enable safe mode programmatically, you can add the following code to your
-                    wp-config.php file</p>
+                <p>
+                    {{ $t('If you want to enable safe mode programmatically, you can add the following code to your wp-config.php file') }}
+                </p>
                 <code style="padding: 10px;">define('FLUENT_SNIPPETS_SAFE_MODE', true);</code>
             </div>
             <div v-else class="box_body">
@@ -80,17 +80,19 @@
                 </div>
             </div>
             <div v-if="!fetching" style="padding: 15px 15px 25px;" class="box_body">
-                <p>FluentSnippet does not force you to keep installing this plugin all the time. You can disable or
-                    uninstall this plugin and still keep running your snippets as a stand-alone mode.</p>
+                <p>
+                    {{ $t('FluentSnippet does not force you to keep installing this plugin all the time.You can disable or uninstall this plugin and still keep running your snippets as a stand-alone mode.') }}
+                </p>
                 <template v-if="is_standalone">
-                    <p style="font-weight: bold;">Standalone Mode is currently activated. Even if you uninstall or
-                        delete this plugin, Your scripts will still run.</p>
+                    <p style="font-weight: bold;">
+                        {{ $t('Standalone Mode is currently activated. Even if you uninstall or delete this plugin, Your scripts will still run.') }}
+                    </p>
                     <el-button v-loading="saving" :disabled="saving" size="small" @click="updateStandAloneMode('no')">
                         {{$t('Disable Standalone Mode')}}
                     </el-button>
                 </template>
                 <template v-else>
-                    <p>When using standalone mode your scripts will be executed from mu-plugins file.</p>
+                    <p>{{ $t('When using standalone mode your scripts will be executed from mu-plugins file.') }}</p>
                     <el-button v-loading="saving" :disabled="saving" type="primary"
                                @click="updateStandAloneMode('yes')">
                         {{$t('Enable Standalone Mode')}}
