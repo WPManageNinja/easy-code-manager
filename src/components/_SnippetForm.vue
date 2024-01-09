@@ -32,7 +32,7 @@
                     <div class="el-form-item__error">{{ errors.get('name') }}</div>
                 </el-form-item>
                 <el-form-item :label="$t('Description')">
-                    <el-input placeholder="Internal Description for this snippet" :rows="3" type="textarea" v-model="snippet.meta.description" />
+                    <el-input :placeholder="$t('Internal Description for this snippet')" :rows="3" type="textarea" v-model="snippet.meta.description" />
                 </el-form-item>
                 <el-form-item :label="$t('Snippet Group')">
                     <template #label>
@@ -40,7 +40,7 @@
                             {{$t('Snippet Group')}} <el-tooltip
                             class="box-item"
                             effect="dark"
-                            content="You may group your snippets for better organization and easy to find."
+                            :content="$t('You may group your snippets for better organization and easy to find.')"
                             placement="top-start"
                         >
                             <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
@@ -55,7 +55,7 @@
                             {{$t('Priority')}} <el-tooltip
                             class="box-item"
                             effect="dark"
-                            content="The lower the number, the earlier to execute the snippet."
+                            :content="$t('The lower the number, the earlier to execute the snippet.')"
                             placement="top-start"
                         >
                             <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
@@ -70,7 +70,7 @@
                             {{$t('Tags')}} <el-tooltip
                             class="box-item"
                             effect="dark"
-                            content="For easily filter your snippets."
+                            :content="$t('For easily filter your snippets.')"
                             placement="top-start"
                         >
                             <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>

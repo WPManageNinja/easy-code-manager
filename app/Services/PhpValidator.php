@@ -300,7 +300,7 @@ class PhpValidator
         if($output) {
             return new \WP_Error(
                 'has_buffer',
-                'PHP code should not have print / echo statement',
+                __('PHP code should not have print / echo statement', 'easy-code-manager'),
                 array(
                     'line' => 0,
                     'output' => $output
@@ -310,7 +310,7 @@ class PhpValidator
         if ($result) {
             return new \WP_Error(
                 'has_buffer',
-                'PHP code should not have print / echo statement',
+                __('PHP code should not have print / echo statement', 'easy-code-manager'),
                 array(
                     'line' => 0,
                     'output' => $result

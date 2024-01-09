@@ -19,7 +19,7 @@
             <div class="box_body">
                 <snippet-form v-if="appLoaded" :errors="errors" :is_new="true" :snippet="snippet">
                     <template v-slot:code_editor_before>
-                        <el-form-item label="Snippet Type">
+                        <el-form-item :label="$t('Snippet Type')">
                             <el-radio-group @change="snippetTypeChanged()" v-model="snippet.meta.type">
                                 <el-radio v-for="(snippetType, type) in appVars.snippet_types" :key="snippetType.value"
                                           :label="snippetType.value">
@@ -79,7 +79,7 @@ export default {
             }
             // check if snippet starts with <?php
             if (this.snippet.meta.type == 'PHP' && this.snippet.code.trim().startsWith('<?php')) {
-                this.$notify.error('The code should not start with <?php');
+                this.$notify.error(this.$t('The code should not start with <?php'));
                 return;
             }
 
@@ -93,7 +93,7 @@ export default {
                 })
                 .catch((errors) => {
                     if (typeof errors == 'string') {
-                        this.$notify.error('Something went wrong. Please check the errors.');
+                        this.$notify.error(this.$t('Something went wrong. Please check the errors.'));
                         this.$eventBus.emit("server_error", errors);
                         return;
                     }

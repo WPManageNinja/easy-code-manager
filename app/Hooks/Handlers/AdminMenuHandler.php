@@ -52,14 +52,14 @@ class AdminMenuHandler
         add_filter('admin_footer_text', function ($content) use ($indexConfig) {
             $ext = '';
             if (defined('FLUENT_SNIPPETS_RUNNING_MU')) {
-                $ext = '<b>Standalone (MU Mode) is active</b> ';
+                $ext = __('<b>Standalone (MU Mode) is active</b> ', 'easy-code-manager');
             }
 
             if (Arr::get($indexConfig, 'meta.legacy_status') == 'migrated') {
-                $ext .= 'FluentSnippets was known as Easy Code Manager.';
+                $ext .= __('FluentSnippets was known as Easy Code Manager.', 'easy-code-manager');
             }
 
-            return 'Thank you for using <a rel="noopener"  target="_blank" href="https://fluentsnippets.com">Fluent Snippets</a>.' . ' ' . $ext;
+            return __('Thank you for using ', 'easy-code-manager') . '<a rel="noopener"  target="_blank" href="https://fluentsnippets.com">Fluent Snippets</a>.' . ' ' . $ext;
         });
 
         wp_localize_script('fluent_snippets_app', 'fluentSnippetAdmin', [
@@ -402,11 +402,10 @@ class AdminMenuHandler
         }
         ?>
         <div class="notice notice-error">
-            <h3>Easy Code Manager is now FluentSnippets</h3>
-            <p>We have upgraded Easy Code Manager with lots of new features and everything is free & opensource. Please
-                <b>migrate and review your snippets</b> and experience unmatched performance.</p>
+            <h3><?php __('Easy Code Manager is now FluentSnippets', 'easy-code-manager') ?></h3>
+            <p><?php __('We have upgraded Easy Code Manager with lots of new features and everything is free & opensource. Please <b>migrate and review your snippets</b> and experience unmatched performance.</p>', 'easy-code-manager') ?>
             <p><a class="button button-primary"
-                  href="<?php echo esc_url(admin_url('admin.php?page=fluent-snippets#/')); ?>">Review Your Snippets</a>
+                  href="<?php echo esc_url(admin_url('admin.php?page=fluent-snippets#/')); ?>"><?php __('Review Your Snippets', 'easy-code-manager') ?></a>
             </p>
         </div>
         <?php

@@ -6,13 +6,10 @@
                     <div class="fss_header">About</div>
                     <div class="fss_content">
                         <p>
-                            <a href="https://fluentsnippets.com" target="_blank" rel="noopener">FluentSnippets</a> is
-                            The High-Performance Code Snippets Plugin for WordPress.
-                            It is built for speed and security. All code snippets are stored in the file system and load
-                            just like a regular feature plugin. No database query, it’s secure and native.
+                            <a href="https://fluentsnippets.com" target="_blank" rel="noopener">FluentSnippets</a> {{ $t('is The High - Performance Code Snippets Plugin for WordPress.It is built for speed and security.All code snippets are stored in the file system and load just like a regular feature plugin.No database query, it’s secure and native.') }}
                         </p>
                         <div>
-                            <p>FluentSMTP is built using the following open-sorce libraries and software</p>
+                            <p>{{ $t('FluentSMTP is built using the following open -sorce libraries and software') }}</p>
                             <ul style="list-style: disc;margin-left: 30px;">
                                 <li>VueJS</li>
                                 <li>Vue Router</li>
@@ -23,25 +20,24 @@
                                 <li>element-plus</li>
                             </ul>
                             <p>
-                                If you find an issue or have a suggestion please <a target="_blank" rel="nofollow"
-                                                                                    href="https://github.com/WPManageNinja/easy-code-manager/issues">open
-                                an issue on GitHub</a>.
-                                <br/>If you are a developer and would like to contribute to the project, Please <a
+                                {{ $t('If you find an issue or have a suggestion please ')}}<a target="_blank" rel="nofollow" href="https://github.com/WPManageNinja/easy-code-manager/issues">{{ $t('open an issue on GitHub')
+                                }}</a>.
+                                <br/>{{ $t('If you are a developer and would like to contribute to the project, Please ')}}<a
                                 target="_blank" rel="nofollow"
-                                href="https://github.com/WPManageNinja/easy-code-manager/">contribute
-                                on GitHub</a>.
+                                href="https://github.com/WPManageNinja/easy-code-manager/">{{
+                                    $t('contribute on GitHub')
+                                }}</a>.
                             </p>
-                            <p>Please <a target="_blank" rel="noopener" href="http://fluentsnippets.com/docs">read the
-                                documentation here</a></p>
+                            <p>{{ $t('Please ') }}<a target="_blank" rel="noopener" href="http://fluentsnippets.com/docs">{{
+                                    $t('read the documentation here')
+                                }}</a></p>
                         </div>
                     </div>
                 </div>
                 <div class="fss_about">
-                    <div class="fss_header">Contributors</div>
+                    <div class="fss_header">{{ $t('Contributors') }}</div>
                     <div class="fss_content">
-                        <p>FluentSnippets is powered by it's users like you. Feel free to contribute on Github. Thanks
-                            to
-                            all of our contributors.</p>
+                        <p>{{ $t('FluentSnippets is powered by it\'s users like you. Feel free to contribute on Github. Thanks to all of our contributors.') }}</p>
 
                         <a target="_blank"
                            href="https://github.com/WPManageNinja/easy-code-manager/graphs/contributors">
@@ -61,8 +57,8 @@
             </el-col>
             <el-col :sm="24" :md="12">
                 <div v-if="plugin || installed_info">
-                    <div v-loading="installing" element-loading-text="Installing... Please wait" class="fss_about">
-                        <div class="fss_header">Recommended Plugin</div>
+                    <div v-loading="installing" :element-loading-text="$t('Installing... Please wait')" class="fss_about">
+                        <div class="fss_header">{{ $t('Recommended Plugin') }}</div>
                         <div class="fss_content">
                             <div v-if="installed_info" class="install_success">
                                 <h3>{{ installed_message }}</h3>
@@ -83,7 +79,7 @@
                                         </el-button>
                                         <a v-else :href="plugin.plugin_url" target="_blank" rel="noopener"
                                            class="el-button el-button--success fss_ninjatables_btn">
-                                            <span>View {{ plugin.title }}</span>
+                                            <span>{{ $t('View') }} {{ plugin.title }}</span>
                                         </a>
                                     </div>
                                 </div>
@@ -92,30 +88,23 @@
                     </div>
                 </div>
                 <div class="fss_about">
-                    <div class="fss_header">Community</div>
+                    <div class="fss_header">{{ $t('Community') }}</div>
                     <div class="fss_content">
-                        <p>FluentSnippets is powered by community. We listen to our community users and build products
-                            that
-                            add values to businesses and save time.</p>
-                        <p>Join our communities and participate in great conversations.</p>
+                        <p>{{ $t('FluentSnippets is powered by community.We listen to our community users and build products that add values to businesses and save time.') }}</p>
+                        <p>{{ $t('Join our communities and participate in great conversations.') }}</p>
                         <ul style="list-style: disc;margin-left: 30px;">
                             <li>
-                                <a target="_blank" rel="nofollow" href="https://www.facebook.com/groups/fluentforms">Join
-                                    FluentForms Facebook Community</a>
+                                <a target="_blank" rel="nofollow" href="https://www.facebook.com/groups/fluentforms">{{ $t('Join FluentForms Facebook Community') }}</a>
                             </li>
                             <li>
-                                <a target="_blank" rel="nofollow" href="https://www.facebook.com/groups/fluentcrm">Join
-                                    FluentCRM Facebook Community</a>
+                                <a target="_blank" rel="nofollow" href="https://www.facebook.com/groups/fluentcrm">{{ $t('Join FluentCRM Facebook Community') }}</a>
                             </li>
                             <li>
                                 <a target="_blank" rel="nofollow"
-                                   href="https://wordpress.org/support/plugin/easy-code-manager/reviews/?filter=5">Write
-                                    a
-                                    review (really appreciate 😊)</a>
+                                   href="https://wordpress.org/support/plugin/easy-code-manager/reviews/?filter=5">{{ $t('Write a review(really appreciate 😊)') }}</a>
                             </li>
                             <li>
-                                <a target="_blank" rel="noopener" href="http://fluentsnippets.com/docs">Read the
-                                    documentation</a>
+                                <a target="_blank" rel="noopener" href="http://fluentsnippets.com/docs">{{ $t('Read the documentation') }}</a>
                             </li>
                         </ul>
                     </div>
@@ -136,37 +125,36 @@ export default {
                 fluentsmtp: {
                     slug: 'fluent-smtp',
                     title: 'Fluent SMTP',
-                    subtitle: 'WP Mail SMTP, Amazon SES, SendGrid, MailGun and Any SMTP Connector Plugin',
-                    description: '<p><a href="https://wordpress.org/plugins/fluent-smtp" target="_blank" rel="nofollow">FluentSMTP</a> plugin fixes your email delivery issue by connecting WordPress Mail with your email service providers. These integrations are native, so it will send the emails super-fast. It\'s free and will be always free.</p>',
-                    btn_text: 'Install Fluent SMTP (Free)',
+                    subtitle: this.$t('WP Mail SMTP, Amazon SES, SendGrid, MailGun and Any SMTP Connector Plugin'),
+                    description: `<p><a href="https://wordpress.org/plugins/fluent-smtp" target="_blank" rel="nofollow">FluentSMTP</a> ${ this.$t(' plugin fixes your email delivery issue by connecting WordPress Mail with your email service providers. These integrations are native, so it will send the emails super-fast. It\'s free and will be always free.')}</p>`,
+                    btn_text: this.$t('Install Fluent SMTP (Free)'),
                     btn_class: '',
                     plugin_url: 'https://wordpress.org/plugins/fluent-smtp'
                 },
                 fluentform: {
                     slug: 'fluentform',
                     title: 'Fluent Forms',
-                    subtitle: 'Fastest Contact Form Builder Plugin for WordPress',
-                    description: '<p><a href="https://wordpress.org/plugins/fluentform" target="_blank" rel="nofollow">Fluent Forms</a> is the ultimate user-friendly, fast, customizable drag-and-drop WordPress Contact Form Plugin that offers you all the premium features, plus many more completely unique additional features.</p>',
-                    btn_text: 'Install Fluent Forms (Free)',
+                    subtitle: this.$t('Fastest Contact Form Builder Plugin for WordPress'),
+                    description: `<p><a href="https://wordpress.org/plugins/fluentform" target="_blank" rel="nofollow">Fluent Forms</a> ${ this.$t(' is the ultimate user-friendly, fast, customizable drag-and-drop WordPress Contact Form Plugin that offers you all the premium features, plus many more completely unique additional features.') }</p>`,
+                    btn_text: this.$t('Install Fluent Forms (Free)'),
                     btn_class: '',
                     plugin_url: 'https://wordpress.org/plugins/fluentform'
                 },
                 fluent_crm: {
                     slug: 'fluent-crm',
                     title: 'FluentCRM',
-                    subtitle: 'Email Marketing Automation and CRM Plugin for WordPress',
-                    description: '<p><a href="https://wordpress.org/plugins/fluent-crm/" target="_blank" rel="nofollow">FluentCRM</a> is the best and complete feature-rich Email Marketing & CRM solution. It is also the simplest and fastest CRM and Marketing Plugin on WordPress. Manage your customer relationships, build your email lists, send email campaigns, build funnels, and make more profit and increase your conversion rates. (Yes, It’s Free!)</p>',
-                    btn_text: 'Install FluentCRM (Free)',
+                    subtitle: this.$t('Email Marketing Automation and CRM Plugin for WordPress'),
+                    description: `<p><a href="https://wordpress.org/plugins/fluent-crm/" target="_blank" rel="nofollow">FluentCRM</a> ${ this.$t('is the best and complete feature-rich Email Marketing & CRM solution. It is also the simplest and fastest CRM and Marketing Plugin on WordPress. Manage your customer relationships, build your email lists, send email campaigns, build funnels, and make more profit and increase your conversion rates. (Yes, It’s Free!)') }</p>`,
+                    btn_text: this.$t('Install FluentCRM (Free)'),
                     btn_class: 'fss_fluentcrm_btn',
                     plugin_url: 'https://wordpress.org/plugins/fluent-crm/'
                 },
                 ninja_tables: {
                     slug: 'ninja-tables',
                     title: 'Ninja Tables',
-                    subtitle: 'Best WP DataTables Plugin for WordPress',
-                    description: '<p>Looking for a WordPress table plugin for your website? Then you’re in the right place.</p>' +
-                        '<p>Meet <a href="https://wordpress.org/plugins/ninja-tables/" target="_blank" rel="nofollow">Ninja Tables</a>, the best WP table plugin that comes with all the solutions to the problems you face while creating tables on your posts/pages.</p>',
-                    btn_text: 'Install Ninja Tables (Free)',
+                    subtitle: this.$t('Best WP DataTables Plugin for WordPress'),
+                    description: `<p>${ this.$t('Looking for a WordPress table plugin for your website? Then you’re in the right place.') }</p><p>${ this.$t('Meet ') }<a href="https://wordpress.org/plugins/ninja-tables/" target="_blank" rel="nofollow">Ninja Tables</a>${this.$t(', the best WP table plugin that comes with all the solutions to the problems you face while creating tables on your posts/pages.')}</p>`,
+                    btn_text: this.$t('Install Ninja Tables (Free)'),
                     btn_class: 'fss_ninjatables_btn',
                     plugin_url: 'https://wordpress.org/plugins/ninja-tables/'
                 }

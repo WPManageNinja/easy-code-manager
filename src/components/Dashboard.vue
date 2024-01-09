@@ -8,7 +8,7 @@
                 <div style="display: flex;" class="box_actions">
                     <el-input clearable
                               style="width: 200px; margin-left: 10px;"
-                              size="small" type="text" v-model="search" placeholder="Search">
+                              size="small" type="text" v-model="search" :placeholder="$t('Search')">
                         <template #append>
                             <el-button :icon="SearchIcon"/>
                         </template>
@@ -25,8 +25,8 @@
             <div v-else-if="is_empty && !loading">
                 <div class="box_body">
                     <div style="padding: 20px 0; text-align: center;">
-                        <h1 style="margin-bottom: 20px;">Thanks for installing FluentSnippets</h1>
-                        <p>The High-Performance Code Snippets Plugin for WP</p>
+                        <h1 style="margin-bottom: 20px;">{{ $t('Thanks for installing FluentSnippets') }}</h1>
+                        <p>{{ $t('The High - Performance Code Snippets Plugin for WP') }}</p>
                         <el-button @click="createSnippet()" size="large" type="primary">
                             {{ $t('Create Your First Snippet') }}
                         </el-button>
@@ -54,13 +54,13 @@
                             <el-radio-button label="table">{{ $t('Table') }}</el-radio-button>
                         </el-radio-group>
                         <el-select style="margin-right: 10px;" size="small" class="snip_ac_item"
-                                   clearable placeholder="All tags"
+                                   clearable :placeholder="$t('All tags')"
                                    filterable v-model="selectedTag">
                             <el-option v-for="tag in tags" :key="tag" :label="tag" :value="tag"></el-option>
                         </el-select>
                         <el-popover :visible="showingPop" placement="bottom-end" width="auto">
                             <div class="fct_filter_items">
-                                <h3>Sort By</h3>
+                                <h3>{{ $t('Sort By') }}</h3>
                                 <div style="max-height: 150px; overflow: auto;">
                                     <el-radio-group class="fct_radios_blocks" v-model="sorting.sortBy">
                                         <el-radio v-for="column in sortingOrderColumns" :key="column.value"
@@ -126,7 +126,7 @@
                                 </router-link>
                                 <span class="fc_middot">|</span>
                                 <el-popconfirm width="220" @confirm="confirmDeleteSnippet(scope.row)"
-                                               title="Are you sure to delete this?">
+                                               :title="$t('Are you sure to delete this?')">
                                     <template #reference>
                                         <span class="fsnip_delete">{{ $t('delete') }}</span>
                                     </template>
@@ -300,7 +300,7 @@
                     <div v-if="!snippets || !snippets.length">
                         <div class="box_body">
                             <div style="padding: 20px 0; text-align: center;">
-                                <p style="margin-bottom: 20px;">Sorry, no snippets found based on your filter.</p>
+                                <p style="margin-bottom: 20px;">{{ $t('Sorry, no snippets found based on your filter.') }}</p>
                             </div>
                         </div>
                     </div>
