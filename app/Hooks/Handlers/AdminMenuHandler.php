@@ -37,6 +37,47 @@ class AdminMenuHandler
 
         [$tags, $groups] = (new Snippet())->getAllSnippetTagsGroups();
 
+        add_action('wp_print_scripts', function () {
+
+            $isSkip = apply_filters('fluent_snippets/skip_no_conflict', false);
+
+            if ($isSkip) {
+                return;
+            }
+
+            global $wp_scripts;
+            if (!$wp_scripts) {
+                return;
+            }
+
+            $approvedSlugs = apply_filters('fluent_snippets_asset_listed_slugs', [
+                '\/gutenberg\/'
+            ]);
+
+            $approvedSlugs[] = 'easy-code-manager';
+
+            $approvedSlugs = array_unique($approvedSlugs);
+
+            $approvedSlugs = implode('|', $approvedSlugs);
+
+            $pluginUrl = plugins_url();
+
+            $pluginUrl = str_replace(['http:', 'https:'], '', $pluginUrl);
+
+            foreach ($wp_scripts->queue as $script) {
+                if (empty($wp_scripts->registered[$script]) || empty($wp_scripts->registered[$script]->src)) {
+                    continue;
+                }
+
+                $src = $wp_scripts->registered[$script]->src;
+                $isMatched = (strpos($src, $pluginUrl) !== false) && !preg_match('/' . $approvedSlugs . '/', $src);
+                if (!$isMatched) {
+                    continue;
+                }
+                wp_dequeue_script($wp_scripts->registered[$script]->handle);
+            }
+        });
+
         wp_enqueue_script('fluent_snippets_app', FLUENT_SNIPPETS_PLUGIN_URL . 'dist/app.js', ['jquery'], FLUENT_SNIPPETS_PLUGIN_VERSION, true);
 
         $indexConfig = Helper::getIndexedConfig();

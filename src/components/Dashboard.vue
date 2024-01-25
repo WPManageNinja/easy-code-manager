@@ -253,7 +253,7 @@
                                 {{ snippet.name }}
                                 <template v-if="snippet.error">
                                     <span style="background: red; color: white;"
-                                          class="fsn_label">{{ t('Error:') }} </span>
+                                          class="fsn_label">{{ $t('Error:') }} </span>
                                     <span
                                         style="margin-right: 10px; color: red;">{{
                                             limitChars(snippet.error, 100)

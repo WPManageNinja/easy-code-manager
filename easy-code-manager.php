@@ -8,7 +8,7 @@
  * License:      GPL-2.0-or-later
  * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:  easy-code-manager
- * Version:     10.32
+ * Version:     10.33
  * Requires PHP: 7.3
  * Requires at least: 6.0
  * Domain Path:  /language
@@ -25,7 +25,7 @@ if (defined('FLUENT_SNIPPETS_PLUGIN_PATH')) {
 
 define('FLUENT_SNIPPETS_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('FLUENT_SNIPPETS_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('FLUENT_SNIPPETS_PLUGIN_VERSION', '10.32');
+define('FLUENT_SNIPPETS_PLUGIN_VERSION', '10.33');
 
 class FluentCodeSnippetsBoot
 {
