@@ -11,6 +11,20 @@ class Helper
         return WP_CONTENT_DIR . '/fluent-snippet-storage';
     }
 
+    public static function getCachedDir()
+    {
+        $dir = self::getStorageDir() . '/cached';
+
+        // check if the directory exists
+        if (!is_file($dir)) {
+            wp_mkdir_p($dir);
+            // add an empty index.php file to that dir
+            file_put_contents($dir.'/index.php', '<?php // silence is golden');
+        }
+
+        return $dir;
+    }
+
     public static function validateCode($language, $code)
     {
         if (!$code) {
@@ -86,7 +100,8 @@ class Helper
             'run_at',
             'priority',
             'group',
-            'condition'
+            'condition',
+            'load_as_file'
         ];
 
         $snippets = (new \FluentSnippets\App\Model\Snippet())->get();
@@ -188,42 +203,6 @@ PHP;
         $cachedFile = self::getStorageDir() . '/index.php';
 
         if (!is_file($cachedFile)) {
-
-
-            // @todo: remove this migration at mid january 2024
-
-            // maybe we have files in uploads directory
-            $oldLocationIndex = wp_upload_dir()['basedir'] . '/fluent-snippet-storage/index.php';
-            if (!is_file($oldLocationIndex)) {
-                return [];
-            }
-
-            if (!class_exists('\WP_Filesystem')) {
-                require_once(ABSPATH . 'wp-admin/includes/file.php');
-            }
-
-            // Initialize the WordPress filesystem
-            WP_Filesystem();
-            global $wp_filesystem;
-
-            // Define the source and destination paths
-            $source = wp_upload_dir()['basedir'] . '/fluent-snippet-storage';
-            $destination = self::getStorageDir();
-
-            // Check if the source directory exists
-            if ($wp_filesystem->is_dir($source)) {
-                // Create destination directory if it doesn't exist
-                if (!$wp_filesystem->is_dir($destination)) {
-                    $wp_filesystem->mkdir($destination);
-                }
-
-                // Move the folder
-                if (copy_dir($source, $destination)) {
-                    // Optionally, delete the original folder after copying
-                    $wp_filesystem->delete($source, true);
-                }
-            }
-
             return [];
         }
 
@@ -325,6 +304,10 @@ PHP;
     public static function sanitizeMetaValue($value)
     {
         if (is_numeric($value)) {
+            return $value;
+        }
+
+        if (!$value) {
             return $value;
         }
 

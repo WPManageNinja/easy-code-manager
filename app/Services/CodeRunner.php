@@ -78,7 +78,8 @@ class CodeRunner
             switch ($type) {
                 case 'PHP':
                     $conditionSettings = $snippet['condition'];
-                    $hookName = 'init';
+                    $hookName = 'wp';
+
                     if (empty($conditionSettings) || empty($conditionSettings['status']) || $conditionSettings['status'] != 'yes' || empty($conditionSettings['items'])) {
                         $hookName = 'setup_theme';
                     }
@@ -103,15 +104,33 @@ class CodeRunner
                 case 'js':
                     $runAt = $this->get($snippet, 'run_at', 'wp_footer');
                     if (in_array($runAt, ['wp_head', 'wp_footer', 'admin_head', 'admin_footer'])) {
-                        add_action($runAt, function () use ($file, $snippet, $conditionalClass) {
+
+                        $loadUrl = '';
+                        $isFooter = false;
+
+                        if ($this->get($snippet, 'load_as_file') == 'yes') {
+                            $cachedFile = str_replace('.php', '.js', $fileName);
+                            $loadUrl = $this->getCachedFileUrl($cachedFile);
+                            if ($loadUrl) {
+                                $isFooter = ($runAt == 'wp_footer' || $runAt == 'admin_footer');
+                                $runAt = ($runAt == 'admin_head' || $runAt == 'admin_footer') ? 'admin_enqueue_scripts' : 'wp_enqueue_scripts';
+                            }
+                        }
+
+                        add_action($runAt, function () use ($file, $snippet, $conditionalClass, $loadUrl, $isFooter) {
                             if (!$conditionalClass->evaluate($snippet['condition'])) {
                                 return;
                             }
 
-                            $code = $this->parseBlock(file_get_contents($file), true);
-                            ?>
-                            <script><?php echo $this->escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></script>
-                            <?php
+                            if ($loadUrl) {
+                                $snippetScriptName = str_replace('.php', '', $snippet['file_name']);
+                                wp_enqueue_script('fluent_snippet_' . $snippetScriptName, $loadUrl, [], strtotime($snippet['updated_at']), $isFooter);
+                            } else {
+                                $code = $this->parseBlock(file_get_contents($file), true);
+                                ?>
+                                <script><?php echo $this->escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></script>
+                                <?php
+                            }
                         }, $this->get($snippet, 'priority', 10));
                     }
                     break;
@@ -123,15 +142,32 @@ class CodeRunner
                         $runAt = 'wp_head';
                     }
 
-                    add_action($runAt, function () use ($file, $snippet, $conditionalClass) {
+                    $loadUrl = '';
+                    if ($this->get($snippet, 'load_as_file') == 'yes') {
+                        $cachedFile = str_replace('.php', '.css', $fileName);
+                        $loadUrl = $this->getCachedFileUrl($cachedFile);
+                        if ($loadUrl) {
+                            $runAt = ($runAt == 'admin_head') ? 'admin_enqueue_scripts' : 'wp_enqueue_scripts';
+                        }
+                    }
+
+                    add_action($runAt, function () use ($file, $snippet, $conditionalClass, $loadUrl) {
                         if (!$conditionalClass->evaluate($snippet['condition'])) {
                             return;
                         }
-                        $code = $this->parseBlock(file_get_contents($file), true);
-                        ?>
-                        <style><?php echo $this->escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></style>
-                        <?php
+
+                        if ($loadUrl) {
+                            $snippetScriptName = str_replace('.php', '', $snippet['file_name']);
+                            wp_enqueue_style('fluent_snippet_' . $snippetScriptName, $loadUrl, [], strtotime($snippet['updated_at']));
+                        } else {
+                            $code = $this->parseBlock(file_get_contents($file), true);
+                            ?>
+                            <style><?php echo $this->escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></style>
+                            <?php
+                        }
+
                     }, $this->get($snippet, 'priority', 10));
+
                     break;
                 case 'php_content':
                     $runAt = $snippet['run_at'];
@@ -250,5 +286,16 @@ class CodeRunner
         // remove opening js tag and closing js tag maybe <script type="text/javascript"> too
         $code = preg_replace('/<style[^>]*>/', '', $code);
         return preg_replace('/<\/style>/', '', $code);
+    }
+
+    private function getCachedFileUrl($fileName)
+    {
+        $file = $this->storageDir . '/cached/' . $fileName;
+
+        if (!file_exists($file)) {
+            return false;
+        }
+
+        return content_url('/fluent-snippet-storage/cached/' . $fileName);
     }
 }

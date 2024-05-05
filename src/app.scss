@@ -519,14 +519,6 @@ ul.fls_listed_data {
 
   .cm-editor::before {
     content: "<!-- begin content (HTML / PHP / Mixed) -->";
-    color: #6b6b6b;
-    font-size: 14px;
-    font-weight: normal;
-    display: block;
-    margin-bottom: 10px;
-    position: absolute;
-    top: 0;
-    left: 40px;
   }
 
   .cm-editor::after {
@@ -553,14 +545,6 @@ ul.fls_listed_data {
 
   .cm-editor::before {
     content: "<style>";
-    color: #6b6b6b;
-    font-size: 14px;
-    font-weight: normal;
-    display: block;
-    margin-bottom: 10px;
-    position: absolute;
-    top: 0;
-    left: 40px;
   }
 
   .cm-editor::after {
@@ -576,6 +560,21 @@ ul.fls_listed_data {
   }
 }
 
+.cm-editor::before {
+  color: #6b6b6b;
+  font-size: 14px;
+  font-weight: normal;
+  display: block;
+  margin-bottom: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #313235;
+  z-index: 999;
+  padding-left: 45px;
+}
+
 .fsnip_code_js {
   .cm-scroller {
     padding-top: 35px;
@@ -587,14 +586,6 @@ ul.fls_listed_data {
 
   .cm-editor::before {
     content: "<script>";
-    color: #6b6b6b;
-    font-size: 14px;
-    font-weight: normal;
-    display: block;
-    margin-bottom: 10px;
-    position: absolute;
-    top: 0;
-    left: 40px;
   }
 
   .cm-editor::after {

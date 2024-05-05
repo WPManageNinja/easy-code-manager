@@ -8,7 +8,7 @@ use FluentSnippets\App\Helpers\Helper;
 class Snippet
 {
 
-    private $ars = [];
+    private $args = [];
 
     public function __construct($args = [])
     {
@@ -274,10 +274,15 @@ class Snippet
         }
 
         $docBlockString = $this->parseInputMeta($metaData, true);
-
         $fullCode = $docBlockString . $code;
 
         file_put_contents($file, $fullCode);
+
+        $type = Arr::get($metaData, 'type');
+
+        if ($type == 'css' || $type == 'js') {
+            $this->maybeCacheCssJs($fileName, $metaData, $code);
+        }
 
         return $fileName;
     }
@@ -317,6 +322,8 @@ class Snippet
         $fullCode = $docBlockString . $code;
 
         file_put_contents($file, $fullCode);
+
+        $this->maybeCacheCssJs($fileName, $metaData, $code);
 
         return $fileName;
     }
@@ -360,14 +367,15 @@ class Snippet
         $docBlock = explode('*', $docBlock);
         // Explode by : and get the key and value
         $docBlockArray = [
-            'name'        => '',
-            'status'      => '',
-            'tags'        => '',
-            'description' => '',
-            'type'        => '',
-            'run_at'      => '',
-            'group'       => '',
-            'condition'   => ''
+            'name'         => '',
+            'status'       => '',
+            'tags'         => '',
+            'description'  => '',
+            'type'         => '',
+            'run_at'       => '',
+            'group'        => '',
+            'condition'    => '',
+            'load_as_file' => ''
         ];
 
         foreach ($docBlock as $key => $value) {
@@ -413,20 +421,21 @@ class Snippet
     private function parseInputMeta($metaData, $convertString = false)
     {
         $metaDefaults = [
-            'description' => '',
-            'tags'        => '',
-            'group'       => '',
-            'name'        => 'Snippet Created @ ' . current_time('mysql'),
-            'type'        => 'PHP',
-            'status'      => 'draft',
-            'created_by'  => get_current_user_id(),
-            'created_at'  => date('Y-m-d H:i:s'),
-            'updated_at'  => date('Y-m-d H:i:s'),
-            'is_valid'    => 1,
-            'updated_by'  => get_current_user_id(),
-            'priority'    => 10,
-            'run_at'      => '',
-            'condition'   => [
+            'description'  => '',
+            'tags'         => '',
+            'group'        => '',
+            'name'         => 'Snippet Created @ ' . current_time('mysql'),
+            'type'         => 'PHP',
+            'status'       => 'draft',
+            'created_by'   => get_current_user_id(),
+            'created_at'   => date('Y-m-d H:i:s'),
+            'updated_at'   => date('Y-m-d H:i:s'),
+            'is_valid'     => 1,
+            'updated_by'   => get_current_user_id(),
+            'priority'     => 10,
+            'run_at'       => '',
+            'load_as_file' => '',
+            'condition'    => [
                 'status' => 'no',
                 'run_if' => 'assertive',
                 'items'  => [[]]
@@ -456,5 +465,26 @@ class Snippet
         $docBlockString .= PHP_EOL . '*/' . PHP_EOL . '?>' . PHP_EOL . '<?php if (!defined("ABSPATH")) { return;} // <Internal Doc End> ?>' . PHP_EOL;
 
         return $docBlockString;
+    }
+
+    private function maybeCacheCssJs($fileName, $metaData = [], $code = '')
+    {
+        // type
+        $type = Arr::get($metaData, 'type');
+        if ($type == 'css' || $type == 'js') {
+            // get file name without extension
+            $cacheFileName = str_replace('.php', '.' . $type, $fileName);
+            $fullFileName = Helper::getCachedDir() . '/' . $cacheFileName;
+            if (Arr::get($metaData, 'load_as_file') == 'yes') {
+                file_put_contents($fullFileName, $code);
+                return $cacheFileName;
+            }
+
+            if (file_exists($fullFileName)) {
+                @unlink($fullFileName);
+            }
+        }
+
+        return false;
     }
 }

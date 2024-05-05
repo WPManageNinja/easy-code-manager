@@ -79,6 +79,27 @@
                     </template>
                     <tag-creator v-model="snippet.meta.tags" />
                 </el-form-item>
+
+                <el-form-item v-if="snippet.meta.type == 'css' || snippet.meta.type == 'js'"  class="snippet_loading_method">
+                    <template #label>
+                        <span>
+                            {{$t('Load as Stylesheet File')}} <el-tooltip
+                            class="box-item"
+                            effect="dark"
+                            content="if you enable this then the snippet will be loaded as a stylesheet file."
+                            placement="top-start"
+                        >
+                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                          </el-tooltip>
+                        </span>
+                    </template>
+
+                    <el-checkbox true-label="yes" false-label="no" v-model="snippet.meta.load_as_file">
+                        {{$t('Enable Load as Stylesheet File')}}
+                    </el-checkbox>
+
+                </el-form-item>
+
             </el-col>
         </el-row>
     </el-form>
