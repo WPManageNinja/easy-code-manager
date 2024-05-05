@@ -1,15 +1,15 @@
-=== FluentSnippets - The High-Performance file based Custom Code Snippet Plugin ===
+=== FluentSnippets - The High-Performance file based Custom Code Snippets Plugin ===
 Contributors: techjewel
 Author URL: https://fluentsnippets.com
-Tags: codes, functions, custom codes, php, footer
+Tags: wp codes, functions, custom codes, php codes, code snippets
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 6.0 or higher
-Requires PHP: 7.3 or higher
-Tested up to: 6.4
-Stable tag: 10.33
+Requires PHP: 7.3
+Tested up to: 6.5
+Stable tag: 10.34
 
-Add high-performance Code Snippets in your WordPress. Add header and footer scripts, PHP Snippets, Custom CSS /JS snippets with advanced conditional logic, and more...
+Add header and footer scripts, PHP Snippets, Custom CSS /JS snippets with advanced conditional logic, and more...
 
 == Description ==
 
@@ -33,6 +33,8 @@ With this native design, FluentSnippets is native, secure by design, and the mos
 - **Automatic Error Handling:** The automatic error hander prevents common errors when adding custom snippets to ensure they never break your site.
 - **Custom Shortcode:** With custom shortcode of your snippets, you can create custom dynamic content blocks and use them across your site and manage them.
 - **Stand-alone Mode:** The most interesting feature is the Stand-alone Mode. With this feature, you can add your snippets, activate the standalone mode, and then you can uninstall and delete the plugin and your snippets will still run via mu-plugins architecture and when you reactivate the plugin you can manage your snippets as before.
+
+[youtube https://www.youtube.com/watch?v=-bQPZ23LSdQ]
 
 
 ### Powerful Smart Conditional Logics
@@ -75,6 +77,8 @@ With this native design, FluentSnippets is native, secure by design, and the mos
 - Custom Javascript codes
 - Dynamic Content to different types of places like before/after post content or footer
 - Dynamic Shortcode
+
+[youtube https://www.youtube.com/watch?v=5E1w4mGe3xw]
 
 == Other Plugins By The Same Team ==
 <ul>
@@ -129,6 +133,11 @@ Absolutely not. Unlike other code snippets plugin, FluentSnippets does not use t
 4. Architectural Design Comparison
 
 == Changelog ==
+
+= 10.34 - May 05, 2024 =
+- Fixed Script Conditions Issues
+- Added Loading as File for Snippets
+- Fixed PHP 8.x Compatibility Issues
 
 = 10.33 - Jan 25, 2024 =
 - Fixed Snippet Error Issue Fixed

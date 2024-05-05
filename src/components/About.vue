@@ -39,7 +39,7 @@
                 <div class="fss_about">
                     <div class="fss_header">Contributors</div>
                     <div class="fss_content">
-                        <p>FluentSnippets is powered by it's users like you. Feel free to contribute on Github. Thanks
+                        <p>FluentSnippets is powered by it's users like you. <a target="_blank" rel="noopener" href="https://github.com/WPManageNinja/easy-code-manager">Feel free to contribute on Github</a>. Thanks
                             to
                             all of our contributors.</p>
 
