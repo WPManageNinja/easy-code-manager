@@ -209,8 +209,9 @@
                                     </span>
                                     <span class="fsn_label">
                                         <el-icon>
-                                                <svg viewBox="0 0 8 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path
-                                                d="M3 0l-3 5h2v3l3-5h-2v-3z" transform="translate(1)"></path></svg>
+                                                <svg viewBox="0 0 8 8" fill="currentColor"
+                                                     xmlns="http://www.w3.org/2000/svg"><path
+                                                    d="M3 0l-3 5h2v3l3-5h-2v-3z" transform="translate(1)"></path></svg>
                                         </el-icon>
                                         {{ getRunAtName(snippet.run_at) }}
                                     </span>
@@ -264,7 +265,8 @@
                                 </span>
                                 <span class="fsn_label">
                                     <el-icon>
-                                            <svg viewBox="0 0 8 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path
+                                            <svg viewBox="0 0 8 8" fill="currentColor"
+                                                 xmlns="http://www.w3.org/2000/svg"><path
                                                 d="M3 0l-3 5h2v3l3-5h-2v-3z" transform="translate(1)"></path></svg>
                                     </el-icon>
                                     {{ getRunAtName(snippet.run_at) }}
@@ -423,6 +425,15 @@ export default {
                 .then(response => {
                     this.rawSnippets = response.snippets.data;
                     this.paginate.total = response.snippets.total;
+
+                    if (response.tags) {
+                        this.tags = response.tags;
+                        this.appVars.tags = response.tags;
+                    }
+
+                    if (response.groups) {
+                        this.appVars.groups = response.groups;
+                    }
                 })
                 .catch((errors) => {
                     this.$handleError(errors);

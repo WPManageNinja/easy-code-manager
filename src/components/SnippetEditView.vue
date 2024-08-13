@@ -18,7 +18,7 @@
                     </el-breadcrumb>
                 </div>
                 <div  v-loading="saving" v-if="snippet" style="display: flex;" class="box_actions">
-                    <el-button @click="saveCode()" :disabled="loading || saving" type="success">
+                    <el-button title="Command / CTR + S to save" @click="saveCode()" :disabled="loading || saving" type="success">
                         {{$t('Update Snippet')}}
                     </el-button>
                     <el-button v-if="!snippet.error" @click="toggleStatus()">
@@ -132,10 +132,22 @@ export default {
         toggleStatus() {
             this.snippet.meta.status = (this.snippet.meta.status == 'published') ? 'draft' : 'published';
             this.saveCode();
+        },
+        maybeKeyboardSave(e) {
+            if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) && e.keyCode == 83) {
+                e.preventDefault();
+                this.saveCode();
+            }
         }
     },
     created() {
         this.fetchSnippet();
+        // save the code on ctrl+s or command+s
+        document.addEventListener('keydown', this.maybeKeyboardSave);
+    },
+    beforeUnmount() {
+        console.log('unmounting');
+        document.removeEventListener('keydown', this.maybeKeyboardSave);
     }
 }
 </script>

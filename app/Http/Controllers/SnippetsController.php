@@ -29,9 +29,18 @@ class SnippetsController
             $page = 1;
         }
 
-        return [
+        $data = [
             'snippets' => $snippetModel->getIndexedSnippets($perPage, $page)
         ];
+
+
+        if($page == 1) {
+            [$tags, $groups] = (new Snippet())->getAllSnippetTagsGroups();
+            $data['tags'] = $tags;
+            $data['groups'] = $groups;
+        }
+
+        return $data;
     }
 
     public static function findSnippet(\WP_REST_Request $request)
