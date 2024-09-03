@@ -27,6 +27,7 @@
 import {Codemirror} from 'vue-codemirror'
 import {php} from '@codemirror/lang-php'
 import {css} from '@codemirror/lang-css'
+import { EditorView } from "@codemirror/view";
 import {javascript} from '@codemirror/lang-javascript'
 import {oneDark} from '@codemirror/theme-one-dark'
 
@@ -76,7 +77,7 @@ export default {
         return {
             code: this.modelValue,
             extensions: [lang, oneDark],
-            appReady: true,
+            appReady: false,
             timer: null,
             errorHooks: []
         }
@@ -156,6 +157,11 @@ export default {
     },
     mounted() {
         this.maybeStartTimer();
+
+        if (this.appVars?.enable_line_wrap === 'yes') {
+            this.extensions.push(EditorView.lineWrapping);
+        }
+        this.appReady = true;
     },
     beforeUnmount() {
         if (this.timer) {

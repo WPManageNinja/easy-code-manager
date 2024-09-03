@@ -217,7 +217,9 @@ PHP;
             'auto_disable'        => 'yes',
             'auto_publish'        => 'no',
             'remove_on_uninstall' => 'no',
-            'legacy_status'       => 'new'
+            'legacy_status'       => 'new',
+            'has_line_wrap'       => 'no',
+
         ];
 
         if (!$config) {

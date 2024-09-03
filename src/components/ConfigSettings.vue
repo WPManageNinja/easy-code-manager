@@ -28,6 +28,15 @@
                         </div>
                     </el-form-item>
                     <el-form-item>
+                        <el-checkbox
+                                true-label="yes"
+                                false-label="no"
+                                v-model="settings.enable_line_wrap"
+                        >
+                            {{ $t("Enable Editor Line Wrap") }}
+                        </el-checkbox>
+                    </el-form-item>
+                    <el-form-item>
                         <el-checkbox :disabled="true" true-label="yes" false-label="no" v-model="settings.remove_on_uninstall">
                             Remove all data including <b>All Scripts</b> completely on plugin delete (coming soon)
                         </el-checkbox>
@@ -130,6 +139,10 @@ export default {
                     this.secret_url = response.secret_url;
                     this.is_standalone = response.is_standalone;
                     this.appVars.is_standalone = response.is_standalone;
+                    if (!this.settings.enable_line_wrap){
+                        this.settings.enable_line_wrap = 'no';
+                    }
+                    this.appVars.enable_line_wrap = this.settings.enable_line_wrap;
                 })
                 .catch((errors) => {
                     this.$handleError(errors);
@@ -145,6 +158,7 @@ export default {
             })
                 .then(response => {
                     this.$notify.success(response.message);
+                    this.appVars.enable_line_wrap = this.settings.enable_line_wrap;
                 })
                 .catch((errors) => {
                     this.$handleError(errors);
