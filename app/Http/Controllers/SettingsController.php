@@ -20,7 +20,8 @@ class SettingsController
         $defaults = [
             'auto_disable'        => 'yes',
             'auto_publish'        => 'no',
-            'remove_on_uninstall' => 'no'
+            'remove_on_uninstall' => 'no',
+            'enable_line_wrap'    => 'no'
         ];
 
         if (!$config || !is_array($config) || empty($config['meta'])) {
@@ -54,7 +55,9 @@ class SettingsController
         $defaults = [
             'auto_disable'        => 'yes',
             'auto_publish'        => 'no',
-            'remove_on_uninstall' => 'no'
+            'remove_on_uninstall' => 'no',
+            'enable_line_wrap'    => 'no'
+
         ];
 
         $settings = Arr::only($settings, array_keys($defaults));
@@ -75,6 +78,7 @@ class SettingsController
         $config['meta']['auto_disable'] = sanitize_text_field($settings['auto_disable']);
         $config['meta']['auto_publish'] = sanitize_text_field($settings['auto_publish']);
         $config['meta']['remove_on_uninstall'] = sanitize_text_field($settings['remove_on_uninstall']);
+        $config['meta']['enable_line_wrap'] = sanitize_text_field($settings['enable_line_wrap']);
 
         $config = Helper::saveIndexedConfig($config);
 
