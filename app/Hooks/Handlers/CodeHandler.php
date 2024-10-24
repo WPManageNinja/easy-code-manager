@@ -52,16 +52,11 @@ class CodeHandler
         (new CodeRunner())->runSnippets();
     }
 
-    public function handleShortcode($atts, $content = null)
-    {
-        $atts = shortcode_atts([
-            'id' => '',
-        ], $atts);
-
-        $fileName = $atts['id'];
-        if (empty($fileName)) {
-            return '';
-        }
+	public function handleShortcode( $atts, $content = null ) {
+		$fileName = $atts['id'];
+		if ( empty( $fileName ) ) {
+			return '';
+		}
 
         $config = Helper::getIndexedConfig();
 
@@ -97,8 +92,21 @@ class CodeHandler
         if (!$conditionalClass->evaluate(Arr::get($snippet, 'condition', []))) {
             return $this->shortCodeError(__('Snippet condition is not valid', 'easy-code-manager'));
         }
-        
-        ob_start();
+
+		$shortcodeAttributes   = Arr::get( $snippet, 'meta.shortcode_attributes', [] );
+		$shortcodeAttributes   = explode( ',', $shortcodeAttributes );
+		$shortcodeAttributes[] = 'id';
+
+		if ( is_array( $shortcodeAttributes ) ) {
+			$allowedAtts = array_intersect_key( $atts, array_flip( $shortcodeAttributes ) );
+			if ( $allowedAtts !== $atts ) {
+				return $this->shortCodeError( __( 'Shortcode attributes are not valid', 'easy-code-manager' ) );
+			}
+
+			extract( $allowedAtts, EXTR_SKIP );
+		}
+
+		ob_start();
 
         $maybeReturn = include $snippet['file'];
 

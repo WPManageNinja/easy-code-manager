@@ -252,6 +252,7 @@ class CodeRunner
         $docBlockArray = [
             'name'        => '',
             'status'      => '',
+            'shortcode_attributes' => '',
             'tags'        => '',
             'description' => '',
             'type'        => '',

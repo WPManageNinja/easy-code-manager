@@ -34,8 +34,9 @@ class AdminMenuHandler
         $currentUser = wp_get_current_user();
 
         [$tags, $groups] = (new Snippet())->getAllSnippetTagsGroups();
-
-        add_action('wp_print_scripts', function () {
+	    $shortcodeAttributes = ( new Snippet() )->getAllShortcodeAttributes();
+		
+	    add_action( 'wp_print_scripts', function () {
 
             $isSkip = apply_filters('fluent_snippets/skip_no_conflict', false);
 
@@ -111,6 +112,7 @@ class AdminMenuHandler
             ],
             'i18n'                       => Trans::getStrings(),
             'tags'                       => $tags,
+            'shortcode_attributes' => $shortcodeAttributes,
             'groups'                     => $groups,
             'safeModes'                  => $this->getSafeModeInfo(),
             'is_standalone'              => defined('FLUENT_SNIPPETS_RUNNING_MU'),

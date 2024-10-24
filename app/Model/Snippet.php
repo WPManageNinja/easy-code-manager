@@ -243,7 +243,37 @@ class Snippet
         return [array_values($allTags), array_values($allGroups)];
     }
 
-    public function findByFileName($fileName)
+	public function getAllShortcodeAttributes() {
+		$config = Helper::getIndexedConfig();
+
+		if ( ! $config || empty( $config['meta'] ) ) {
+			return [];
+		}
+
+		if ( empty( $config['published'] ) && empty( $config['draft'] ) ) {
+			return [];
+		}
+
+		$snippets = array_merge( $config['published'], $config['draft'] );
+		if ( ! $snippets ) {
+			return [];
+		}
+
+		$allAttributes = [];
+
+		foreach ( $snippets as $snippet ) {
+			if ( ! empty( $snippet['shortcode_attributes'] ) ) {
+				$attributes    = array_map( 'trim', explode( ',', $snippet['shortcode_attributes'] ) );
+				$allAttributes = array_merge( $allAttributes, $attributes );
+			}
+		}
+
+		$allAttributes = array_unique( $allAttributes );
+
+		return array_values( $allAttributes );
+	}
+
+	public function findByFileName($fileName)
     {
         $snippetDir = Helper::getStorageDir();
         $file = $snippetDir . '/' . $fileName;
@@ -375,7 +405,8 @@ class Snippet
             'run_at'       => '',
             'group'        => '',
             'condition'    => '',
-            'load_as_file' => ''
+            'load_as_file'         => '',
+            'shortcode_attributes' => ''
         ];
 
         foreach ($docBlock as $key => $value) {
@@ -439,7 +470,8 @@ class Snippet
                 'status' => 'no',
                 'run_if' => 'assertive',
                 'items'  => [[]]
-            ]
+            ],
+            'shortcode_attributes' => ''
         ];
 
         $metaData = Arr::only($metaData, array_keys($metaDefaults));

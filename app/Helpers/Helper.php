@@ -94,6 +94,7 @@ class Helper
             'description',
             'type',
             'status',
+            'shortcode_attributes',
             'tags',
             'created_at',
             'updated_at',
