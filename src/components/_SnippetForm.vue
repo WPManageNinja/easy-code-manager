@@ -100,6 +100,21 @@
 
                 </el-form-item>
 
+                <el-form-item v-if="snippet.meta.run_at === 'shortcode'" class="snippet_tags_item">
+                    <template #label>
+                        <span>
+                            {{ $t('Shortcode Attributes') }} <el-tooltip
+                            class="box-item"
+                            content="Define attributes that you want to expose to the snippet."
+                            effect="dark"
+                            placement="top-start"
+                        >
+                            <el-button :icon="InfoField" size="small" style="font-style: italic" text></el-button>
+                          </el-tooltip>
+                        </span>
+                    </template>
+                    <shortcode-attribute-creator v-model="snippet.meta.shortcode_attributes"/>
+                </el-form-item>
             </el-col>
         </el-row>
     </el-form>
@@ -107,6 +122,7 @@
 
 <script type="text/babel">
 import TagCreator from './_TagCreator.vue'
+import ShortcodeAttributeCreator from './_ShortcodeAttributeCreator.vue'
 import CodeEditor from './_CodeEditor.vue'
 import {InfoFilled} from '@element-plus/icons-vue';
 import {markRaw} from "vue";
@@ -117,6 +133,7 @@ import WhereRun from './_WhereRun';
 export default {
     name: 'SnippetForm',
     components: {
+        ShortcodeAttributeCreator,
         TagCreator,
         CodeEditor,
         SelectPlus,
