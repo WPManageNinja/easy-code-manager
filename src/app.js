@@ -117,6 +117,7 @@ app.mixin({
 
 app.config.globalProperties.$notify = ElNotification;
 app.config.globalProperties.$confirm = ElMessageBox.confirm;
+app.config.globalProperties.$prompt = ElMessageBox.prompt;
 
 app.use(eventBus);
 

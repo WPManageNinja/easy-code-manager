@@ -79,7 +79,22 @@ export default {
             }
             // check if snippet starts with <?php
             if (this.snippet.meta.type == 'PHP' && this.snippet.code.trim().startsWith('<?php')) {
-                this.$notify.error('The code should not start with <?php');
+                this.$notify.error(this.$t('The code should not start with <?php'));
+                return;
+            }
+
+            if(!this.snippet.meta.name) {
+                this.$prompt(this.$t('Please enter a name for the snippet'), this.$t('Snippet Name'), {
+                    confirmButtonText: this.$t('Save'),
+                    cancelButtonText: this.$t('Cancel'),
+                    inputPattern: /\S/,
+                    inputErrorMessage: this.$t('Name cannot be empty')
+                }).then(({ value }) => {
+                    this.snippet.meta.name = value;
+                    this.saveCode();
+                }).catch(() => {
+                    this.$notify.error(this.$t('Snippet Name is required'));
+                });
                 return;
             }
 
@@ -93,7 +108,7 @@ export default {
                 })
                 .catch((errors) => {
                     if (typeof errors == 'string') {
-                        this.$notify.error('Something went wrong. Please check the errors.');
+                        this.$notify.error(this.$t('Something went wrong. Please check the errors.'));
                         this.$eventBus.emit("server_error", errors);
                         return;
                     }

@@ -76,7 +76,7 @@ export default {
 
         return {
             code: this.modelValue,
-            extensions: [lang, oneDark],
+            extensions: [lang, oneDark, EditorView.lineWrapping],
             appReady: false,
             timer: null,
             errorHooks: []

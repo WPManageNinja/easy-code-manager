@@ -93,7 +93,13 @@ class Snippet
 
     public function getIndexedSnippets($perPage = null, $page = null)
     {
-        $config = Helper::getIndexedConfig();
+        $cachedFile = Helper::getStorageDir() . '/index.php';
+
+        if (!is_file($cachedFile)) {
+            $config = [];
+        } else {
+            $config = include $cachedFile;
+        }
 
         if (!$config || empty($config['meta'])) {
             return [];
@@ -207,7 +213,7 @@ class Snippet
 
     public function getAllSnippetTagsGroups()
     {
-        $config = Helper::getIndexedConfig();
+        $config = Helper::getIndexedConfig(false);
 
         if (!$config || empty($config['meta'])) {
             return [[], []];

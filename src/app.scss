@@ -150,9 +150,6 @@ $bodyBg: #f1f2f5;
       margin-right: 10px;
       ul.#{$slug}menu {
         display: none;
-
-        li {
-        }
       }
       ul.#{$slug}menu.#{$slug}menu_open {
         display: block;
@@ -193,7 +190,7 @@ $bodyBg: #f1f2f5;
 .fsnip_secondary_menu.fsnip_menu {
   float: right;
 }
-
+@import "~element-plus/theme-chalk/base.css";
 @import "~element-plus/theme-chalk/el-notification.css";
 @import "~element-plus/theme-chalk/el-loading.css";
 @import "~element-plus/theme-chalk/el-message-box.css";
@@ -286,14 +283,13 @@ $bodyBg: #f1f2f5;
 
 .box_wrapper {
   box-sizing: border-box;
+  display: block;
+  width: 100%;
+  overflow: hidden;
 
   * {
     box-sizing: border-box;
   }
-
-  display: block;
-  width: 100%;
-  overflow: hidden;
 
   .box_header {
     display: block;
@@ -1035,6 +1031,8 @@ span.fsn_label {
     min-width: 50%;
     padding: 20px 15px;
     cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 5px;
 
     p {
       margin: 0;
@@ -1044,9 +1042,6 @@ span.fsn_label {
         margin-bottom: 5px;
       }
     }
-
-    border: 1px solid transparent;
-    border-radius: 5px;
 
     &:hover,&.selector_option_selected {
       transition: all 0.3s ease;

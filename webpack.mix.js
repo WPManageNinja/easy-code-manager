@@ -1,25 +1,24 @@
 // webpack.mix.js
 let mix = require('laravel-mix');
-const AutoImport = require("unplugin-auto-import/webpack");
-const {ElementPlusResolver} = require("unplugin-vue-components/resolvers");
-const Components = require("unplugin-vue-components/webpack");
+const AutoImport = require('unplugin-auto-import/webpack').default;
+const { ElementPlusResolver } = require('unplugin-vue-components/resolvers');
+const VueComponents = require('unplugin-vue-components/webpack').default;
 var path = require('path');
 
 mix.webpackConfig({
     module: {
         rules: [{
             test: /\.mjs$/,
-            resolve: {fullySpecified: false},
+            resolve: { fullySpecified: false },
             include: /node_modules/,
             type: "javascript/auto"
         }]
-
     },
     plugins: [
         AutoImport({
             resolvers: [ElementPlusResolver()],
         }),
-        Components({
+        VueComponents({
             resolvers: [ElementPlusResolver()],
             directives: false
         }),

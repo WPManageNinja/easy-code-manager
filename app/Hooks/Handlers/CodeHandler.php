@@ -16,9 +16,6 @@ class CodeHandler
     {
         $this->storageDir = Helper::getStorageDir();
 
-        // @todo: remove this at mid january 2024
-        Helper::getIndexedConfig();
-
         if (!$this->isDisabled()) {
             add_action('shutdown', function () {
                 $error = error_get_last();

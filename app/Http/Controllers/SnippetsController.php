@@ -30,7 +30,8 @@ class SnippetsController
         }
 
         $data = [
-            'snippets' => $snippetModel->getIndexedSnippets($perPage, $page)
+            'snippets' => $snippetModel->getIndexedSnippets($perPage, $page),
+            'time' => current_time('mysql')
         ];
 
 
