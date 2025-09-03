@@ -8,7 +8,9 @@ class Helper
 {
     public static function getStorageDir()
     {
-        return WP_CONTENT_DIR . '/fluent-snippet-storage';
+        $wp_upload_dir = wp_get_upload_dir();
+        $uploads_basedir = $wp_upload_dir['basedir'];
+        return $uploads_basedir . '/fluent-snippet-storage';
     }
 
     public static function getCachedDir()
