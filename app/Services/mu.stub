@@ -359,10 +359,77 @@ class CodeRunner
 {
 
     private $storageDir = '';
+    private $storageUrl = '';
 
     public function __construct()
     {
-        $this->storageDir = WP_CONTENT_DIR . '/fluent-snippet-storage';
+        $this->storageDir = $this->resolveStorageDir();
+        $this->storageUrl = $this->resolveStorageUrl();
+    }
+
+    /**
+     * Resolve the storage directory path.
+     * Supports FLUENT_SNIPPETS_STORAGE_DIR constant and fluent_snippets/storage_dir filter.
+     */
+    private function resolveStorageDir()
+    {
+        // Check for constant first (can be defined in wp-config.php)
+        if (defined('FLUENT_SNIPPETS_STORAGE_DIR') && FLUENT_SNIPPETS_STORAGE_DIR) {
+            $path = untrailingslashit(FLUENT_SNIPPETS_STORAGE_DIR);
+            return apply_filters('fluent_snippets/storage_dir', $path);
+        }
+
+        $defaultPath = WP_CONTENT_DIR . '/fluent-snippet-storage';
+
+        return apply_filters('fluent_snippets/storage_dir', $defaultPath);
+    }
+
+    /**
+     * Resolve the storage URL.
+     * Supports FLUENT_SNIPPETS_STORAGE_URL constant and fluent_snippets/storage_url filter.
+     */
+    private function resolveStorageUrl()
+    {
+        // Check for constant first
+        if (defined('FLUENT_SNIPPETS_STORAGE_URL') && FLUENT_SNIPPETS_STORAGE_URL) {
+            $url = untrailingslashit(FLUENT_SNIPPETS_STORAGE_URL);
+            return apply_filters('fluent_snippets/storage_url', $url);
+        }
+
+        $storageDir = $this->storageDir;
+        $defaultDir = WP_CONTENT_DIR . '/fluent-snippet-storage';
+
+        // If using default path, use default URL
+        if ($storageDir === $defaultDir) {
+            $url = content_url('/fluent-snippet-storage');
+        } else {
+            // Try to determine URL from path
+            // Check if path is within uploads directory
+            $uploadsDir = wp_upload_dir();
+            $uploadsBasedir = untrailingslashit($uploadsDir['basedir']);
+            $uploadsBaseurl = untrailingslashit($uploadsDir['baseurl']);
+
+            if (strpos($storageDir, $uploadsBasedir) === 0) {
+                // Path is within uploads, calculate relative URL
+                $relativePath = substr($storageDir, strlen($uploadsBasedir));
+                $url = $uploadsBaseurl . $relativePath;
+            } elseif (strpos($storageDir, WP_CONTENT_DIR) === 0) {
+                // Path is within wp-content, calculate relative URL
+                $relativePath = substr($storageDir, strlen(WP_CONTENT_DIR));
+                $url = content_url($relativePath);
+            } else {
+                // Fallback: try to calculate from ABSPATH
+                if (strpos($storageDir, ABSPATH) === 0) {
+                    $relativePath = substr($storageDir, strlen(ABSPATH));
+                    $url = site_url('/' . $relativePath);
+                } else {
+                    // Cannot determine URL, use default
+                    $url = content_url('/fluent-snippet-storage');
+                }
+            }
+        }
+
+        return apply_filters('fluent_snippets/storage_url', $url);
     }
 
     public function runSnippets()
@@ -679,7 +746,7 @@ class CodeRunner
             return false;
         }
 
-        return content_url('/fluent-snippet-storage/cached/' . $fileName);
+        return $this->storageUrl . '/cached/' . $fileName;
     }
 }
 

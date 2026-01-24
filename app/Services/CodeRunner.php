@@ -6,10 +6,12 @@ class CodeRunner
 {
 
     private $storageDir = '';
+    private $storageUrl = '';
 
     public function __construct()
     {
-        $this->storageDir = WP_CONTENT_DIR . '/fluent-snippet-storage';
+        $this->storageDir = \FluentSnippets\App\Helpers\Helper::getStorageDir();
+        $this->storageUrl = \FluentSnippets\App\Helpers\Helper::getStorageUrl();
     }
 
     public function runSnippets()
@@ -325,6 +327,6 @@ class CodeRunner
             return false;
         }
 
-        return content_url('/fluent-snippet-storage/cached/' . $fileName);
+        return $this->storageUrl . '/cached/' . $fileName;
     }
 }

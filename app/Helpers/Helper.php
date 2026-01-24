@@ -7,9 +7,88 @@ use FluentSnippets\App\Services\PhpValidator;
 
 class Helper
 {
+    /**
+     * Get the storage directory path for snippets.
+     *
+     * Users can customize this path by:
+     * 1. Defining FLUENT_SNIPPETS_STORAGE_DIR constant in wp-config.php
+     * 2. Using the 'fluent_snippets/storage_dir' filter
+     *
+     * Example for wp-config.php:
+     * define('FLUENT_SNIPPETS_STORAGE_DIR', ABSPATH . 'wp-content/uploads/fluent-snippets');
+     *
+     * Example filter usage:
+     * add_filter('fluent_snippets/storage_dir', function($path) {
+     *     return WP_CONTENT_DIR . '/uploads/fluent-snippets';
+     * });
+     *
+     * @return string The storage directory path
+     */
     public static function getStorageDir()
     {
-        return WP_CONTENT_DIR . '/fluent-snippet-storage';
+        // Check for constant first (can be defined in wp-config.php)
+        if (defined('FLUENT_SNIPPETS_STORAGE_DIR') && FLUENT_SNIPPETS_STORAGE_DIR) {
+            $path = untrailingslashit(FLUENT_SNIPPETS_STORAGE_DIR);
+            return apply_filters('fluent_snippets/storage_dir', $path);
+        }
+
+        $defaultPath = WP_CONTENT_DIR . '/fluent-snippet-storage';
+
+        return apply_filters('fluent_snippets/storage_dir', $defaultPath);
+    }
+
+    /**
+     * Get the URL for the storage directory.
+     *
+     * Users can customize this URL by:
+     * 1. Defining FLUENT_SNIPPETS_STORAGE_URL constant in wp-config.php
+     * 2. Using the 'fluent_snippets/storage_url' filter
+     *
+     * @return string The storage directory URL
+     */
+    public static function getStorageUrl()
+    {
+        // Check for constant first
+        if (defined('FLUENT_SNIPPETS_STORAGE_URL') && FLUENT_SNIPPETS_STORAGE_URL) {
+            $url = untrailingslashit(FLUENT_SNIPPETS_STORAGE_URL);
+            return apply_filters('fluent_snippets/storage_url', $url);
+        }
+
+        // Try to calculate URL from path
+        $storageDir = self::getStorageDir();
+        $defaultDir = WP_CONTENT_DIR . '/fluent-snippet-storage';
+
+        // If using default path, use default URL
+        if ($storageDir === $defaultDir) {
+            $url = content_url('/fluent-snippet-storage');
+        } else {
+            // Try to determine URL from path
+            // Check if path is within uploads directory
+            $uploadsDir = wp_upload_dir();
+            $uploadsBasedir = untrailingslashit($uploadsDir['basedir']);
+            $uploadsBaseurl = untrailingslashit($uploadsDir['baseurl']);
+
+            if (strpos($storageDir, $uploadsBasedir) === 0) {
+                // Path is within uploads, calculate relative URL
+                $relativePath = substr($storageDir, strlen($uploadsBasedir));
+                $url = $uploadsBaseurl . $relativePath;
+            } elseif (strpos($storageDir, WP_CONTENT_DIR) === 0) {
+                // Path is within wp-content, calculate relative URL
+                $relativePath = substr($storageDir, strlen(WP_CONTENT_DIR));
+                $url = content_url($relativePath);
+            } else {
+                // Fallback: try to calculate from ABSPATH
+                if (strpos($storageDir, ABSPATH) === 0) {
+                    $relativePath = substr($storageDir, strlen(ABSPATH));
+                    $url = site_url('/' . $relativePath);
+                } else {
+                    // Cannot determine URL, use default
+                    $url = content_url('/fluent-snippet-storage');
+                }
+            }
+        }
+
+        return apply_filters('fluent_snippets/storage_url', $url);
     }
 
     public static function getCachedDir()
