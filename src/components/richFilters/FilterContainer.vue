@@ -36,7 +36,7 @@ export default {
         },
         add_label: {
             type: String,
-            default: 'Add new filter to execute your snippet to specific conditions.'
+            default: 'Add a new filter to run your snippet only under specific conditions.'
         },
         filterOptions: {
             type: Array,

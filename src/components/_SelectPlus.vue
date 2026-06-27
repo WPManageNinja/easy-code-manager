@@ -17,7 +17,7 @@
                 v-model="new_group"
             >
             </el-input>
-            <el-button style="margin-top: 10px;" type="primary" @click="addItem()">Add</el-button>
+            <el-button style="margin-top: 10px;" type="primary" @click="addItem()">{{ $t('Add') }}</el-button>
         </el-popover>
     </div>
 </template>

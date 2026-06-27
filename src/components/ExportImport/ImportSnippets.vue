@@ -105,7 +105,7 @@ export default {
                 } else {
                     this.publishing = false;
                     this.allDone = true;
-                    this.$notify.success('All snippets has been published successfully');
+                    this.$notify.success(this.$t('All snippets have been published successfully.'));
                 }
             };
             publishNext();

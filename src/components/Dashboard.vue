@@ -7,11 +7,11 @@
                 </div>
                 <div style="display: flex;" class="box_actions">
 
-                    <el-switch activeValue="yes" inactive-value="no" @change="toggleHideInactive" v-model="hideInactive" active-text="Hide Inactives" />
+                    <el-switch activeValue="yes" inactive-value="no" @change="toggleHideInactive" v-model="hideInactive" :active-text="$t('Hide Inactives')" />
 
                     <el-input clearable
                               style="width: 200px; margin-left: 10px;"
-                              size="small" type="text" v-model="search" placeholder="Search">
+                              size="small" type="text" v-model="search" :placeholder="$t('Search')">
                         <template #append>
                             <el-button :icon="SearchIcon"/>
                         </template>
@@ -449,8 +449,7 @@ export default {
             this.getSnippets();
         },
         toggleHideInactive(value) {
-            console.log(value);
-            this.hideInactive = this.hideInactive == 'yes' ? 'yes' : 'no';
+            this.hideInactive = value == 'yes' ? 'yes' : 'no';
             this.$storeLocalData('hide_inactive', this.hideInactive);
         },
         changeLang(lang) {

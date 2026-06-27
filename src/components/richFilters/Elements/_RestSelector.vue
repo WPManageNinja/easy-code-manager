@@ -7,7 +7,7 @@
         reserve-keyword
         :disabled="field.disabled"
         :size="field.size"
-        :placeholder="field.placeholder || 'Please enter a keyword'"
+        :placeholder="field.placeholder || $t('Please enter a keyword')"
         :remote-method="fetchOptions"
         :loading="loading">
 

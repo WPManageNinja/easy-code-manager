@@ -3,16 +3,14 @@
         <el-row :gutter="20">
             <el-col :sm="24" :md="12">
                 <div class="fss_about">
-                    <div class="fss_header">About</div>
+                    <div class="fss_header">{{ $t('About') }}</div>
                     <div class="fss_content">
                         <p>
-                            <a href="https://fluentsnippets.com" target="_blank" rel="noopener">FluentSnippets</a> is
-                            The High-Performance Code Snippets Plugin for WordPress.
-                            It is built for speed and security. All code snippets are stored in the file system and load
-                            just like a regular feature plugin. No database query, it’s secure and native.
+                            <a href="https://fluentsnippets.com" target="_blank" rel="noopener">FluentSnippets</a>
+                            {{ $t('is the high-performance code snippets plugin for WordPress, built for speed and security. All snippets are stored in the file system and load just like a regular feature plugin — no database queries, just secure and native code.') }}
                         </p>
                         <div>
-                            <p>FluentSMTP is built using the following open-sorce libraries and software</p>
+                            <p>{{ $t('FluentSnippets is built using the following open-source libraries and software:') }}</p>
                             <ul style="list-style: disc;margin-left: 30px;">
                                 <li>VueJS</li>
                                 <li>Vue Router</li>
@@ -23,25 +21,27 @@
                                 <li>element-plus</li>
                             </ul>
                             <p>
-                                If you find an issue or have a suggestion please <a target="_blank" rel="nofollow"
-                                                                                    href="https://github.com/WPManageNinja/easy-code-manager/issues">open
-                                an issue on GitHub</a>.
-                                <br/>If you are a developer and would like to contribute to the project, Please <a
-                                target="_blank" rel="nofollow"
-                                href="https://github.com/WPManageNinja/easy-code-manager/">contribute
-                                on GitHub</a>.
+                                {{ $t('If you find an issue or have a suggestion, please') }}
+                                <a target="_blank" rel="nofollow"
+                                   href="https://github.com/WPManageNinja/easy-code-manager/issues">{{ $t('open an issue on GitHub') }}</a>.
+                                <br/>{{ $t('If you are a developer and would like to contribute to the project, please') }}
+                                <a target="_blank" rel="nofollow"
+                                   href="https://github.com/WPManageNinja/easy-code-manager/">{{ $t('contribute on GitHub') }}</a>.
                             </p>
-                            <p>Please <a target="_blank" rel="noopener" href="http://fluentsnippets.com/docs">read the
-                                documentation here</a></p>
+                            <p>
+                                <a target="_blank" rel="noopener" href="http://fluentsnippets.com/docs">{{ $t('Read the documentation here') }}</a>
+                            </p>
                         </div>
                     </div>
                 </div>
                 <div class="fss_about">
-                    <div class="fss_header">Contributors</div>
+                    <div class="fss_header">{{ $t('Contributors') }}</div>
                     <div class="fss_content">
-                        <p>FluentSnippets is powered by it's users like you. <a target="_blank" rel="noopener" href="https://github.com/WPManageNinja/easy-code-manager">Feel free to contribute on Github</a>. Thanks
-                            to
-                            all of our contributors.</p>
+                        <p>
+                            {{ $t('FluentSnippets is powered by users like you.') }}
+                            <a target="_blank" rel="noopener" href="https://github.com/WPManageNinja/easy-code-manager">{{ $t('Feel free to contribute on GitHub') }}</a>.
+                            {{ $t('Thanks to all of our contributors.') }}
+                        </p>
 
                         <a target="_blank"
                            href="https://github.com/WPManageNinja/easy-code-manager/graphs/contributors">
@@ -61,8 +61,8 @@
             </el-col>
             <el-col :sm="24" :md="12">
                 <div v-if="plugin || installed_info">
-                    <div v-loading="installing" element-loading-text="Installing... Please wait" class="fss_about">
-                        <div class="fss_header">Recommended Plugin</div>
+                    <div v-loading="installing" :element-loading-text="$t('Installing... Please wait')" class="fss_about">
+                        <div class="fss_header">{{ $t('Recommended Plugin') }}</div>
                         <div class="fss_content">
                             <div v-if="installed_info" class="install_success">
                                 <h3>{{ installed_message }}</h3>
@@ -83,7 +83,7 @@
                                         </el-button>
                                         <a v-else :href="plugin.plugin_url" target="_blank" rel="noopener"
                                            class="el-button el-button--success fss_ninjatables_btn">
-                                            <span>View {{ plugin.title }}</span>
+                                            <span>{{ $t('View') }} {{ plugin.title }}</span>
                                         </a>
                                     </div>
                                 </div>
@@ -92,30 +92,23 @@
                     </div>
                 </div>
                 <div class="fss_about">
-                    <div class="fss_header">Community</div>
+                    <div class="fss_header">{{ $t('Community') }}</div>
                     <div class="fss_content">
-                        <p>FluentSnippets is powered by community. We listen to our community users and build products
-                            that
-                            add values to businesses and save time.</p>
-                        <p>Join our communities and participate in great conversations.</p>
+                        <p>{{ $t('FluentSnippets is powered by our community. We listen to our users and build products that add value to businesses and save time.') }}</p>
+                        <p>{{ $t('Join our communities and participate in great conversations.') }}</p>
                         <ul style="list-style: disc;margin-left: 30px;">
                             <li>
-                                <a target="_blank" rel="nofollow" href="https://www.facebook.com/groups/fluentforms">Join
-                                    FluentForms Facebook Community</a>
+                                <a target="_blank" rel="nofollow" href="https://www.facebook.com/groups/fluentforms">{{ $t('Join FluentForms Facebook Community') }}</a>
                             </li>
                             <li>
-                                <a target="_blank" rel="nofollow" href="https://www.facebook.com/groups/fluentcrm">Join
-                                    FluentCRM Facebook Community</a>
+                                <a target="_blank" rel="nofollow" href="https://www.facebook.com/groups/fluentcrm">{{ $t('Join FluentCRM Facebook Community') }}</a>
                             </li>
                             <li>
                                 <a target="_blank" rel="nofollow"
-                                   href="https://wordpress.org/support/plugin/easy-code-manager/reviews/?filter=5">Write
-                                    a
-                                    review (really appreciate 😊)</a>
+                                   href="https://wordpress.org/support/plugin/easy-code-manager/reviews/?filter=5">{{ $t('Write a review (we really appreciate it!)') }}</a>
                             </li>
                             <li>
-                                <a target="_blank" rel="noopener" href="http://fluentsnippets.com/docs">Read the
-                                    documentation</a>
+                                <a target="_blank" rel="noopener" href="http://fluentsnippets.com/docs">{{ $t('Read the documentation') }}</a>
                             </li>
                         </ul>
                     </div>

@@ -77,7 +77,7 @@ export default {
         createNewItem() {
             this.creating = true;
             if (!this.new_item.length) {
-                this.$notify.error('Provide name Field is required');
+                this.$notify.error(this.$t('The name field is required.'));
                 return false;
             }
             this.$post(this.field.option_key + '/bulk', {

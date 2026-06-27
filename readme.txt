@@ -1,22 +1,37 @@
-=== FluentSnippets - The High-Performance file based Custom Code Snippets Plugin ===
+=== FluentSnippets – High-Performance Code Snippets, Header & Footer Code, Custom CSS & PHP Code Manager ===
 Contributors: techjewel
 Author URL: https://fluentsnippets.com
-Tags: wp codes, functions, custom codes, php codes, code snippets
+Tags: code snippets, header footer, php, custom css, code manager
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Requires at least: 6.0 or higher
+Requires at least: 6.0
 Requires PHP: 7.3
 Tested up to: 7.0
-Stable tag: 10.53
+Stable tag: 10.55
 
-Add header and footer scripts, PHP Snippets, Custom CSS /JS snippets with advanced conditional logic, and more...
+Fast, file-based code snippets plugin. Insert header & footer scripts and add PHP, CSS, JS & HTML snippets with conditional logic. Zero DB queries.
 
 == Description ==
 
-Experience unmatched speed and security with a unique file-based code snippet plugin, designed for security & speed
+FluentSnippets is the **fastest and most secure code snippets plugin** for WordPress — a high-performance way to add custom code to your site without editing your theme's functions.php file. Easily **insert header and footer scripts**, run **PHP code snippets**, and add **custom CSS, JavaScript, and HTML** with powerful conditional logic.
 
-FluentSnippets is the **Most Secure and Performance-Focused** Code Snippet Plugin for WordPress. FluentSnippets store your snippets in flat files, so it does not run SQL queries for your snippets. It is the **Fastest Code Snippet Plugin** for WordPress.
-Our mission is to streamline the process of integrating custom code snippets in WordPress, making it safe, secure, fast, and hassle-free.
+⭐ **100% free and open source — no "Pro" version, no upsells.** Read, audit, or contribute to the full source code on [GitHub](https://github.com/WPManageNinja/easy-code-manager).
+
+Unlike every other code snippet plugin, FluentSnippets stores your snippets in flat files and loads them natively — so it runs **zero database queries** and never slows down your site. No bloated database tables, no extra SQL injection surface, just safe, native, lightning-fast code execution.
+
+Whether you want to add Google Analytics, a Facebook Pixel, ads.txt or banner ad codes, conversion tracking scripts, custom CSS tweaks, or complex PHP functionality, FluentSnippets makes it safe, secure, fast, and hassle-free. It is the perfect lightweight alternative to editing functions.php or using heavier, database-driven code snippet managers.
+
+### Simple for Beginners, Powerful for Developers
+
+Adding a snippet takes seconds: open the editor, paste or write your code, choose where it should run (everywhere, admin only, front-end only, or based on conditional logic), and save. A built-in syntax highlighter and smart error handling guide you along the way — and if a snippet ever causes a fatal error, FluentSnippets automatically deactivates it so your site stays online instead of breaking. You can organize snippets with tags, switch them on or off with a single click, and export or import them between sites in seconds.
+
+### 100% Free & Open Source — No Upsells, No "Pro" Version
+
+FluentSnippets is completely free and fully open source under the GPL. There is no premium version, no locked or "Pro-only" features, no upsells, and no email-gated downloads — every single feature is included for everyone, on every site, forever. The full source code lives on [GitHub](https://github.com/WPManageNinja/easy-code-manager), so developers can read the code, audit it for security, request features, report bugs, or contribute directly via pull requests. It is built and actively maintained by the team behind FluentCRM, Fluent Forms, and FluentSMTP.
+
+### From Quick Tweaks to Advanced Customizations
+
+From simple tweaks to advanced development, FluentSnippets handles it all. Use it to add Google Tag Manager and tracking pixels, register custom shortcodes, create custom functions, disable comments or emojis, remove unwanted admin notices, add JSON-LD schema markup, or run any PHP snippet you would normally drop into functions.php. CSS snippets even support the WordPress Block Editor (Gutenberg), so you can style your site with a familiar editing experience. Every snippet runs only where you tell it to, thanks to granular conditional logic based on post type, page URL, user role, login status, and more — so your custom code stays fast, targeted, and easy to manage.
 
 [youtube https://www.youtube.com/watch?v=kUuW4sY8m7o]
 
@@ -105,6 +120,18 @@ This section describes how to install the plugin and get it working.
 
 
 == Frequently Asked Questions ==
+= Can I insert header and footer scripts with FluentSnippets? =
+Yes. FluentSnippets lets you easily insert code into your site's header and footer, such as Google Analytics, Facebook Pixel, Google Tag Manager, ad codes, and any other custom HTML, JavaScript, or tracking scripts. You can add them globally or only on specific pages using conditional logic.
+
+= What types of code snippets can I add? =
+You can add PHP code snippets (just like your theme's functions.php), Content snippets (PHP + HTML for header, footer, before/after post content, and more), Custom CSS snippets, and Custom JavaScript snippets — all from one clean interface with syntax highlighting.
+
+= Is FluentSnippets a good alternative to other code snippet plugins? =
+Absolutely. Most code snippet plugins store your snippets in the database and run SQL queries on every page load, which is slow and increases your attack surface. FluentSnippets stores everything in flat files and loads them natively with zero database queries, making it a faster, safer, and more lightweight alternative for managing custom code.
+
+= Can I use FluentSnippets instead of editing functions.php? =
+Yes. FluentSnippets is the safe way to add custom code without touching your theme's functions.php file. Your snippets survive theme updates, can be activated or deactivated with one click, and the built-in error handler prevents a bad snippet from breaking your site.
+
 = What are the differences between FluentSnippets & other code snippets plugins? =
 The primary difference is that FluentSnippets is built for speed, security, and ease of use. All other Code Snippet plugins store all the snippets in Database tables so in every WordPress request, they do extensive DB queries to execute them. The method is very slow and dangerous for site security. The snippets can be modified or exploited via SQL injection caused by other plugins.
 
@@ -133,6 +160,14 @@ Absolutely not. Unlike other code snippets plugin, FluentSnippets does not use t
 4. Architectural Design Comparison
 
 == Changelog ==
+
+= 10.55 - Jun 28, 2026 =
+- Added "Hide Inactives" filter to quickly hide inactive snippets on the dashboard
+- Added Custom Snippets Storage Path support via constant
+- Invalidate OPcache after writing snippet engine files for reliable updates
+- Fixed RTL code formatting issue in the editor
+- Fixed string concatenation issue
+- UI / UX Improvements
 
 = 10.53 - Jun 22, 2026 =
 - Fixed Block Editor CSS Issue

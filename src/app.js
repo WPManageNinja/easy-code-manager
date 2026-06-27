@@ -67,11 +67,11 @@ app.mixin({
                 errorMessage = convertToText(response);
             }
             if (!errorMessage) {
-                errorMessage = 'Something is wrong!';
+                errorMessage = this.$t('Something went wrong!');
             }
             this.$notify({
                 type: 'error',
-                title: 'Error',
+                title: this.$t('Error'),
                 message: errorMessage,
                 dangerouslyUseHTMLString: true
             });
@@ -114,7 +114,7 @@ app.mixin({
             });
 
             if (selected.length === 0) {
-                this.$message.error('Please select at least one snippet to export.');
+                this.$message.error(this.$t('Please select at least one snippet to export.'));
                 return;
             }
 

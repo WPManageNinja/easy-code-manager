@@ -9,7 +9,7 @@
                             placement="top-start"
                             class="box-item"
                             effect="dark"
-                            content="Enable logic to add rules and limit where your snippet will be executed. Use multiple groups for different sets of rules."
+                            :content="$t('Enable logic to add rules that limit where your snippet runs. Use multiple groups for different sets of rules.')"
                         >
                             <el-icon class="header-icon">
                                 <InfoFilled/>

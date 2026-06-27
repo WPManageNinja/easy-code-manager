@@ -49,12 +49,12 @@ export default {
     computed: {
         placeholder() {
             if (this.langType == 'js') {
-                return 'Write your Javascript code here';
+                return this.$t('Write your JavaScript code here');
             }
             if (this.langType == 'css') {
-                return 'Write your CSS here';
+                return this.$t('Write your CSS code here');
             }
-            return 'Code goes here...';
+            return this.$t('Write your code here...');
         }
     },
     components: {

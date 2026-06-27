@@ -38,7 +38,7 @@
                     </el-form-item>
                     <el-form-item>
                         <el-checkbox :disabled="true" true-value="yes" false-value="no" v-model="settings.remove_on_uninstall">
-                            Remove all data including <b>All Scripts</b> completely on plugin delete (coming soon)
+                            {{ $t('Remove all data, including all scripts, when the plugin is deleted (coming soon)') }}
                         </el-checkbox>
                     </el-form-item>
                 </el-form>
@@ -55,25 +55,21 @@
             </div>
             <div v-if="!fetching" style="padding: 15px 15px 25px;" class="box_body">
                 <p>
-                    FluentSnippets always try to deactivate any script if fatal error encountered. There are still
-                    situations when you might get locked due to any fatal error from your snippets.
+                    {{ $t('FluentSnippets always tries to deactivate a script when a fatal error is encountered. Even so, there are rare situations where you could get locked out due to a fatal error in one of your snippets.') }}
                 </p>
                 <p>
-                    This doesn't happen often, but if it does, or if you just want to turn off all code snippets for a
-                    while, you can use a thing called safe mode.
+                    {{ $t('This does not happen often, but if it does — or if you simply want to turn off all code snippets for a while — you can use Safe Mode.') }}
                 </p>
-                <p><b>To use safe mode</b>, use the following URL and once you visit the URL, FluentSnippets will
-                    disable all scripts temporarily.</p>
-                <b>Safe Mode URL</b>
+                <p>{{ $t('To use Safe Mode, open the following URL. As soon as you visit it, FluentSnippets will temporarily disable all scripts.') }}</p>
+                <b>{{ $t('Safe Mode URL') }}</b>
                 <el-input style="margin-top: 5px;" size="large" v-model="secret_url" :disabled="true">
                     <template #append>
-                        <el-button @click="copyItem(secret_url)">Copy</el-button>
+                        <el-button @click="copyItem(secret_url)">{{ $t('Copy') }}</el-button>
                     </template>
                 </el-input>
 
                 <h3>{{$t('Enable Safe Mode Programmatically:')}}</h3>
-                <p>If you want to enable safe mode programmatically, you can add the following code to your
-                    wp-config.php file</p>
+                <p>{{ $t('If you want to enable Safe Mode programmatically, you can add the following code to your wp-config.php file:') }}</p>
                 <code style="padding: 10px;">define('FLUENT_SNIPPETS_SAFE_MODE', true);</code>
             </div>
             <div v-else class="box_body">
@@ -89,17 +85,15 @@
                 </div>
             </div>
             <div v-if="!fetching" style="padding: 15px 15px 25px;" class="box_body">
-                <p>FluentSnippet does not force you to keep installing this plugin all the time. You can disable or
-                    uninstall this plugin and still keep running your snippets as a stand-alone mode.</p>
+                <p>{{ $t('FluentSnippets does not force you to keep this plugin installed all the time. You can disable or uninstall the plugin and still keep your snippets running in standalone mode.') }}</p>
                 <template v-if="is_standalone">
-                    <p style="font-weight: bold;">Standalone Mode is currently activated. Even if you uninstall or
-                        delete this plugin, Your scripts will still run.</p>
+                    <p style="font-weight: bold;">{{ $t('Standalone Mode is currently activated. Even if you uninstall or delete this plugin, your scripts will still run.') }}</p>
                     <el-button v-loading="saving" :disabled="saving" size="small" @click="updateStandAloneMode('no')">
                         {{$t('Disable Standalone Mode')}}
                     </el-button>
                 </template>
                 <template v-else>
-                    <p>When using standalone mode your scripts will be executed from mu-plugins file.</p>
+                    <p>{{ $t('When using Standalone Mode, your scripts are executed from the mu-plugins file.') }}</p>
                     <el-button v-loading="saving" :disabled="saving" type="primary"
                                @click="updateStandAloneMode('yes')">
                         {{$t('Enable Standalone Mode')}}
@@ -170,12 +164,12 @@ export default {
         copyItem(copyText) {
             navigator.clipboard.writeText(copyText).then(() => {
                 this.$notify.success({
-                    message: 'Secure SafeMode URL has been copied to clipboard',
+                    message: this.$t('The secure Safe Mode URL has been copied to your clipboard.'),
                     type: 'success'
                 });
             }, () => {
                 this.$notify.error({
-                    message: 'Failed to copy shortcode',
+                    message: this.$t('Failed to copy the URL.'),
                     type: 'error'
                 });
             });

@@ -19,7 +19,7 @@
             <div class="box_body">
                 <snippet-form v-if="appLoaded" :errors="errors" :is_new="true" :snippet="snippet">
                     <template v-slot:code_editor_before>
-                        <el-form-item label="Snippet Type">
+                        <el-form-item :label="$t('Snippet Type')">
                             <el-radio-group @change="snippetTypeChanged()" v-model="snippet.meta.type">
                                 <el-radio v-for="(snippetType, type) in appVars.snippet_types" :key="snippetType.value"
                                           :value="snippetType.value">
@@ -138,9 +138,6 @@ export default {
             } else if (type == 'js') {
                 this.snippet.meta.run_at = 'wp_footer';
             }
-        },
-        $handle500Error(error) {
-            console.log(error);
         }
     },
     created() {

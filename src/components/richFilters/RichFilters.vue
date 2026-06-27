@@ -23,7 +23,7 @@
                     </el-button>
                 </template>
             </el-popover>
-            {{add_label}}
+            {{ $t(add_label) }}
             <el-button style="float: right;" @click="$emit('maybeRemove')" size="small" type="danger">
                 <el-icon><delete-icon /></el-icon>
             </el-button>
@@ -67,7 +67,7 @@ export default {
         add_label: {
             type: String,
             default() {
-                return 'Add new filter to apply conditions for this snippet';
+                return 'Add a new filter to run your snippet only under specific conditions.';
             }
         },
         filterOptions: {
