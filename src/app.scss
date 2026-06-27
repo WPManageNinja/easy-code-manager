@@ -402,6 +402,16 @@ $bodyBg: #f1f2f5;
   }
 }
 
+
+.el-input {
+  .el-input__inner {
+    min-height: auto;
+  }
+}
+.el-select__input-wrapper .el-select__input {
+  min-height: auto;
+}
+
 .el-notification__content {
   text-align: left !important;
 }

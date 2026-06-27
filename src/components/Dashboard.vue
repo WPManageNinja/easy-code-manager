@@ -6,6 +6,9 @@
                     {{ $t('Code Snippets') }}
                 </div>
                 <div style="display: flex;" class="box_actions">
+
+                    <el-switch activeValue="yes" inactive-value="no" @change="toggleHideInactive" v-model="hideInactive" active-text="Hide Inactives" />
+
                     <el-input clearable
                               style="width: 200px; margin-left: 10px;"
                               size="small" type="text" v-model="search" placeholder="Search">
@@ -54,7 +57,7 @@
                             <el-radio-button value="grouped">{{ $t('Grouped') }}</el-radio-button>
                             <el-radio-button value="table">{{ $t('Table') }}</el-radio-button>
                         </el-radio-group>
-                        <el-select style="margin-right: 10px;" size="small" class="snip_ac_item"
+                        <el-select style="margin-right: 10px;" class="snip_ac_item"
                                    clearable :placeholder="$t('All tags')"
                                    filterable v-model="selectedTag">
                             <el-option v-for="tag in tags" :key="tag" :label="tag" :value="tag"></el-option>
@@ -394,6 +397,7 @@ export default {
             tags: [],
             selectedTag: '',
             viewType: 'grouped',
+            hideInactive: 'no',
             sortingOrderColumns: [
                 {
                     value: 'name',
@@ -414,7 +418,8 @@ export default {
             ],
             showingPop: false,
             groupCollapsed: {},
-            showImportExport: false
+            showImportExport: false,
+            loadedDone: false
         }
     },
     components: {
@@ -442,6 +447,11 @@ export default {
         applySorting() {
             this.$storeLocalData('snippet_sorting', this.sorting);
             this.getSnippets();
+        },
+        toggleHideInactive(value) {
+            console.log(value);
+            this.hideInactive = this.hideInactive == 'yes' ? 'yes' : 'no';
+            this.$storeLocalData('hide_inactive', this.hideInactive);
         },
         changeLang(lang) {
             if (this.selectedLang == lang) {
@@ -601,7 +611,8 @@ export default {
             return (!this.snippets || !this.snippets.length) && (!this.search && !this.selectedTag && this.selectedLang == 'all');
         },
         snippets() {
-            if (!this.search && !this.selectedTag) {
+
+            if (!this.search && !this.selectedTag && this.hideInactive != 'yes') {
                 return this.rawSnippets;
             }
 
@@ -615,6 +626,12 @@ export default {
                     }
                     const tagsArr = tags.split(',');
                     return tagsArr.includes(this.selectedTag);
+                });
+            }
+
+            if(this.hideInactive === 'yes') {
+                snippets = snippets.filter((snippet) => {
+                    return snippet.status === 'published';
                 });
             }
 
@@ -639,7 +656,11 @@ export default {
             sortType: 'DESC',
             sortBy: 'created_at'
         });
+        this.hideInactive = this.$getLocalData('hide_inactive', 'no');
         this.groupCollapsed = this.$getLocalData('group_collapsed', {});
+
+        this.loadedDone = true;
+
         this.getSnippets();
         this.tags = this.appVars.tags;
     }
