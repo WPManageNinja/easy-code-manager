@@ -7,9 +7,90 @@ use FluentSnippets\App\Services\PhpValidator;
 
 class Helper
 {
+    /**
+     * Get the storage directory path for snippets.
+     *
+     * The location can be overridden with the FLUENT_SNIPPETS_STORAGE_DIR constant in
+     * wp-config.php. A constant is used (rather than a filter) on purpose: the standalone
+     * mu-plugin runner loads before themes and regular plugins, so only a value available
+     * at config-load time stays consistent between where snippets are written and where
+     * they are read and executed.
+     *
+     * Example for wp-config.php:
+     * define('FLUENT_SNIPPETS_STORAGE_DIR', WP_CONTENT_DIR . '/uploads/fluent-snippets');
+     *
+     * NOTE: keep this logic in sync with CodeRunner::resolveStorageDir() in app/Services/mu.stub
+     *
+     * @return string The storage directory path (no trailing slash)
+     */
     public static function getStorageDir()
     {
+        if (defined('FLUENT_SNIPPETS_STORAGE_DIR') && FLUENT_SNIPPETS_STORAGE_DIR) {
+            return untrailingslashit(FLUENT_SNIPPETS_STORAGE_DIR);
+        }
+
         return WP_CONTENT_DIR . '/fluent-snippet-storage';
+    }
+
+    /**
+     * Get the URL for the storage directory.
+     *
+     * The URL can be overridden with the FLUENT_SNIPPETS_STORAGE_URL constant in
+     * wp-config.php. When not set, it is derived from the storage directory path.
+     *
+     * NOTE: keep this logic in sync with CodeRunner::resolveStorageUrl() in app/Services/mu.stub
+     *
+     * @return string The storage directory URL (no trailing slash)
+     */
+    public static function getStorageUrl()
+    {
+        if (defined('FLUENT_SNIPPETS_STORAGE_URL') && FLUENT_SNIPPETS_STORAGE_URL) {
+            return untrailingslashit(FLUENT_SNIPPETS_STORAGE_URL);
+        }
+
+        return self::deriveStorageUrl(self::getStorageDir());
+    }
+
+    /**
+     * Derive a public URL for a storage directory that lives inside a known WordPress root.
+     *
+     * NOTE: keep this logic in sync with CodeRunner::deriveStorageUrl() in app/Services/mu.stub
+     *
+     * @param string $storageDir Absolute path, no trailing slash.
+     * @return string
+     */
+    protected static function deriveStorageUrl($storageDir)
+    {
+        $defaultDir = WP_CONTENT_DIR . '/fluent-snippet-storage';
+        if ($storageDir === $defaultDir) {
+            return content_url('/fluent-snippet-storage');
+        }
+
+        // Path inside uploads/ (the recommended target for locked-down hosts).
+        $uploadsDir = wp_upload_dir();
+        $uploadsBasedir = untrailingslashit($uploadsDir['basedir']);
+        if (strpos($storageDir, $uploadsBasedir) === 0) {
+            return untrailingslashit($uploadsDir['baseurl']) . substr($storageDir, strlen($uploadsBasedir));
+        }
+
+        // Path inside wp-content/.
+        if (strpos($storageDir, WP_CONTENT_DIR) === 0) {
+            return content_url(substr($storageDir, strlen(WP_CONTENT_DIR)));
+        }
+
+        // Path inside the WordPress root.
+        if (strpos($storageDir, untrailingslashit(ABSPATH)) === 0) {
+            return site_url(substr($storageDir, strlen(untrailingslashit(ABSPATH))));
+        }
+
+        // Path is outside every known root: the URL cannot be derived. Fail loud so the
+        // misconfiguration is visible instead of silently serving broken cached-asset URLs.
+        // The site keeps working; only cached CSS/JS asset URLs are affected.
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('FluentSnippets: cannot derive a URL for storage dir "' . $storageDir . '". Define FLUENT_SNIPPETS_STORAGE_URL in wp-config.php.');
+        }
+
+        return content_url('/fluent-snippet-storage');
     }
 
     public static function getCachedDir()
