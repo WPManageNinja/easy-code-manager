@@ -620,6 +620,9 @@ ul.fls_listed_data {
   font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu;
   font-size: 16px;
   line-height: 1.6;
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed;
 }
 
 .ͼ1 .cm-scroller {
