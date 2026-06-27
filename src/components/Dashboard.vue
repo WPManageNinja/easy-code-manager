@@ -608,7 +608,7 @@ export default {
             };
         },
         is_empty() {
-            return (!this.snippets || !this.snippets.length) && (!this.search && !this.selectedTag && this.selectedLang == 'all');
+            return (!this.snippets || !this.snippets.length) && (!this.search && !this.selectedTag && this.selectedLang == 'all' && this.hideInactive != 'yes');
         },
         snippets() {
 
