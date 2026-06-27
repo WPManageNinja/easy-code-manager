@@ -132,7 +132,7 @@ class CodeHandler
         }
         $message .= '. ' . __('This message is only visible to site admin role', 'easy-code-manager');
 
-        return "<div class='fluent-snippet-error'>'.wp_kses_post($message).'</div>";
+        return "<div class='fluent-snippet-error'>".wp_kses_post($message)."</div>";
     }
 
     public function rebuildCache($snippetFile)
