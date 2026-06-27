@@ -26,6 +26,36 @@ class Helper
         return $dir;
     }
 
+    /**
+     * Invalidate the OPcache entry for a snippet/engine file we just wrote.
+     *
+     * Our runtime include()s these PHP files. On hosts where OPcache caches
+     * compiled bytecode (common in Docker/Alpine images, especially with
+     * opcache.validate_timestamps=0), edits stay invisible until PHP-FPM is
+     * restarted. Force-invalidating the exact path makes changes apply on the
+     * next request without a restart.
+     *
+     * This is intentionally a best-effort, no-throw no-op: it does nothing when
+     * OPcache is unavailable, disabled, or restricted via opcache.restrict_api,
+     * so it is safe to call on every write across every hosting environment.
+     *
+     * @param string $file Absolute path to the file that was just written/removed.
+     * @return void
+     */
+    public static function invalidateOpcache($file)
+    {
+        if (!$file || !function_exists('opcache_invalidate')) {
+            return;
+        }
+
+        // force = true so it also invalidates when opcache.validate_timestamps=0.
+        // Silenced because opcache.restrict_api can emit a warning for callers
+        // outside the allowed path prefix; in that case it is simply a no-op.
+        @opcache_invalidate($file, true);
+
+        clearstatcache(true, $file);
+    }
+
     public static function validateCode($language, $code)
     {
         if (!$code) {
@@ -184,7 +214,11 @@ PHP;
 
         $code .= 'return ' . var_export($data, true) . ';';
 
-        return file_put_contents($cacheFile, $code);
+        $bytesWritten = file_put_contents($cacheFile, $code);
+
+        self::invalidateOpcache($cacheFile);
+
+        return $bytesWritten;
     }
 
     public static function getIndexedConfig($cached = true)
