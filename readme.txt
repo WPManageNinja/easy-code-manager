@@ -6,7 +6,7 @@ License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 6.0 or higher
 Requires PHP: 7.3
-Tested up to: 6.9
+Tested up to: 7.0
 Stable tag: 10.53
 
 Add header and footer scripts, PHP Snippets, Custom CSS /JS snippets with advanced conditional logic, and more...
