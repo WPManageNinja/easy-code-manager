@@ -278,6 +278,8 @@ class Snippet
 
         file_put_contents($file, $fullCode);
 
+        Helper::invalidateOpcache($file);
+
         $type = Arr::get($metaData, 'type');
 
         if ($type == 'css' || $type == 'js') {
@@ -323,6 +325,8 @@ class Snippet
 
         file_put_contents($file, $fullCode);
 
+        Helper::invalidateOpcache($file);
+
         $this->maybeCacheCssJs($fileName, $metaData, $code);
 
         return $fileName;
@@ -338,6 +342,8 @@ class Snippet
         }
 
         unlink($file);
+
+        Helper::invalidateOpcache($file);
 
         return true;
     }
