@@ -161,6 +161,12 @@ Absolutely not. Unlike other code snippets plugin, FluentSnippets does not use t
 
 == Changelog ==
 
+= Unreleased =
+- Added inactive snippets count and filter reset options when no snippets match the current filter
+- Fixed the welcome screen being skipped on a fresh install when "Hide Inactives" was enabled
+- Fixed a JavaScript error on the dashboard when the site has no snippets
+- Fixed pagination total count so sites with more than 200 snippets can reach every page
+
 = 10.55 - Jun 28, 2026 =
 - Added "Hide Inactives" filter to quickly hide inactive snippets on the dashboard
 - Added Custom Snippets Storage Path support via constant

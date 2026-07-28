@@ -96,11 +96,11 @@ class Snippet
         $config = Helper::getIndexedConfig();
 
         if (!$config || empty($config['meta'])) {
-            return [];
+            return $this->emptyIndexedSnippets($perPage, $page);
         }
 
         if (empty($config['published']) && empty($config['draft'])) {
-            return [];
+            return $this->emptyIndexedSnippets($perPage, $page);
         }
 
         if (!empty($this->args['status'])) {
@@ -120,7 +120,7 @@ class Snippet
         }
 
         if (empty($snippets)) {
-            return [];
+            return $this->emptyIndexedSnippets($perPage, $page);
         }
 
         $errorFiles = Arr::get($config, 'error_files', []);
@@ -161,17 +161,37 @@ class Snippet
         $snippets = $this->sortSnippets($snippets);
 
         if ($perPage != null && $page != null) {
+            $total = count($snippets); // has to be counted before slicing the current page out
             $snippets = array_slice($snippets, ($page - 1) * $perPage, $perPage);
             return [
                 'data'      => $snippets,
                 'page'      => (int)$page,
                 'per_page'  => (int)$perPage,
-                'total'     => count($snippets),
-                'last_page' => (int)ceil(count($snippets) / $perPage)
+                'total'     => $total,
+                'last_page' => (int)ceil($total / $perPage)
             ];
         }
 
         return $snippets;
+    }
+
+    /*
+     * Keeps the response shape consistent when there is nothing to return.
+     * Without this the paginated callers get a bare array and no data key.
+     */
+    private function emptyIndexedSnippets($perPage = null, $page = null)
+    {
+        if ($perPage != null && $page != null) {
+            return [
+                'data'      => [],
+                'page'      => (int)$page,
+                'per_page'  => (int)$perPage,
+                'total'     => 0,
+                'last_page' => 0
+            ];
+        }
+
+        return [];
     }
 
     private function sortSnippets($snippets)

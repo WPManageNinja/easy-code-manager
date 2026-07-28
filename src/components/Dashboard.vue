@@ -95,12 +95,11 @@
 
                 <div v-if="!loading">
                     <el-table
-                        v-if="viewType == 'table'"
+                        v-if="viewType == 'table' && snippets.length"
                         v-loading="loading"
                         :data="snippets"
                         :row-class-name="tableRowClassName"
                         style="width: 100%"
-                        :empty-text="$t('No Snippets Found based on your filter')"
                     >
                         <el-table-column width="80">
                             <template #default="scope">
@@ -190,7 +189,7 @@
                             </template>
                         </el-table-column>
                     </el-table>
-                    <div v-else-if="groupedSnippets" v-loading="loading" class="groups_snippets">
+                    <div v-else-if="snippets.length && groupedSnippets" v-loading="loading" class="groups_snippets">
                         <div v-for="(group, groupName) in groupedSnippets.groups" :key="groupName" class="fsnip_group">
                             <div class="group_name">
                                 <el-icon @click="toggleGroupView(groupName)">
@@ -323,12 +322,17 @@
                                 </div>
                             </li>
                         </ul>
-                        <div v-if="!snippets || !snippets.length">
-                            <div class="box_body">
-                                <div style="padding: 20px 0; text-align: center;">
-                                    <p style="margin-bottom: 20px;">{{$t('Sorry, no snippets found based on your filter.')}}</p>
-                                </div>
-                            </div>
+                    </div>
+                    <div v-else class="box_body">
+                        <div style="padding: 20px 0; text-align: center;">
+                            <p style="margin-bottom: 20px;">{{$t('Sorry, no snippets found based on your filter.')}}</p>
+                            <p v-if="hiddenInactiveCount" style="margin-bottom: 20px;">
+                                {{ $t('Inactive snippets hidden by the Hide Inactives filter') }} ({{ hiddenInactiveCount }})
+                            </p>
+                            <el-button v-if="hiddenInactiveCount" @click="toggleHideInactive('no')" type="primary">
+                                {{ $t('Show Inactive Snippets') }}
+                            </el-button>
+                            <el-button @click="resetFilters()">{{ $t('Reset Filters') }}</el-button>
                         </div>
                     </div>
                     <el-row style="margin-top: 20px; padding: 0 15px;" :gutter="30">
@@ -452,6 +456,12 @@ export default {
             this.hideInactive = value == 'yes' ? 'yes' : 'no';
             this.$storeLocalData('hide_inactive', this.hideInactive);
         },
+        resetFilters() {
+            this.search = '';
+            this.selectedTag = '';
+            this.toggleHideInactive('no');
+            this.changeLang('all');
+        },
         changeLang(lang) {
             if (this.selectedLang == lang) {
                 return;
@@ -471,8 +481,8 @@ export default {
                 sort_order: this.sorting.sortType
             })
                 .then(response => {
-                    this.rawSnippets = response.snippets.data;
-                    this.paginate.total = response.snippets.total;
+                    this.rawSnippets = response.snippets.data || [];
+                    this.paginate.total = response.snippets.total || 0;
 
                     if (response.tags) {
                         this.tags = response.tags;
@@ -606,8 +616,20 @@ export default {
                 roots: roots
             };
         },
+        hiddenInactiveCount() {
+            if (this.hideInactive != 'yes') {
+                return 0;
+            }
+            // exact complement of the hideInactive filter on the snippets computed
+            return this.rawSnippets.filter((snippet) => snippet.status !== 'published').length;
+        },
         is_empty() {
-            return (!this.snippets || !this.snippets.length) && (!this.search && !this.selectedTag && this.selectedLang == 'all' && this.hideInactive != 'yes');
+            // search, tag and hideInactive are client side filters over rawSnippets,
+            // so they must not be taken into account here. Otherwise the onboarding
+            // screen gets skipped on a fresh install when one of them is active.
+            // paginate.total covers every page, so landing on an emptied out page
+            // does not get mistaken for a fresh install either.
+            return !this.paginate.total && this.selectedLang == 'all';
         },
         snippets() {
 
