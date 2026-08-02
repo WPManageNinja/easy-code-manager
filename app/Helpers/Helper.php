@@ -98,7 +98,7 @@ class Helper
         $dir = self::getStorageDir() . '/cached';
 
         // check if the directory exists
-        if (!is_file($dir)) {
+        if (!is_dir($dir)) {
             wp_mkdir_p($dir);
             // add an empty index.php file to that dir
             file_put_contents($dir.'/index.php', '<?php // silence is golden');

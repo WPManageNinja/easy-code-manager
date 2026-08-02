@@ -34,15 +34,14 @@ class Router
             },
             'permission_callback' => function($request) use ($permissions) {
                 if(is_array($permissions)) {
-                    if(count($permissions)) {
-                        foreach ($permissions as $permission) {
-                            if(current_user_can($permission)) {
-                                return true;
-                            }
+                    // Fail closed: a route registered without any capability is denied
+                    // rather than served publicly.
+                    foreach ($permissions as $permission) {
+                        if(current_user_can($permission)) {
+                            return true;
                         }
-                        return false;
                     }
-                    return true;
+                    return false;
                 }
 
                 return call_user_func($permissions, $request);
