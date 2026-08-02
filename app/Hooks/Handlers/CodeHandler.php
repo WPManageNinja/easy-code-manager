@@ -160,8 +160,6 @@ class CodeHandler
 
     public function maybeHandleFatalError($args, $error)
     {
-        error_log('OK');
-
         if (empty($args['response']) || $args['response'] != 500) {
             return $args;
         }

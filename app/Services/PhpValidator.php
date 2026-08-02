@@ -290,6 +290,21 @@ class PhpValidator
             $result = new \WP_Error('runtime_error', $parse_error->getMessage(), array(
                 'line' => $parse_error->getLine(),
             ));
+        } catch (\Throwable $throwable) {
+            // Anything that is not a ParseError lands here: an undefined function or
+            // class, a TypeError, a DivisionByZeroError, or an exception thrown by the
+            // snippet. Without this catch the throwable escapes and the save request
+            // dies as an uncaught fatal instead of returning a validation message.
+            $errorData = array();
+
+            // Only report a line number when the throwable came from the snippet
+            // itself. If it was raised inside a WordPress function the line points at
+            // core and reads as nonsense to the user.
+            if (strpos($throwable->getFile(), "eval()'d code") !== false) {
+                $errorData['line'] = $throwable->getLine();
+            }
+
+            $result = new \WP_Error('runtime_error', $throwable->getMessage(), $errorData);
         }
         $output = ob_get_clean();
 

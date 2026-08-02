@@ -14,6 +14,8 @@ class AdminMenuHandler
     {
         add_action('admin_menu', array($this, 'addMenu'));
 
+        add_action('admin_init', [Helper::class, 'maybeUpdateStandAlone']);
+
         add_action('wp_ajax_fluent_snippets_export_snippets', [$this, 'exportSnippets']);
         add_action('wp_ajax_fluent_snippets_import_json', [$this, 'importSnippets']);
 

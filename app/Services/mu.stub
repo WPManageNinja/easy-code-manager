@@ -1,5 +1,29 @@
 <?php
 
+namespace FluentSnippets\Mu;
+
+/*
+ * Standalone (MU) runner for Fluent Snippets.
+ *
+ * WordPress loads this file on every request, before regular plugins. It only takes
+ * over when the main plugin is not loaded, so published snippets keep running after
+ * the plugin is deactivated or removed.
+ *
+ * The two classes below are hand-maintained copies of:
+ *   - app/Services/FluentSnippetCondition.php
+ *   - app/Services/CodeRunner.php
+ *
+ * After editing either of those, run:  php tests/mu-stub-drift.php
+ * That check fails when this file has drifted from them.
+ *
+ * The namespace is deliberate: these classes have very generic names, and this file
+ * loads on every request. In the global namespace a `CodeRunner` declared by any other
+ * plugin would fatal the entire site.
+ *
+ * The version below is substituted by Helper::enableStandAlone() when this file is
+ * written, so the plugin can detect a stale copy and refresh it after an update.
+ */
+
 if (!defined('ABSPATH')) {
     return;
 }
@@ -9,7 +33,7 @@ if (defined('FLUENT_SNIPPETS_RUNNING_MU')) {
 }
 
 define('FLUENT_SNIPPETS_RUNNING_MU', true);
-define('FLUENT_SNIPPETS_RUNNING_MU_VERSION', '10.32');
+define('FLUENT_SNIPPETS_RUNNING_MU_VERSION', '{{FLUENT_SNIPPETS_VERSION}}');
 
 class FluentSnippetCondition
 {
@@ -64,7 +88,7 @@ class FluentSnippetCondition
     private function evaluateUserCondition($key, $operator, $value)
     {
         if ($key == 'authenticated') {
-            return is_user_logged_in();
+            return $value == (is_user_logged_in() ? 'yes' : 'no');
         }
 
         if ($key == 'role') {
@@ -156,7 +180,7 @@ class FluentSnippetCondition
                     return false;
                 }
 
-                $value = (array) $value;
+                $value = (array)$value;
 
                 $value = array_filter($value);
 
@@ -440,6 +464,7 @@ class CodeRunner
         return content_url('/fluent-snippet-storage');
     }
 
+
     public function runSnippets()
     {
         if (!is_file($this->storageDir . '/index.php')) {
@@ -507,6 +532,7 @@ class CodeRunner
                 case 'PHP':
                     $conditionSettings = $snippet['condition'];
                     $hookName = 'wp';
+
                     if (empty($conditionSettings) || empty($conditionSettings['status']) || $conditionSettings['status'] != 'yes' || empty($conditionSettings['items'])) {
                         $hookName = 'setup_theme';
                     }
@@ -565,7 +591,6 @@ class CodeRunner
                     $runAt = $this->get($snippet, 'run_at', 'wp_head');
 
                     $isBlockStyle = $this->get($snippet, 'load_in_block_editor', '') === 'yes';
-
                     if ($isBlockStyle) {
                         add_filter('block_editor_settings_all', function ($settings) use ($snippet, $file) {
                             $code = $this->parseBlock(file_get_contents($file), true);
@@ -597,9 +622,8 @@ class CodeRunner
                         }
                     }
 
-
-                    if($isAdminCss) {
-                        add_action('enqueue_block_editor_assets', function() use($file, $snippet, $conditionalClass, $loadUrl) {
+                    if ($isAdminCss) {
+                        add_action('enqueue_block_editor_assets', function () use ($file, $snippet, $conditionalClass, $loadUrl) {
                             if (!$conditionalClass->evaluate($snippet['condition'])) {
                                 return;
                             }

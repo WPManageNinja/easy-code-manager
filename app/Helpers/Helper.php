@@ -137,6 +137,67 @@ class Helper
         clearstatcache(true, $file);
     }
 
+    /**
+     * Write a file atomically.
+     *
+     * The runtime include()s index.php on every request and require()s each published
+     * snippet file. A plain file_put_contents() truncates the target first and then
+     * writes, so for the duration of the write the file on disk is empty or half
+     * written. A concurrent request that includes it in that window hits a parse error
+     * and fatals.
+     *
+     * Writing to a temp file in the same directory and rename()-ing it over the target
+     * makes the swap atomic: a reader sees either the whole old file or the whole new
+     * one, never a torn one.
+     *
+     * Falls back to a direct write whenever the atomic path is unavailable, so a save
+     * can never start failing because of this.
+     *
+     * @param string $file Absolute path of the destination file.
+     * @param string $contents
+     * @return int|false Number of bytes written, or false on failure.
+     */
+    public static function atomicPut($file, $contents)
+    {
+        $dir = dirname($file);
+
+        $tmpFile = @tempnam($dir, '.fluent-snippets-tmp');
+
+        // tempnam() silently falls back to the system temp dir when $dir is not
+        // writable, and a cross-device rename() is not atomic. Only take the atomic
+        // path when the temp file really landed next to the target.
+        if ($tmpFile === false || dirname($tmpFile) !== $dir) {
+            if ($tmpFile !== false) {
+                @unlink($tmpFile);
+            }
+            return file_put_contents($file, $contents);
+        }
+
+        $bytesWritten = file_put_contents($tmpFile, $contents);
+
+        if ($bytesWritten === false) {
+            @unlink($tmpFile);
+            return false;
+        }
+
+        // tempnam() creates the file as 0600. Keep whatever the target already used so
+        // host-specific setups (group-writable files, for instance) survive the swap.
+        $perms = is_file($file) ? (@fileperms($file) & 0777) : 0;
+        @chmod($tmpFile, $perms ? $perms : 0644);
+
+        // rename() cannot overwrite an existing file on Windows.
+        if (DIRECTORY_SEPARATOR === '\\' && is_file($file)) {
+            @unlink($file);
+        }
+
+        if (!@rename($tmpFile, $file)) {
+            @unlink($tmpFile);
+            return file_put_contents($file, $contents);
+        }
+
+        return $bytesWritten;
+    }
+
     public static function validateCode($language, $code)
     {
         if (!$code) {
@@ -295,7 +356,7 @@ PHP;
 
         $code .= 'return ' . var_export($data, true) . ';';
 
-        $bytesWritten = file_put_contents($cacheFile, $code);
+        $bytesWritten = self::atomicPut($cacheFile, $code);
 
         self::invalidateOpcache($cacheFile);
 
@@ -381,16 +442,53 @@ PHP;
             return new \WP_Error('failed', 'mu-plugins dir could not be created');
         }
 
-        file_put_contents(
-            $muDir . '/fluent-snippets-mu.php',
-            file_get_contents(FLUENT_SNIPPETS_PLUGIN_PATH . 'app/Services/mu.stub')
-        );
+        $stub = file_get_contents(FLUENT_SNIPPETS_PLUGIN_PATH . 'app/Services/mu.stub');
+
+        if (!$stub) {
+            return new \WP_Error('failed', 'mu.stub could not be read');
+        }
+
+        // Stamp the current plugin version into the copy so a later release can tell
+        // that the installed runner is stale and refresh it. See maybeUpdateStandAlone().
+        $stub = str_replace('{{FLUENT_SNIPPETS_VERSION}}', FLUENT_SNIPPETS_PLUGIN_VERSION, $stub);
+
+        self::atomicPut($muDir . '/fluent-snippets-mu.php', $stub);
 
         if (!is_file($muDir . '/fluent-snippets-mu.php')) {
             return new \WP_Error('failed', 'file could not be moved to mu-plugins directory');
         }
 
         return true;
+    }
+
+    /**
+     * Refresh the standalone runner when it is older than the plugin.
+     *
+     * The mu-plugin is only written when standalone mode is toggled or the plugin is
+     * deactivated, so without this a site that enabled standalone on an older release
+     * keeps running that release's runner forever — and that stale copy is exactly what
+     * takes over the moment the plugin is deactivated.
+     *
+     * Hooked to admin_init: the check is two defined() calls, and a rewrite only happens
+     * on the first admin request after an update.
+     *
+     * @return void
+     */
+    public static function maybeUpdateStandAlone()
+    {
+        if (!defined('FLUENT_SNIPPETS_RUNNING_MU')) {
+            return; // Standalone mode is not enabled, nothing to refresh.
+        }
+
+        // A runner predating the version constant has no FLUENT_SNIPPETS_RUNNING_MU_VERSION
+        // at all, so an undefined constant also means "stale".
+        if (defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION') && FLUENT_SNIPPETS_RUNNING_MU_VERSION === FLUENT_SNIPPETS_PLUGIN_VERSION) {
+            return;
+        }
+
+        // The constants above come from the copy already loaded this request, so the
+        // refreshed file takes effect from the next request. No rewrite loop.
+        self::enableStandAlone(true);
     }
 
     public static function disableStandAlone()
@@ -439,7 +537,10 @@ PHP;
 
     public static function handleDeactivate()
     {
-        if (defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION')) {
+        // Checks RUNNING_MU rather than RUNNING_MU_VERSION: a runner written before the
+        // version constant existed still needs refreshing on deactivation, and that is
+        // precisely when the standalone copy takes over.
+        if (defined('FLUENT_SNIPPETS_RUNNING_MU')) {
             self::enableStandAlone(true);
         }
     }

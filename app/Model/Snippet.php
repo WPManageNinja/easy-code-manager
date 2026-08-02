@@ -296,7 +296,7 @@ class Snippet
         $docBlockString = $this->parseInputMeta($metaData, true);
         $fullCode = $docBlockString . $code;
 
-        file_put_contents($file, $fullCode);
+        Helper::atomicPut($file, $fullCode);
 
         Helper::invalidateOpcache($file);
 
@@ -343,7 +343,7 @@ class Snippet
 
         $fullCode = $docBlockString . $code;
 
-        file_put_contents($file, $fullCode);
+        Helper::atomicPut($file, $fullCode);
 
         Helper::invalidateOpcache($file);
 
@@ -524,7 +524,7 @@ class Snippet
             $cacheFileName = str_replace('.php', '.' . $type, $fileName);
             $fullFileName = Helper::getCachedDir() . '/' . $cacheFileName;
             if (Arr::get($metaData, 'load_as_file') == 'yes') {
-                file_put_contents($fullFileName, $code);
+                Helper::atomicPut($fullFileName, $code);
                 return $cacheFileName;
             }
 
