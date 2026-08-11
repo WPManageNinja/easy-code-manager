@@ -14,7 +14,8 @@
                             v-model="snippet.code"
                             :conditions="snippet.meta.condition"
                         />
-                        <div v-if="errors.has('code')" class="code_error_block">
+                        <save-error-panel v-if="errorDetails" :details="errorDetails" />
+                        <div v-else-if="errors.has('code')" class="code_error_block">
                             <p>{{ errors.get('code') }}</p>
                             <pre class="el-form-item__error_explained">{{ errors.get('code_explanation') }}</pre>
                         </div>
@@ -136,6 +137,7 @@ import {markRaw} from "vue";
 import SelectPlus from './_SelectPlus';
 import AdvancedConditions from './AdvancedConditions';
 import WhereRun from './_WhereRun';
+import SaveErrorPanel from './_SaveErrorPanel.vue';
 
 export default {
     name: 'SnippetForm',
@@ -144,11 +146,21 @@ export default {
         CodeEditor,
         SelectPlus,
         AdvancedConditions,
-        WhereRun
+        WhereRun,
+        SaveErrorPanel
     },
     data() {
         return {
             InfoField: markRaw(InfoFilled)
+        }
+    },
+    computed: {
+        // Every failure carries `error_details` now, whatever it was about — bad code, a
+        // full disk, an expired token. The panel sits under the editor because that is
+        // where the user is looking when they press save.
+        errorDetails() {
+            const details = this.errors.get('error_details');
+            return (details && details.title) ? details : null;
         }
     },
     props: ['snippet', 'is_new', 'errors']

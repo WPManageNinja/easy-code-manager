@@ -215,25 +215,35 @@ class PhpValidator
                         case T_FUNCTION:
                             /* translators: %s: PHP function name */
                             $message = __('Cannot redeclare function %s.', 'easy-code-manager');
+                            $structure = 'function';
                             break;
                         case T_CLASS:
                             /* translators: %s: PHP class name */
                             $message = __('Cannot redeclare class %s.', 'easy-code-manager');
+                            $structure = 'class';
                             break;
                         case T_INTERFACE:
                             /* translators: %s: PHP interface name */
                             $message = __('Cannot redeclare interface %s.', 'easy-code-manager');
+                            $structure = 'interface';
                             break;
                         default:
                             /* translators: %s: PHP identifier name*/
                             $message = __('Cannot redeclare %s.', 'easy-code-manager');
+                            $structure = 'identifier';
                     }
 
+                    // The name and what kind of thing it is are carried alongside the
+                    // message so SnippetErrors can build the `function_exists()` guard
+                    // for this exact identifier instead of parsing it back out of a
+                    // translated sentence.
                     return new \WP_Error(
                         'duplicate_error',
                         sprintf($message, $token[1]),
                         array(
-                            'line' => $token[2],
+                            'line'       => $token[2],
+                            'identifier' => $token[1],
+                            'structure'  => $structure,
                         ));
                 }
             }
@@ -287,7 +297,11 @@ class PhpValidator
         try {
             $result = eval($code); // phpcs:ignore Squiz.PHP.Eval.Discouraged
         } catch (\ParseError $parse_error) {
-            $result = new \WP_Error('runtime_error', $parse_error->getMessage(), array(
+            // `parse_error`, not `runtime_error`: most syntax mistakes get this far
+            // rather than being caught by validate(), and describing a stray semicolon
+            // as something that "failed when it was test-run" — with advice to move it
+            // onto a hook — sends the user looking in the wrong place entirely.
+            $result = new \WP_Error('parse_error', $parse_error->getMessage(), array(
                 'line' => $parse_error->getLine(),
             ));
         } catch (\Throwable $throwable) {
@@ -312,9 +326,12 @@ class PhpValidator
             return $result;
         }
 
-        if($output) {
+        // Printing and returning are two different mistakes with two different fixes, so
+        // they no longer share the `has_buffer` code and its echo-only wording — a
+        // stray top-level `return` was being reported as an echo statement.
+        if ($output) {
             return new \WP_Error(
-                'has_buffer',
+                'has_output',
                 'PHP code should not have print / echo statement',
                 array(
                     'line' => 0,
@@ -324,8 +341,8 @@ class PhpValidator
 
         if ($result) {
             return new \WP_Error(
-                'has_buffer',
-                'PHP code should not have print / echo statement',
+                'has_return',
+                'PHP code should not return a value at the top level',
                 array(
                     'line' => 0,
                     'output' => $result

@@ -98,6 +98,9 @@ export default {
                 return;
             }
 
+            this.$eventBus.emit("server_error", null);
+            this.errors.clear();
+
             this.saving = true;
             this.$ajax('post', 'fluent_snippet_create', {
                 meta: JSON.stringify({...this.snippet.meta, code: this.snippet.code})
@@ -115,6 +118,10 @@ export default {
 
                     if (errors && errors.data) {
                         this.errors.record(errors.data);
+                    }
+
+                    if (errors && errors.html) {
+                        this.$eventBus.emit("server_error", errors.html);
                     }
 
                     this.$handleError(errors);

@@ -1140,6 +1140,108 @@ input.el-select__input {
   margin: 0 20px 20px 0;
 }
 
+.fsnip_error_panel {
+  margin-top: 12px;
+  border: 1px solid #f0a4a4;
+  border-left: 4px solid #d63638;
+  border-radius: 4px;
+  background: #fef7f7;
+  padding: 14px 18px;
+  line-height: 1.6;
+
+  .fsnip_error_head {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    .dashicons-warning {
+      color: #d63638;
+      margin-top: 2px;
+      flex: 0 0 auto;
+    }
+  }
+
+  .fsnip_error_head_text {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    h4 {
+      margin: 0;
+      font-size: 15px;
+      color: #8a1f21;
+    }
+  }
+
+  .fsnip_error_line {
+    background: #d63638;
+    color: #fff;
+    border-radius: 3px;
+    padding: 1px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .fsnip_error_reason {
+    margin: 8px 0 0;
+    color: #3c434a;
+  }
+
+  .fsnip_error_fix {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f3d4d4;
+
+    strong {
+      display: block;
+      color: #8a1f21;
+      margin-bottom: 2px;
+    }
+
+    p {
+      margin: 0;
+      color: #3c434a;
+    }
+  }
+
+  pre {
+    margin: 8px 0 0;
+    padding: 10px 12px;
+    background: #2c3338;
+    color: #f0f0f1;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .fsnip_error_extra {
+    margin-top: 12px;
+
+    strong {
+      display: block;
+      color: #8a1f21;
+    }
+
+    // The captured output is the user's own markup and can be any width; it scrolls
+    // rather than stretching the editor column.
+    pre {
+      max-height: 220px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    a {
+      font-size: 12px;
+      text-decoration: none;
+    }
+  }
+}
+
 .fsnin_run_selector {
   position: relative;
 }

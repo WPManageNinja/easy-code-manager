@@ -6,6 +6,7 @@ use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Http\Controllers\SnippetsController;
 use FluentSnippets\App\Model\Snippet;
+use FluentSnippets\App\Services\SnippetErrors;
 use FluentSnippets\App\Services\Trans;
 
 class AdminMenuHandler
@@ -708,26 +709,82 @@ class AdminMenuHandler
 </svg>');
     }
 
-    public function saveSnippet()
+    /**
+     * Capability and nonce gate for the two editor endpoints.
+     *
+     * Both failures are dead ends for the user unless they are told what to do about
+     * them, and the expired-nonce one is worse than it looks: reloading the page is the
+     * fix, and reloading loses whatever they just typed. That warning belongs in the
+     * message, not in a support reply afterwards.
+     *
+     * Sends a 422 and exits when the request cannot proceed.
+     *
+     * @return void
+     */
+    private function guardAuthoringRequest()
     {
         if (!current_user_can('unfiltered_html') || !current_user_can('install_plugins')) {
-            wp_send_json([
-                'message' => 'You do not have permission to perform this action. Required Permission: unfiltered_html and install_plugins'
-            ], 422);
+            $this->sendError(SnippetErrors::make('permission_denied', [
+                'title'  => __('You are not allowed to save snippets on this site', 'easy-code-manager'),
+                'reason' => __('Saving a snippet means putting executable code on the site, so it needs both the install_plugins and unfiltered_html capabilities. Your account is missing at least one of them.', 'easy-code-manager'),
+                'fix'    => __('On a multisite, only Super Admins have unfiltered_html by default. Otherwise the usual causes are DISALLOW_UNFILTERED_HTML set in wp-config.php, or a security or role-editor plugin that has removed the capability from your role.', 'easy-code-manager'),
+            ]));
         }
 
-        // validate the nonce
         $nonce = Arr::get($_REQUEST, '__nonce');
+
         if (!wp_verify_nonce($nonce, 'fluent-snippets')) {
-            wp_send_json([
-                'message' => 'Invalid nonce. Please refresh the page and try again.'
-            ], 422);
+            $this->sendError(SnippetErrors::make('invalid_nonce', [
+                'title'  => __('Your security token has expired', 'easy-code-manager'),
+                'reason' => __('WordPress security tokens are only valid for a limited time. This page has been open for too long, or you have signed in again somewhere else since it loaded.', 'easy-code-manager'),
+                'fix'    => __('Copy your code somewhere safe first, then reload this page and paste it back — reloading is what issues a fresh token. If this keeps happening, a caching layer is caching wp-admin pages and needs to be told not to.', 'easy-code-manager'),
+            ]));
+        }
+    }
+
+    /**
+     * @param \WP_Error $error
+     * @return void
+     */
+    private function sendError($error)
+    {
+        wp_send_json([
+            'message' => $error->get_error_message(),
+            'data'    => $error->get_error_data()
+        ], 422);
+    }
+
+    /**
+     * Decode the `meta` payload the editor posts, or explain why it could not be read.
+     *
+     * A truncated or missing payload used to fatal on `$meta['code']` one line later, so
+     * a size limit on the server surfaced as a blank 500 with no clue attached. Large
+     * snippets are exactly what trips `post_max_size`, a ModSecurity body limit, or a
+     * `max_input_vars` cap, so this is a real path and it deserves a real message.
+     *
+     * @return array Decoded meta including the `code` key. Exits on failure.
+     */
+    private function readPostedMeta()
+    {
+        $meta = json_decode(wp_unslash(Arr::get($_REQUEST, 'meta', '')), true);
+
+        if (is_array($meta) && isset($meta['code'])) {
+            return $meta;
         }
 
+        $this->sendError(SnippetErrors::make('invalid_payload', [
+            'title'  => __('The snippet did not arrive in one piece', 'easy-code-manager'),
+            'reason' => __('The editor sent your snippet, but the server received something incomplete, so nothing was saved and the previous version is still in place.', 'easy-code-manager'),
+            'fix'    => __('This is almost always a size limit on the request. Ask your host to raise post_max_size and max_input_vars, or to relax the firewall rule (often ModSecurity) that is truncating requests to wp-admin. Saving a much shorter snippet is a quick way to confirm that is what is happening.', 'easy-code-manager'),
+        ]));
+    }
+
+    public function saveSnippet()
+    {
+        $this->guardAuthoringRequest();
 
         $fileName = sanitize_file_name(Arr::get($_REQUEST, 'fluent_saving_snippet_name'));
-        $meta = wp_unslash(Arr::get($_REQUEST, 'meta'));
-        $meta = json_decode($meta, true);
+        $meta = $this->readPostedMeta();
         $code = $meta['code'];
         unset($meta['code']);
 
@@ -755,23 +812,9 @@ class AdminMenuHandler
 
     public function createSnippet()
     {
-        if (!current_user_can('unfiltered_html') || !current_user_can('install_plugins')) {
-            wp_send_json([
-                'message' => 'You do not have permission to perform this action. Required Permission: unfiltered_html and install_plugins'
-            ], 422);
-        }
+        $this->guardAuthoringRequest();
 
-        // validate the nonce
-        $nonce = Arr::get($_REQUEST, '__nonce');
-        if (!wp_verify_nonce($nonce, 'fluent-snippets')) {
-            wp_send_json([
-                'message' => 'Invalid nonce. Please refresh the page and try again.'
-            ], 422);
-        }
-
-
-        $meta = wp_unslash(Arr::get($_REQUEST, 'meta'));
-        $meta = json_decode($meta, true);
+        $meta = $this->readPostedMeta();
         $code = $meta['code'];
         unset($meta['code']);
 

@@ -4,6 +4,7 @@ namespace FluentSnippets\App\Model;
 
 use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
+use FluentSnippets\App\Services\SnippetErrors;
 
 class Snippet
 {
@@ -270,7 +271,7 @@ class Snippet
         $file = $snippetDir . '/' . $fileName;
 
         if (!is_file($file) || $fileName === 'index.php') {
-            return new \WP_Error('file_not_found', 'File not found');
+            return SnippetErrors::fileMissing($fileName);
         }
 
         $fileContent = file_get_contents($snippetDir . '/' . $fileName);
@@ -291,13 +292,18 @@ class Snippet
         $file = Helper::getStorageDir() . '/' . $fileName;
 
         if (!is_file($file)) {
-            return new \WP_Error('file_not_found', 'File not found');
+            return SnippetErrors::fileMissing($fileName);
         }
 
         $docBlockString = $this->parseInputMeta($metaData, true);
         $fullCode = $docBlockString . $code;
 
-        Helper::atomicPut($file, $fullCode);
+        // atomicPut() returns false when the storage directory is not writable. Ignoring
+        // that was the one failure mode where the plugin actively lied: the editor said
+        // "Snippet has been updated successfully" and the old code came back on reload.
+        if (Helper::atomicPut($file, $fullCode) === false) {
+            return SnippetErrors::writeFailed($file);
+        }
 
         Helper::invalidateOpcache($file);
 
@@ -337,14 +343,24 @@ class Snippet
         $file = $storageDir . '/' . $fileName;
 
         if (is_file($file)) {
-            return new \WP_Error('file_exists', 'Please try a different name');
+            return SnippetErrors::make('file_exists', [
+                'title'  => __('A snippet file with this name already exists', 'easy-code-manager'),
+                'reason' => sprintf(
+                    /* translators: %s: snippet file name */
+                    __('Snippet files are named after the snippet, and %s is taken. This normally happens when a snippet was deleted and recreated, so the numbering no longer lines up.', 'easy-code-manager'),
+                    $fileName
+                ),
+                'fix'    => __('Change the snippet name slightly and save again.', 'easy-code-manager'),
+            ]);
         }
 
         $docBlockString = $this->parseInputMeta($metaData, true);
 
         $fullCode = $docBlockString . $code;
 
-        Helper::atomicPut($file, $fullCode);
+        if (Helper::atomicPut($file, $fullCode) === false) {
+            return SnippetErrors::writeFailed($file);
+        }
 
         Helper::invalidateOpcache($file);
 

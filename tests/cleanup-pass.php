@@ -70,6 +70,7 @@ class WP_Error
 require $base . 'app/Helpers/Arr.php';
 require $base . 'app/Helpers/Helper.php';
 require $base . 'app/Model/Snippet.php';
+require $base . 'app/Services/SnippetErrors.php';
 
 use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Model\Snippet;

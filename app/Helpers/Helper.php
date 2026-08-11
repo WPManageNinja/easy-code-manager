@@ -4,6 +4,7 @@ namespace FluentSnippets\App\Helpers;
 
 use FluentSnippets\App\Model\Snippet;
 use FluentSnippets\App\Services\PhpValidator;
+use FluentSnippets\App\Services\SnippetErrors;
 
 class Helper
 {
@@ -156,6 +157,11 @@ class Helper
      * @param string $file Absolute path of the destination file.
      * @param string $contents
      * @return int|false Number of bytes written, or false on failure.
+     *
+     * The writes are silenced because every caller now acts on the false return. Left
+     * unsilenced, a permission warning is printed straight into the AJAX response and
+     * the JSON the editor is waiting for arrives unparseable — turning "the folder is
+     * not writable" into "the server sent back an unexpected response".
      */
     public static function atomicPut($file, $contents)
     {
@@ -170,10 +176,10 @@ class Helper
             if ($tmpFile !== false) {
                 @unlink($tmpFile);
             }
-            return file_put_contents($file, $contents);
+            return @file_put_contents($file, $contents);
         }
 
-        $bytesWritten = file_put_contents($tmpFile, $contents);
+        $bytesWritten = @file_put_contents($tmpFile, $contents);
 
         if ($bytesWritten === false) {
             @unlink($tmpFile);
@@ -192,7 +198,7 @@ class Helper
 
         if (!@rename($tmpFile, $file)) {
             @unlink($tmpFile);
-            return file_put_contents($file, $contents);
+            return @file_put_contents($file, $contents);
         }
 
         return $bytesWritten;
@@ -786,11 +792,31 @@ PHP;
      */
     public static function detectWrappingTag($code)
     {
-        if (!preg_match('/^\s*<\s*(script|style)\b/i', $code)) {
+        if (!preg_match('/^\s*<\s*(script|style)\b/i', $code, $matches)) {
             return false;
         }
 
-        return new \WP_Error('invalid_code', __('Please remove the wrapping style or script tag — the editor adds it for you.', 'easy-code-manager'), [
+        $tag = strtolower(trim($matches[1]));
+
+        return SnippetErrors::make('invalid_code', [
+            'title'  => sprintf(
+                /* translators: %s: script or style */
+                __('Remove the wrapping <%s> tag', 'easy-code-manager'),
+                $tag
+            ),
+            'reason' => sprintf(
+                /* translators: 1: script or style, 2: script or style */
+                __('FluentSnippets outputs the <%1$s> element for you and puts this snippet inside it. A second <%2$s> tag in the code ends up printed as literal text on the page, and the snippet does nothing.', 'easy-code-manager'),
+                $tag,
+                $tag
+            ),
+            'fix'    => sprintf(
+                /* translators: 1: opening tag, 2: closing tag */
+                __('Delete the opening %1$s and its matching %2$s, and keep only what was between them.', 'easy-code-manager'),
+                '<' . $tag . '>',
+                '</' . $tag . '>'
+            ),
+        ], [
             'original' => $code
         ]);
     }
@@ -808,54 +834,19 @@ PHP;
             return $metaValidated;
         }
 
-        if ($meta['type'] == 'PHP') {
-            // Check if the code starts with <?php
-            if (preg_match('/^<\?php/', $code)) {
-                return new \WP_Error('invalid_code', 'Please remove <?php from the beginning of the code', [
-                    'code' => 'Please remove <?php from the beginning of the code'
-                ]);
-            }
+        $code = self::prepareCodeForStorage($code, $meta);
 
-            $code = rtrim($code, '?>');
-            $code = '<?php' . PHP_EOL . $code;
-        } else if ($meta['type'] == 'php_content') {
-            $code = apply_filters('fluent_snippets/sanitize_mixed_content', $code, $meta);
-            if (is_wp_error($code)) {
-                return $code;
-            }
-        } else {
-            $wrappingTag = self::detectWrappingTag($code);
-            if ($wrappingTag) {
-                return $wrappingTag;
-            }
-        }
-
-        // Validate the code
-        $validated = self::validateCode($meta['type'], $code);
-
-        if (is_wp_error($validated)) {
-
-            $message = $validated->get_error_message();
-            $additionalData = $validated->get_error_data();
-
-            if ($lineNumber = Arr::get($additionalData, 'line')) {
-                if (is_numeric($lineNumber) && $lineNumber > 1) {
-                    $lineNumber = $lineNumber - 1;
-                    $additionalData['line'] = $lineNumber;
-                }
-
-                $message .= ' on line ' . $lineNumber;
-            }
-
-            return new \WP_Error('code', $message, [
-                'code'             => $message,
-                'code_explanation' => $additionalData
-            ]);
+        if (is_wp_error($code)) {
+            return $code;
         }
 
         // check if the $code which is a php snippet is valid or not
         $snippetModel = new Snippet();
         $snippet = $snippetModel->updateSnippet($fileName, $code, $meta);
+
+        if (is_wp_error($snippet)) {
+            return $snippet;
+        }
 
         if ($reactivate) {
             $config = Helper::getIndexedConfig();
@@ -884,43 +875,10 @@ PHP;
 
         $meta['status'] = 'draft';
 
-        // Check if the php snippet $code is valid or not by validating it
-        if ($meta['type'] == 'PHP') {
-            // Check if the code starts with <?php
-            if (preg_match('/^<\?php/', $code)) {
-                return new \WP_Error('invalid_code', 'Please remove <?php from the beginning of the code', [
-                    'code' => 'Please remove <?php from the beginning of the code'
-                ]);
-            }
-            $code = rtrim($code, '?>');
-            $code = '<?php' . PHP_EOL . $code;
-        } else if ($meta['type'] == 'php_content') {
-            $code = apply_filters('fluent_snippets/sanitize_mixed_content', $code, $meta);
-            if (is_wp_error($code)) {
-                return $code;
-            }
-        }
+        $code = self::prepareCodeForStorage($code, $meta);
 
-        // Validate the code
-        $validated = self::validateCode($meta['type'], $code);
-
-        if (is_wp_error($validated)) {
-            $message = $validated->get_error_message();
-            $additionalData = $validated->get_error_data();
-
-            if ($lineNumber = Arr::get($additionalData, 'line')) {
-                if (is_numeric($lineNumber) && $lineNumber > 1) {
-                    $lineNumber = $lineNumber - 1;
-                    $additionalData['line'] = $lineNumber;
-                }
-
-                $message .= ' on line ' . $lineNumber;
-            }
-
-            return new \WP_Error('code', $message, [
-                'code'             => $message,
-                'code_explanation' => $additionalData
-            ]);
+        if (is_wp_error($code)) {
+            return $code;
         }
 
         $settings = self::getConfigSettings();
@@ -932,21 +890,94 @@ PHP;
         // check if the $code which is a php snippet is valid or not
         $snippetModel = new Snippet();
         $snippet = $snippetModel->createSnippet($code, $meta);
+
+        if (is_wp_error($snippet)) {
+            return $snippet;
+        }
+
         do_action('fluent_snippets/snippet_created', $snippet);
 
         return $snippet;
     }
 
-    public static function validateMeta($meta)
+    /**
+     * Normalise a snippet body and refuse it if it cannot safely be written.
+     *
+     * updateSnippet() and createSnippet() each carried their own copy of this, which is
+     * how the wrapping-tag check ended up on the update path alone: a CSS snippet pasted
+     * with its own <style> tag was rejected when edited but accepted when first created,
+     * and quietly rendered the tag as text on the site. One copy, both paths.
+     *
+     * @param string $code Raw code as typed in the editor.
+     * @param array $meta Snippet meta; only `type` is read here.
+     * @return string|\WP_Error The code to write, or why it cannot be written.
+     */
+    private static function prepareCodeForStorage($code, $meta)
     {
-        $required = ['name', 'status', 'type', 'run_at'];
+        $type = Arr::get($meta, 'type');
 
-        foreach ($required as $key) {
-            if (empty($meta[$key])) {
-                return new \WP_Error($key, sprintf(__('%s is required', 'easy-code-manager'), $key), [
-                    $key => sprintf(__('%s is required', 'easy-code-manager'), $key)
+        if ($type == 'PHP') {
+            if (preg_match('/^<\?php/', $code)) {
+                return SnippetErrors::make('invalid_code', [
+                    'title'  => __('Remove the opening <?php tag', 'easy-code-manager'),
+                    'reason' => __('FluentSnippets writes the opening PHP tag itself when it saves the file, so a second one in your code would be printed onto the page as text.', 'easy-code-manager'),
+                    'fix'    => __('Delete the <?php line at the very top of the snippet and keep the rest as it is.', 'easy-code-manager'),
                 ]);
             }
+
+            $code = rtrim($code, '?>');
+            $code = '<?php' . PHP_EOL . $code;
+        } else if ($type == 'php_content') {
+            $code = apply_filters('fluent_snippets/sanitize_mixed_content', $code, $meta);
+            if (is_wp_error($code)) {
+                return $code;
+            }
+        } else {
+            $wrappingTag = self::detectWrappingTag($code);
+            if ($wrappingTag) {
+                return $wrappingTag;
+            }
+        }
+
+        $validated = self::validateCode($type, $code);
+
+        if (is_wp_error($validated)) {
+            return SnippetErrors::fromValidator($validated);
+        }
+
+        return $code;
+    }
+
+    public static function validateMeta($meta)
+    {
+        $labels = [
+            'name'   => __('Snippet Name', 'easy-code-manager'),
+            'status' => __('Status', 'easy-code-manager'),
+            'type'   => __('Snippet Type', 'easy-code-manager'),
+            'run_at' => __('Where to run', 'easy-code-manager'),
+        ];
+
+        foreach ($labels as $key => $label) {
+            if (!empty($meta[$key])) {
+                continue;
+            }
+
+            /* translators: %s: name of the field that was left empty */
+            $title = sprintf(__('%s is required', 'easy-code-manager'), $label);
+
+            // The per-field key is kept in the data so the form can still highlight the
+            // offending input; `error_details` is what the panel renders.
+            return SnippetErrors::make($key, [
+                'title'  => $title,
+                'reason' => __('A snippet cannot be stored without this — it is written into the file header and is what tells FluentSnippets when and how to run your code.', 'easy-code-manager'),
+                'fix'    => sprintf(
+                    /* translators: %s: name of the field that was left empty */
+                    __('Fill in the %s field on the right and save again.', 'easy-code-manager'),
+                    $label
+                ),
+            ], [
+                $key => $title
+            ]);
         }
 
         return true;

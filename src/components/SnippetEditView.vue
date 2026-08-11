@@ -100,6 +100,9 @@ export default {
             }
 
             this.$eventBus.emit("server_error", null);
+            // Without this the panel from the previous attempt stayed on screen while the
+            // next one was in flight, so a fixed snippet still looked broken.
+            this.errors.clear();
 
             this.saving = true;
             this.$ajax('post', 'fluent_snippet_update', {
@@ -123,6 +126,13 @@ export default {
 
                     if (errors && errors.data) {
                         this.errors.record(errors.data);
+                    }
+
+                    // An HTML page came back where our JSON should have been — a PHP
+                    // fatal, or a firewall's own block page. It goes to the sandboxed
+                    // viewer at the top; the panel below the editor says what it means.
+                    if (errors && errors.html) {
+                        this.$eventBus.emit("server_error", errors.html);
                     }
 
                     this.$handleError(errors);

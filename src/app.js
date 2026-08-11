@@ -17,6 +17,17 @@ dayjs.extend(require('dayjs/plugin/utc'));
 dayjs.extend(require('dayjs/plugin/localizedFormat'));
 dayjs.extend(relativeTime)
 
+// The notification renders HTML, and error text now includes things PHP said verbatim —
+// class names in angle brackets, snippets of the user's own markup. Those get escaped
+// before they are pasted into the message.
+function escapeHtml(text) {
+    return String(text === null || text === undefined ? '' : text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
 function convertToText(obj) {
     const string = [];
     if (typeof (obj) === 'object' && (obj.join === undefined)) {
@@ -58,6 +69,8 @@ app.mixin({
             jQuery('head title').text(title + ' - FluentSnippets');
         },
         $handleError(response) {
+            const details = (response && response.data) ? response.data.error_details : null;
+
             let errorMessage = '';
             if (typeof response === 'string') {
                 errorMessage = response;
@@ -69,10 +82,20 @@ app.mixin({
             if (!errorMessage) {
                 errorMessage = this.$t('Something went wrong!');
             }
+
+            // The toast carries the headline and why it happened. The step-by-step fix
+            // lives in the panel under the editor, where it can be read at leisure and
+            // does not have to fit in a corner of the screen.
+            if (details && details.reason) {
+                errorMessage = '<strong>' + escapeHtml(details.title || errorMessage) + '</strong>'
+                    + '<div style="margin-top:6px;font-weight:normal;">' + escapeHtml(details.reason) + '</div>';
+            }
+
             this.$notify({
                 type: 'error',
                 title: this.$t('Error'),
                 message: errorMessage,
+                duration: details ? 10000 : 4500,
                 dangerouslyUseHTMLString: true
             });
         },
