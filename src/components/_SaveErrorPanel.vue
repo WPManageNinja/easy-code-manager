@@ -8,6 +8,13 @@
             </div>
         </div>
 
+        <!--
+            What PHP actually said, directly under the headline and never folded away.
+            It is the one line that identifies the problem - the name it could not find,
+            the token it did not expect - and everything below it is context for this.
+        -->
+        <pre v-if="showRaw" class="fsnip_error_raw">{{ details.raw }}</pre>
+
         <p v-if="details.reason" class="fsnip_error_reason">{{ details.reason }}</p>
 
         <div v-if="details.fix" class="fsnip_error_fix">
@@ -21,12 +28,6 @@
             <pre>{{ details.output }}</pre>
         </div>
 
-        <div v-if="showRaw" class="fsnip_error_extra">
-            <a href="#" @click.prevent="raw_visible = !raw_visible">
-                {{ raw_visible ? $t('Hide technical details') : $t('Show technical details') }}
-            </a>
-            <pre v-if="raw_visible">{{ details.raw }}</pre>
-        </div>
     </div>
 </template>
 
@@ -36,9 +37,15 @@
  *
  * The editor used to show the error message and then a <pre> containing the raw error
  * data array, which rendered as things like {"line":12} — technically the explanation,
- * practically noise. The three fields here (what happened / why / what to do) are the
- * ones a user can act on; the engine's own wording is tucked behind a toggle for when
- * it is being pasted into a support ticket.
+ * practically noise. The fields here (what PHP said / why / what to do) are the ones a
+ * user can act on.
+ *
+ * PHP's own wording used to sit behind a "Show technical details" toggle, and the
+ * explanation quoted it mid-paragraph so the panel would still make sense with the
+ * toggle closed. That got the priority backwards: "Call to undefined function dddddd()"
+ * is the line that tells you which name to go and look at, and it was both buried in
+ * prose and hidden behind a click. It is now the first thing under the headline, and
+ * the prose no longer repeats it.
  */
 export default {
     name: 'SaveErrorPanel',
@@ -48,21 +55,11 @@ export default {
             required: true
         }
     },
-    data() {
-        return {
-            raw_visible: false
-        }
-    },
     computed: {
         showRaw() {
-            // Hidden when the engine text is what the title already says, which is the
+            // Skipped when the engine text is what the title already says, which is the
             // case for every error built entirely by the plugin.
             return !!this.details.raw && this.details.raw !== this.details.title;
-        }
-    },
-    watch: {
-        details() {
-            this.raw_visible = false;
         }
     }
 }

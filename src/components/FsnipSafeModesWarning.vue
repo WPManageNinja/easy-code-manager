@@ -3,12 +3,12 @@
         <div class="fsnip_warn" v-if="config.is_defined_disabled">
             <h3>{{$t('Safe Mode is Enabled')}}</h3>
             <p>{{ $t('Safe Mode is enabled, which means your snippets are not executing. You can disable Safe Mode by removing the following code from your wp-config.php file (or wherever it is defined):') }}</p>
-            <code style="padding: 10px;">define('FLUENT_SNIPPETS_SAFE_MODE', true);</code>
+            <code>define('FLUENT_SNIPPETS_SAFE_MODE', true);</code>
         </div>
         <div class="fsnip_warn" v-else-if="config.is_filtered_disabled">
             <h3>{{$t('Safe Mode is Enabled')}}</h3>
             <p>{{ $t('It looks like you enabled Safe Mode via a filter hook, which means your snippets are not executing. The filter hook used to enable Safe Mode is:') }}</p>
-            <code style="padding: 10px;">add_filter('fluent_snippets/run_snippets', '__return_false');</code>
+            <code>add_filter('fluent_snippets/run_snippets', '__return_false');</code>
         </div>
         <div class="fsnip_warn" v-else-if="config.is_forced_disabled">
             <h3>{{$t('Safe Mode is Enabled')}}</h3>

@@ -612,6 +612,57 @@ PHP;
         return Arr::get($config, 'meta.secret_key');
     }
 
+    /**
+     * The Safe Mode URL: the way back in when a snippet has locked you out of wp-admin.
+     *
+     * The key is a parameter rather than always read back from the config, because
+     * regenerating it has to be able to build the new URL in the same request that wrote
+     * it - getIndexedConfig() caches in a static, so reading it there would hand back the
+     * key that was just replaced.
+     *
+     * @param string $secret Defaults to the key currently stored.
+     * @return string
+     */
+    public static function getSafeModeUrl($secret = '')
+    {
+        if (!$secret) {
+            $secret = self::getSecretKey();
+        }
+
+        return site_url('index.php?fluent_snippets=1&snippet_secret=' . $secret);
+    }
+
+    /**
+     * Issue a new Safe Mode key, invalidating the old URL.
+     *
+     * Wanted whenever the URL has been somewhere it should not have been - a shared
+     * document, a support thread, a screenshot, or an ex-colleague's bookmarks. It is a
+     * password in URL form, and there was previously no way to change it short of
+     * editing the generated index.php by hand.
+     *
+     * @return string|\WP_Error The new URL.
+     */
+    public static function regenerateSecretKey()
+    {
+        $config = self::getIndexedConfig();
+
+        if (!$config || empty($config['meta'])) {
+            return new \WP_Error('invalid_config', __('The snippet index could not be read, so a new Safe Mode URL could not be issued.', 'easy-code-manager'));
+        }
+
+        $secret = bin2hex(random_bytes(16));
+
+        $config['meta']['secret_key'] = $secret;
+
+        $saved = self::saveIndexedConfig($config);
+
+        if (is_wp_error($saved)) {
+            return $saved;
+        }
+
+        return self::getSafeModeUrl($secret);
+    }
+
     public static function enableStandAlone($isForced = false)
     {
         if (defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION') && FLUENT_SNIPPETS_RUNNING_MU_VERSION == FLUENT_SNIPPETS_PLUGIN_VERSION && !$isForced) {

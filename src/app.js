@@ -59,6 +59,19 @@ app.mixin({
             is_rtl: false
         }
     },
+    computed: {
+        /*
+         * Whether this screen may change anything, as one name every component can ask
+         * rather than each of them reaching into appVars for the same key.
+         *
+         * False on a site with DISALLOW_FILE_MODS set: snippets are files, so WordPress
+         * has been told nothing may write them. Hiding the controls is a courtesy — the
+         * server refuses these operations regardless of what the app draws.
+         */
+        canEdit() {
+            return !!window.fluentSnippetAdmin.can_edit;
+        }
+    },
     methods: {
         $get: Rest.get,
         $post: Rest.post,
@@ -100,8 +113,35 @@ app.mixin({
             });
         },
         convertToText,
+        /**
+         * The translation of `string`, with any %s / %1s / %d placeholders filled in from
+         * the remaining arguments.
+         *
+         * Placeholders are what let a sentence keep its word order in a language that puts
+         * the value somewhere else, which concatenating the pieces at the call site does
+         * not. Called with one argument it is exactly the lookup it always was.
+         */
         $t(string) {
-            return window.fluentSnippetAdmin.i18n[string] || string;
+            string = window.fluentSnippetAdmin.i18n[string] || string;
+
+            const args = Array.prototype.slice.call(arguments, 1);
+
+            if (args.length === 0) {
+                return string;
+            }
+
+            let argIndex = 0;
+
+            return string.replace(/%(\d*)s|%d/g, (match, number) => {
+                // A numbered placeholder names its argument; a bare one takes the next.
+                if (number) {
+                    const index = parseInt(number, 10) - 1;
+
+                    return index < args.length ? args[index] : match;
+                }
+
+                return argIndex < args.length ? args[argIndex++] : match;
+            });
         },
         relativeTimeFromUtc(utcDateTime) {
             if(!utcDateTime) {
@@ -146,16 +186,6 @@ app.mixin({
                 snippets: selected,
                 _nonce: window.fluentSnippetAdmin.nonce
             });
-        }
-    },
-    watch: {
-        $route(to, from) {
-            const active = to.meta.active;
-            if (!active) {
-                return;
-            }
-            jQuery('.fsnip_menu_primary').removeClass('router-link-active');
-            jQuery('.fsnip_menu_primary.fsnip_menu_' + active).addClass('router-link-active');
         }
     }
 });

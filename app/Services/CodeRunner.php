@@ -192,7 +192,11 @@ class CodeRunner
                         }, $this->get($snippet, 'priority', 10));
                     }
 
-                    if (($runAt == 'everywehere' && is_admin()) || $runAt == 'admin_head') {
+                    // 'everywhere' was misspelled 'everywehere' here, so the CSS type's
+                    // "Both Backend and Frontend" option never matched and always fell
+                    // through to wp_head — which does not fire in the admin, so that
+                    // option silently behaved as frontend-only.
+                    if (($runAt == 'everywhere' && is_admin()) || $runAt == 'admin_head') {
                         $runAt = 'admin_head';
                     } else {
                         $runAt = 'wp_head';

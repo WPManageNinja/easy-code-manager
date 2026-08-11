@@ -1,0 +1,241 @@
+/*
+ * The application shell: the bar across the top, and the page under it.
+ *
+ * Measurements follow FluentCart and FluentAuth so the plugins feel like one product. The
+ * positioning is not copied literally - FluentCart pins its chrome to a fixed offset that
+ * matches its own header - this uses flow and a pinned bar, which survive the plugin being
+ * rendered inside whatever wp-admin gives it.
+ */
+
+@use "mixins";
+
+/* ------------------------------------------------------------------ app bar */
+
+/*
+ * The bar is out of flow, so the page below it needs the space kept clear by hand.
+ */
+.fsnip_app {
+    padding-top: 56px;
+}
+
+.fsnip_app_bar {
+    @apply flex items-center gap-6 bg-surface px-6 border-0 border-b border-solid border-hairline;
+
+    height: 56px;
+
+    /*
+     * Pinned rather than sticky, so it survives a screen whose content is itself pinned or
+     * shorter than the viewport. `--fsnip-shell-left` is the width of wp-admin's menu,
+     * measured at runtime (see App.vue) rather than hard-coded, so folding the menu or
+     * dropping to a narrow screen moves the bar with it.
+     */
+    position: fixed;
+    top: var(--fsnip-shell-top, 32px);
+    left: var(--fsnip-shell-left, 160px);
+    right: 0;
+    z-index: 2000;
+    transition: box-shadow .2s ease;
+
+    &.is-scrolled {
+        box-shadow: var(--fsnip-shadow-lift);
+    }
+
+    /*
+     * The mark and the word, as one link back to the list.
+     *
+     * Both are drawn rather than loaded: see Bits/BrandMark.vue. The tile keeps its own
+     * colour in both themes - it is the one place in the admin the brand indigo appears -
+     * and only the word beside it moves with the text colour.
+     */
+    /*
+     * The logo and the actions are the two counterweights that centre the nav: both grow
+     * from a zero basis, so whatever room is left over after the three groups have taken
+     * their content width is split equally between them and the nav lands on the middle of
+     * the bar rather than on the middle of what the logo left behind. Sizing them off each
+     * other's real width instead would put the nav somewhere between the two.
+     */
+    .fsnip_app_logo {
+        @apply flex items-center;
+
+        flex: 1 1 0;
+
+        a {
+            @apply flex items-center gap-2 no-underline;
+        }
+
+        .fsnip_wordmark {
+            @apply text-ink-head;
+
+            font-size: 18.4px;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -.025em;
+            white-space: nowrap;
+
+            /*
+             * The lockup sets a light "fluent" against a bold "Snippets", which is how the
+             * word is set everywhere else in the family.
+             */
+            span {
+                font-weight: 400;
+            }
+        }
+    }
+
+    .fsnip_app_nav {
+        @apply flex items-center justify-center gap-1 m-0 p-0 list-none flex-none;
+
+        li {
+            @apply m-0;
+        }
+
+        a {
+            @apply flex items-center rounded px-3 py-2 text-sm font-medium no-underline text-ink-mid;
+
+            transition: background-color .15s ease, color .15s ease;
+
+            &:hover {
+                @apply bg-surface-sunk text-ink;
+            }
+
+            &.router-link-active {
+                @apply bg-accent-wash text-ink;
+            }
+        }
+    }
+
+    .fsnip_app_bar_actions {
+        @apply flex items-center justify-end gap-2;
+
+        flex: 1 1 0;
+    }
+
+    /* Hidden until the narrow layout at the foot of this file puts it back. */
+    .fsnip_app_bar_toggle {
+        @include mixins.icon-button(36px, 8px);
+        @apply hidden;
+    }
+}
+
+/* ------------------------------------------------------------ theme switch */
+
+/*
+ * FluentCart puts its theme control at the right-hand end of its own bar, at the same size
+ * and with the same glyphs, so the plugins are switched the same way in the same place.
+ */
+.fsnip_theme_trigger {
+    @include mixins.icon-button(36px, 8px);
+
+    svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+    }
+}
+
+/* Teleported to <body>, so it is styled here rather than beside the trigger. */
+.fsnip_theme_menu {
+    .fsnip_theme_item {
+        @apply flex items-center;
+
+        gap: 8px;
+    }
+
+    .fsnip_theme_item_icon {
+        @apply flex flex-none items-center;
+
+        svg {
+            width: 16px;
+            height: 16px;
+        }
+    }
+
+    /* The one in force, marked by weight rather than by a tick that shifts the row. */
+    .is_current {
+        @apply font-medium text-ink;
+    }
+}
+
+/* ------------------------------------------------------------------- the page */
+
+/*
+ * 28px lands the first row of content the same distance below the app bar as FluentCart's
+ * lands below its own header, and 30px either side is its page gutter.
+ */
+.fsnip_page {
+    padding: 28px 30px;
+}
+
+.fsnip_page_inner {
+    @apply mx-auto;
+
+    max-width: 1350px;
+}
+
+/* ------------------------------------------------------------- narrow screens */
+
+/*
+ * wp-admin moves its own menu off-canvas down here, so there is nothing left to pin
+ * against and the bar goes back into the flow of the page.
+ */
+@media (max-width: 960px) {
+    .fsnip_app {
+        padding-top: 0;
+    }
+
+    .fsnip_app_bar {
+        @apply flex-wrap;
+
+        position: sticky;
+        top: var(--fsnip-shell-top, 32px);
+        left: auto;
+        right: auto;
+        height: auto;
+        min-height: 56px;
+        gap: 12px;
+
+        /*
+         * Nothing to centre down here - the nav has left the bar for a stack underneath it -
+         * so the two counterweights go back to their content width and let the toggle's own
+         * `margin-left: auto` do the spacing.
+         */
+        .fsnip_app_logo,
+        .fsnip_app_bar_actions {
+            flex: none;
+        }
+
+        .fsnip_app_bar_toggle {
+            @apply flex;
+
+            order: 2;
+            margin-left: auto;
+        }
+
+        .fsnip_app_bar_actions {
+            order: 3;
+        }
+
+        /*
+         * Below this width the nav is a stack under the bar rather than a row in it, so
+         * it takes the full width and only appears once the toggle has been pressed.
+         */
+        .fsnip_app_nav {
+            @apply hidden flex-col items-stretch w-full border-0 border-t border-solid border-hairline;
+
+            order: 4;
+            flex-basis: 100%;
+            padding: 8px 0;
+            gap: 2px;
+
+            &.is-open {
+                @apply flex;
+            }
+        }
+    }
+}
+
+@media (max-width: 782px) {
+    .fsnip_page {
+        padding: 20px 12px;
+    }
+}

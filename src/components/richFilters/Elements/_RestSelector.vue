@@ -23,7 +23,7 @@
                     :label="item.title"
                     :value="item.id">
                     <template v-if="field.show_id">
-                        {{ item.title || item.id }} <span style="float: right; font-size: 70%;">{{ item.id }}</span>
+                        {{ item.title || item.id }} <span class="fc_option_id">{{ item.id }}</span>
                     </template>
                 </el-option>
             </el-option-group>

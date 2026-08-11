@@ -158,17 +158,22 @@ class SnippetsController
      * Guard for anything that writes, publishes or removes a snippet — all of which
      * amount to putting code on the site.
      *
-     * Route registration already requires install_plugins; this is the second half.
      * Deliberately NOT the same test as SettingsController::denyUnlessCanManageSettings(),
      * which also wants manage_options. The two used to share the name isBlockedRequest(),
      * which made the difference look accidental.
+     *
+     * install_plugins is checked here rather than left to route registration. It used to
+     * be safe to assume, because every route in this plugin required it; now that reading
+     * and writing have separate gates (see Http/routes.php), assuming it is how a write
+     * ends up reachable from a read-only screen the first time somebody moves a route
+     * between the two lists.
      */
     private static function denyUnlessCanAuthorSnippets()
     {
-        if (current_user_can('unfiltered_html')) {
+        if (current_user_can('install_plugins') && current_user_can('unfiltered_html')) {
             return false;
         }
 
-        return new \WP_Error('invalid_request', 'You do not have permission to perform this action. Required Permission: unfiltered_html');
+        return new \WP_Error('invalid_request', 'You do not have permission to perform this action. Required Permission: install_plugins & unfiltered_html');
     }
 }

@@ -1,6 +1,6 @@
 <template>
     <div class="fc_rich_filters">
-        <table v-if="items.length && !working" style="width: 100%;" class="fc_table">
+        <table v-if="items.length && !working" class="fc_table">
             <tbody>
             <filter-item v-for="(item,itemKey) in items" :view_only="view_only" @removeItem="removeItem(itemKey)" :key="itemKey"
                          :filterLabels="filterLabels" :item="item"/>
@@ -14,7 +14,7 @@
                 class="fc_contact_filter_pop"
                 :visible="addVisible">
                 <el-cascader-panel @change="maybeSelected"
-                                   style="width: 100%"
+                                   class="fc_filter_input"
                                    :options="filterOptions"
                                    v-model="new_item"/>
                 <template #reference>
@@ -23,8 +23,10 @@
                     </el-button>
                 </template>
             </el-popover>
+            <!-- i18n.node.js cannot see a prop default, so it warns about this line. The
+                 default text is listed in reserved18n.json to keep it translatable. -->
             {{ $t(add_label) }}
-            <el-button style="float: right;" @click="$emit('maybeRemove')" size="small" type="danger">
+            <el-button class="fc_filter_group_remove" @click="$emit('maybeRemove')" size="small" type="danger">
                 <el-icon><delete-icon /></el-icon>
             </el-button>
         </div>
@@ -35,7 +37,7 @@
                 width="450"
                 :visible="addVisible">
                 <el-cascader-panel @change="maybeSelected"
-                                   style="width: 100%"
+                                   class="fc_filter_input"
                                    :options="filterOptions"
                                    v-model="new_item"/>
                 <template #reference>

@@ -11,8 +11,7 @@
             </div>
         </div>
         <div class="fc_cond_or">
-            <em @click="addConditionGroup()"
-                style="cursor: pointer; color: rgb(0, 119, 204); font-weight: bold;"><i
+            <em class="fc_cond_add" @click="addConditionGroup()"><i
                 class="el-icon-plus"></i> {{$t('OR')}}</em>
         </div>
     </div>

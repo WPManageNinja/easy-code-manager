@@ -8,16 +8,23 @@
                 :value="item">
             </el-option>
         </el-select>
-        <el-popover :visible="createPop" placement="left" :width="400" trigger="click">
+        <!--
+            v-model:visible, not :visible - the same trap as the sort popover on the
+            dashboard. Bound one way the popover is fully controlled, so Element Plus
+            will not close it on an outside click or a second press of "+", and the only
+            thing that ever set it back to false was Add. With v-model the trigger opens
+            and closes it, which is why the button no longer sets the flag by hand.
+        -->
+        <el-popover v-model:visible="createPop" placement="left" :width="400" trigger="click">
             <template #reference>
-                <el-button @click="createPop = true">+</el-button>
+                <el-button>+</el-button>
             </template>
             <el-input
                 :placeholder="pop_placeholder"
                 v-model="new_group"
             >
             </el-input>
-            <el-button style="margin-top: 10px;" type="primary" @click="addItem()">{{ $t('Add') }}</el-button>
+            <el-button class="snip_add_item" type="primary" @click="addItem()">{{ $t('Add') }}</el-button>
         </el-popover>
     </div>
 </template>

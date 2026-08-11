@@ -1,45 +1,79 @@
 <template>
     <div class="fsnip_app">
-        <div class="fsnip_main-menu-items">
-            <div class="menu_logo_holder">
-                <h3 style="margin: 10px 0; display: flex;align-items: center;">
-                    <router-link to="/">
-                        <img :src="appVars.asset_url+'images/logo.png'" alt="FluentSnippets" />
-                    </router-link>
-                </h3>
+        <div class="fsnip_app_bar" :class="{'is-scrolled': scrolled}">
+            <div class="fsnip_app_logo">
+                <router-link :to="{name: 'dashboard'}" aria-label="FluentSnippets">
+                    <brand-mark :size="30"/>
+                    <span class="fsnip_wordmark"><span>fluent</span>Snippets</span>
+                </router-link>
             </div>
-            <div class="fsnip_handheld"><span class="dashicons dashicons-menu-alt3"></span></div>
-            <ul class="fsnip_menu">
-                <li v-for="item in menuItems" :key="item.route" class="fsnip_menu_item">
-                    <router-link :to="{ name: item.route }" :class="'fsnip_menu_' + item.route" class="fsnip_menu_primary">
-                        {{item.title}}
+
+            <button class="fsnip_app_bar_toggle" type="button" @click="navOpen = !navOpen"
+                    :aria-label="$t('Menu')">
+                <span class="dashicons dashicons-menu-alt3"></span>
+            </button>
+
+            <ul class="fsnip_app_nav" :class="{'is-open': navOpen}">
+                <li v-for="item in menuItems" :key="item.route">
+                    <router-link :to="{name: item.route}"
+                                 :class="{'router-link-active': isActive(item)}">
+                        {{ item.title }}
                     </router-link>
                 </li>
             </ul>
-        </div>
-        <fsnip-promo :config="appVars.safeModes" />
-        <div v-show="hasServerError">
-            <el-button @click="hideErrors()" v-if="hasServerError">{{$t('Hide Errors')}}</el-button>
-            <div :class="{fluent_snip_server_error : hasServerError}" id="fsnip_shadow_wrapper">
-                <div id="fluent_snip_500_error"></div>
+
+            <div class="fsnip_app_bar_actions">
+                <theme-switch/>
             </div>
         </div>
-        <div class="ff_app_body">
-            <router-view></router-view>
+
+        <div class="fsnip_page">
+            <div class="fsnip_page_inner">
+                <fsnip-promo :config="appVars.safeModes"/>
+
+                <!--
+                    Said once, at the top, on every screen - rather than as a tooltip on
+                    each control that is no longer there. Someone who opens this plugin and
+                    finds the Create button missing needs the reason before they go looking
+                    for it in Settings.
+                -->
+                <div v-if="readOnlyNotice" class="fsnip_read_only">
+                    <span class="dashicons dashicons-lock"></span>
+                    <div>
+                        <strong>{{ readOnlyNotice.title }}</strong>
+                        <p>{{ readOnlyNotice.reason }}</p>
+                    </div>
+                </div>
+
+                <div v-show="hasServerError">
+                    <el-button @click="hideErrors()" v-if="hasServerError">{{ $t('Hide Errors') }}</el-button>
+                    <div :class="{fluent_snip_server_error : hasServerError}" id="fsnip_shadow_wrapper">
+                        <div id="fluent_snip_500_error"></div>
+                    </div>
+                </div>
+
+                <router-view></router-view>
+            </div>
         </div>
     </div>
 </template>
 
 <script type="text/babel">
 import FsnipPromo from './components/FsnipSafeModesWarning.vue';
-import eventBus from "./Bits/event-bus";
+import ThemeSwitch from './Bits/ThemeSwitch.vue';
+import BrandMark from './Bits/BrandMark.vue';
+
 export default {
-    name: 'FluentAuthApp',
+    name: 'FluentSnippetsApp',
     components: {
-        FsnipPromo
+        FsnipPromo,
+        ThemeSwitch,
+        BrandMark
     },
     data() {
         return {
+            scrolled: false,
+            navOpen: false,
             menuItems: [
                 {
                     route: 'dashboard',
@@ -57,9 +91,55 @@ export default {
             hasServerError: false
         }
     },
+    computed: {
+        // Built server-side, because the reason is a fact about wp-config.php that the
+        // browser has no way of knowing. Null unless the screen really is read-only.
+        readOnlyNotice() {
+            return this.appVars.read_only_notice || null;
+        }
+    },
     methods: {
+        /*
+         * Which nav item is lit. `meta.active` is the route's own answer to "which section
+         * am I in", so the editor and the create screen keep Snippets lit rather than
+         * lighting nothing - which is what router-link-active alone would do.
+         */
+        isActive(item) {
+            const active = this.$route.meta ? this.$route.meta.active : '';
+
+            return active === item.route;
+        },
+        onScroll() {
+            this.scrolled = window.scrollY > 10;
+        },
+        /**
+         * Publishes the space wp-admin's own chrome occupies, as two CSS variables.
+         *
+         * The app bar is pinned to the viewport, which means it cannot inherit the page's
+         * offsets the way an in-flow element does - it has to be told where the menu ends
+         * and where the admin bar stops. Measuring beats hard-coding 160px and 32px:
+         * collapsing the menu, the automatic fold on a narrow window and the off-canvas
+         * menu on a phone all land on different widths, and an admin bar with enough items
+         * on it to wrap onto a second line is taller than 32px - which is how the app bar
+         * ends up underneath somebody's plugin menu.
+         *
+         * Below 783px wp-admin lets the admin bar scroll away with the page, so there is
+         * nothing to sit under and the offset is zero.
+         */
+        measureShell() {
+            const content = document.getElementById('wpcontent');
+            const left = content ? content.getBoundingClientRect().left : 0;
+            const bar = document.getElementById('wpadminbar');
+            const pinned = bar && window.getComputedStyle(bar).position === 'fixed';
+            const top = pinned ? bar.getBoundingClientRect().height : 0;
+
+            const root = document.documentElement.style;
+
+            root.setProperty('--fsnip-shell-left', left + 'px');
+            root.setProperty('--fsnip-shell-top', top + 'px');
+        },
         initShadowDomIframe(error) {
-            if(!error) {
+            if (!error) {
                 this.hideErrors();
                 return false;
             }
@@ -97,17 +177,51 @@ export default {
             this.hasServerError = false;
         }
     },
+    watch: {
+        $route() {
+            this.navOpen = false;
+        }
+    },
     created() {
         jQuery('.update-nag,.notice, #wpbody-content > .updated, #wpbody-content > .error').remove();
     },
     mounted() {
-        jQuery('.fsnip_handheld span').on('click', function () {
-            jQuery('ul.fsnip_menu').toggle('show');
-        });
+        window.addEventListener('scroll', this.onScroll);
+        this.onScroll();
+
+        this.measureShell();
+
+        /*
+         * Folding the menu changes the width of #wpcontent, so watching its size catches
+         * the fold, the automatic fold at narrow widths and an ordinary window resize
+         * without listening for any of them by name.
+         */
+        const content = document.getElementById('wpcontent');
+        const bar = document.getElementById('wpadminbar');
+
+        if (content && window.ResizeObserver) {
+            this.shellObserver = new ResizeObserver(this.measureShell);
+            this.shellObserver.observe(content);
+
+            /* The admin bar wraps to a second line on its own, without #wpcontent moving. */
+            if (bar) {
+                this.shellObserver.observe(bar);
+            }
+        } else {
+            window.addEventListener('resize', this.measureShell);
+        }
 
         this.$eventBus.on("server_error", (error) => {
             this.initShadowDomIframe(error);
         });
+    },
+    beforeUnmount() {
+        window.removeEventListener('scroll', this.onScroll);
+        window.removeEventListener('resize', this.measureShell);
+
+        if (this.shellObserver) {
+            this.shellObserver.disconnect();
+        }
     }
 }
 </script>

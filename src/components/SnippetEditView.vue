@@ -1,8 +1,8 @@
 <template>
     <div class="box_wrapper">
-        <div class="box dashboard_box">
-            <div class="box_header" style="padding: 15px;font-size: 16px;">
-                <div style="padding-top: 5px;" class="box_head">
+        <div class="box">
+            <div class="box_header">
+                <div class="box_head">
                     <el-breadcrumb separator="/">
                         <el-breadcrumb-item :to="{ name: 'dashboard' }">{{$t('Code Snippets')}}</el-breadcrumb-item>
                         <el-breadcrumb-item>
@@ -17,8 +17,8 @@
                         </el-breadcrumb-item>
                     </el-breadcrumb>
                 </div>
-                <div  v-loading="saving" v-if="snippet" style="display: flex;" class="box_actions">
-                    <el-button :title="$t('Command / CTR + S to save')" @click="saveCode()" :disabled="loading || saving" type="success">
+                <div v-loading="saving" v-if="snippet && canEdit" class="box_actions">
+                    <el-button :title="$t('Cmd / Ctrl + S to save')" @click="saveCode()" :disabled="loading || saving" type="primary">
                         {{$t('Update Snippet')}}
                     </el-button>
                     <el-button v-if="!snippet.error" @click="toggleStatus()">
@@ -31,13 +31,13 @@
                 <el-skeleton :loading="loading" :rows="10"></el-skeleton>
             </div>
             <div v-else-if="!snippet" class="box_body">
-                <h2>{{$t('Sorry Snippet could not be loaded')}}</h2>
+                <h2>{{$t('Sorry, this snippet could not be loaded.')}}</h2>
             </div>
             <div v-else class="box_body">
                 <div class="snippet_error_wrap" v-if="snippet.error">
                     <p>{{$t('__SNIPPET_FATAL_ERROR__')}}</p>
                     <p><strong>{{$t('Error Message:')}}</strong> {{snippet.error}}</p>
-                    <el-button @click="saveCode(true)" :disabled="loading || saving" type="primary">
+                    <el-button v-if="canEdit" @click="saveCode(true)" :disabled="loading || saving" type="primary">
                         {{$t('Try Reactivate')}}
                     </el-button>
                 </div>
@@ -88,6 +88,15 @@ export default {
                 });
         },
         saveCode(reactivate = false) {
+            /*
+             * The buttons that call this are not rendered on a read-only screen, but
+             * Cmd/Ctrl+S is still bound and toggleStatus() still routes through here. One
+             * guard at the single choke point beats remembering every entrance.
+             */
+            if (!this.canEdit) {
+                return;
+            }
+
             // validate the code
             if (!this.snippet.code) {
                 this.$notify.error(this.$t('Please enter some code to save'));

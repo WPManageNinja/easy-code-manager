@@ -1,6 +1,6 @@
 <template>
     <tr>
-        <td style="width: 190px; line-height: 110%;">
+        <td class="fc_filter_field">
             {{ ucFirst(itemConfig.provider) }} <span class="fs_provider_separator">/</span>
             {{ itemConfig.label }}
             <span v-if="itemConfig.help">
@@ -10,7 +10,7 @@
                 </el-tooltip>
             </span>
         </td>
-        <td style="width: 190px" class="fc_filter_operator">
+        <td class="fc_filter_operator">
             <el-select :disabled="view_only" size="small" :placeholder="$t('Select Operator')"
                        @visible-change="maybeOperatorSelected"
                        v-model="item.operator">
@@ -79,7 +79,7 @@
                 </template>
             </template>
         </td>
-        <td v-if="!view_only" style="width: 50px; text-align: right;">
+        <td v-if="!view_only" class="fc_filter_remove">
             <el-button
                 @click="removeItem()"
                 size="small"
@@ -119,7 +119,7 @@ export default {
             if (type == 'extended_text') {
                 return {
                     contains: this.$t('includes'),
-                    not_contains: this.$t('does not includes'),
+                    not_contains: this.$t('does not include'),
                     '=': this.$t('equal'),
                     '!=': this.$t('does not equal'),
                     startsWith: this.$t('starts with'),
@@ -130,7 +130,7 @@ export default {
             if (!type || type == 'text') {
                 return {
                     contains: this.$t('includes'),
-                    not_contains: this.$t('does not includes'),
+                    not_contains: this.$t('does not include'),
                     '=': this.$t('equal'),
                     '!=': this.$t('does not equal'),
                 }
@@ -218,7 +218,7 @@ export default {
                     '=': this.$t('equal'),
                     '!=': this.$t('does not equal'),
                     contains: this.$t('includes'),
-                    not_contains: this.$t('does not includes'),
+                    not_contains: this.$t('does not include'),
                     is_null: this.$t('Empty'),
                     not_null: this.$t('Not Empty')
                 }

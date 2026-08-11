@@ -3,11 +3,11 @@
         <h3>{{$t('Where to Run?')}}</h3>
         <div @click="showSelector = !showSelector" class="fsnin_run_selector">
             <div v-if="selectedOption" class="run_selected run_box">
-                <p style="font-weight: bold;">{{ selectedOption.label }}</p>
-                <p style="font-size: 80%;">{{ selectedOption.description }}</p>
+                <p class="option_label">{{ selectedOption.label }}</p>
+                <p class="option_desc">{{ selectedOption.description }}</p>
             </div>
-            <div style="border: 1px solid red !important;" v-else class="run_selected run_box">
-                <p style="font-weight: bold;">{{$t('Select Snippet Run Location')}}</p>
+            <div v-else class="run_selected run_box run_box_error">
+                <p class="option_label">{{$t('Select Snippet Run Location')}}</p>
             </div>
             <slot></slot>
         </div>
@@ -18,16 +18,16 @@
                     {{ runType.label }}
                     <el-tag v-if="runLabel == snippet.meta.run_at" size="small">{{$t('selected')}}</el-tag>
                 </p>
-                <p style="font-size: 80%;">{{ runType.description }}</p>
+                <p>{{ runType.description }}</p>
             </div>
         </div>
 
         <div v-if="snippet.meta.run_at == 'shortcode'">
             <div v-if="is_new">
-                <p>{{$t('You can view the shortcode after save this snippet')}}</p>
+                <p>{{$t('You can view the shortcode after you save this snippet')}}</p>
             </div>
             <div class="fsnip_highlight" v-else>
-                <p style="line-height: 1.9">{{$t('Use Shortcode to display the return or print content of this snippet:')}}</p>
+                <p>{{$t('Use Shortcode to display the return or print content of this snippet:')}}</p>
                 <div class="snip_shortcode">
                 <span class="snip_code">
                     [fluent_snippet id="{{ getFileName(snippet.file_name) }}"]

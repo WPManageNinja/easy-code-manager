@@ -1,0 +1,1672 @@
+/*
+ * The screens: the snippet list, the editor, the settings pages, and the parts that only
+ * appear on one of them.
+ *
+ * A rule moves up to _ui.scss when a second screen needs it, and not before - a shared
+ * class with one caller is just a rule filed in the wrong place.
+ */
+
+@use "mixins";
+
+/* ========================================================== the snippet list */
+
+/*
+ * Snippets grouped by folder. Rows are separated by a hairline rather than by zebra
+ * stripes: a striped list on a dark card reads as two different backgrounds rather than as
+ * one list, and the stripe was carrying no information anyway.
+ */
+.groups_snippets {
+    .fsnip_group {
+        padding: 0 0 16px;
+    }
+
+    .group_name {
+        @apply flex items-center gap-1.5 text-sm font-semibold text-ink-head;
+
+        padding: 6px 0;
+
+        > span,
+        i,
+        .el-icon {
+            cursor: pointer;
+            user-select: none;
+
+            &:hover {
+                @apply text-ink-link;
+            }
+        }
+    }
+
+    /* Only shown on the row the pointer is over - see the hover rule below. */
+    .group_file_meta {
+        display: none;
+    }
+
+    .group_files {
+        @apply list-none border border-solid border-hairline rounded overflow-hidden;
+
+        margin: 4px 0 0;
+        padding: 0;
+
+        li {
+            @apply flex items-center justify-between gap-3 list-none text-sm border-0 border-b border-solid border-hairline;
+
+            margin: 0;
+            padding: 10px 14px;
+            transition: background-color .12s ease;
+
+            &:last-child {
+                @apply border-b-0;
+            }
+
+            &:hover {
+                @apply bg-surface-sunk;
+
+                .group_file_meta {
+                    display: block;
+                }
+            }
+        }
+    }
+
+    .group_file_name {
+        @apply flex items-center gap-2 text-sm text-ink;
+
+        line-height: 24px;
+        min-width: 0;
+        cursor: pointer;
+
+        > span:first-of-type {
+            @apply truncate;
+        }
+    }
+
+    /* A draft is present but not running, which is what the dimming says. */
+    .fsnip_status_draft .group_file_name {
+        opacity: .6;
+    }
+}
+
+/*
+ * The row of actions that appears on hover, and the same row under a title in the table
+ * view. Quiet by default - it is a set of secondary actions on something you are already
+ * looking at, not a toolbar.
+ */
+.snippet_actions {
+    @apply flex flex-wrap items-center text-xs text-ink-light;
+
+    gap: 2px;
+
+    .el-icon {
+        vertical-align: -2px;
+        margin-right: 2px;
+    }
+
+    /* The two that do something, as against the timestamp and description beside them. */
+    .fsnip_delete,
+    .fsnip_download {
+        @apply text-ink-mid;
+
+        cursor: pointer;
+
+        &:hover {
+            @apply text-ink-link;
+        }
+    }
+
+    .snippet_desc {
+        margin-right: 10px;
+    }
+}
+
+/* ------------------------------------------------------------- the table view */
+
+/*
+ * The same snippets as a table. One fact per column, and every row exactly two lines tall
+ * - the title over its group and priority on the left, and everything else set against
+ * that. Nothing in a cell is allowed to wrap to a third line, because a table whose rows
+ * are three different heights cannot be scanned down a column, which is the only thing a
+ * table is for.
+ */
+/*
+ * The table runs to the edges of the card, so the header band and the rule under every row
+ * are full-width the way the tab bar above them is - a table inset inside a card reads as
+ * a box in a box. The 20px the content needs is put back on the outer cells below, which
+ * lands the toggle and the Updated column on the same 20px as the card's own title and the
+ * tabs rather than on the table's frame.
+ */
+.fsnip_table_wrap {
+    margin: 0 -20px;
+}
+
+.fsnip_table {
+    width: 100%;
+    /* Flush inside its card - the card already draws the frame. */
+    margin-top: 4px;
+    margin-bottom: 4px;
+
+    /*
+     * The two lines, as a number every cell is held to.
+     *
+     * "Two lines tall" only holds if nothing can be taller than two lines and nothing can
+     * be shorter. 47px is the floor and the ceiling - a 20px title over a 24px line of
+     * group and actions, plus the 3px between them - and every other cell is built to come
+     * in under it: two lines of description, two rows of tag chips, the run location and
+     * its priority badge on one line. The floor is what keeps a snippet with no group from
+     * sitting in a row a few pixels shorter than its neighbours, which is more obvious than
+     * it sounds once there are twenty of them.
+     */
+    .el-table__cell {
+        vertical-align: top;
+        padding: 14px 0;
+    }
+
+    /* Body rows only - the header is one line and should not be held to two. */
+    .el-table__body .el-table__cell > .cell {
+        min-height: 47px;
+    }
+
+    /*
+     * Breathing room at both ends. Element Plus insets a cell by 12px, which put the
+     * toggle and the action icons all but flush against the edges of the card - the row
+     * rules run the full width, so there was nothing between the content and the corner.
+     */
+    .el-table__cell:first-child .cell {
+        padding-left: 20px;
+    }
+
+    .el-table__cell:last-child .cell {
+        padding-right: 20px;
+    }
+
+    /* The toggle sits on the first line, beside the title rather than above it. */
+    .fsnip_col_status .cell {
+        padding-top: 2px;
+    }
+
+    /* The name and what state it is in, on one line that never wraps. */
+    .fsnip_row_head {
+        @apply flex items-center;
+
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .fsnip_row_title {
+        @apply block font-medium text-ink no-underline;
+
+        line-height: 20px;
+        /* Long names truncate rather than pushing the row taller or the chip off. */
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        &:hover {
+            @apply text-ink-link;
+        }
+    }
+
+    /* The status word beside the title, a size down from a tag in a cell of its own. */
+    .fsnip_tag {
+        @apply flex-none;
+
+        font-size: 11px;
+    }
+
+    /*
+     * The second line under a title: which group the snippet is filed in, then what you
+     * can do to it. Never wraps and never changes height - the actions are 24px so the hit
+     * target is a real one, and that is what sets the line.
+     */
+    .fsnip_row_meta {
+        @apply flex flex-nowrap items-center text-xs text-ink-light;
+
+        gap: 10px;
+        margin-top: 3px;
+        /* Fixed, not a minimum - an empty one has to occupy the line all the same. */
+        height: 24px;
+
+        /* Gives way to the actions, which keep their width. */
+        .fsnip_row_group {
+            @apply inline-flex items-center gap-1 min-w-0;
+
+            flex: 0 1 auto;
+
+            /* The name, so it is the text that ellipses rather than the icon that clips. */
+            > span {
+                @apply truncate;
+            }
+        }
+
+        > .fsnip_row_group .el-icon {
+            @apply flex-none;
+
+            font-size: 13px;
+        }
+    }
+
+    /*
+     * Two lines of description and then an ellipsis. `line-clamp` needs a block box with a
+     * height it can measure, which is why this is a -webkit-box rather than a plain span.
+     */
+    .fsnip_row_desc {
+        @apply block text-sm text-ink-mid;
+
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        line-height: 20px;
+    }
+
+    /*
+     * Aligned to the top rather than the middle: a run location long enough to wrap
+     * ("Frontend body open") would otherwise centre its bolt against both lines, leaving
+     * it floating between them instead of sitting on the first word.
+     */
+    /* Where it runs and in what order, on one line - the hook and its position in it. */
+    .fsnip_row_hook {
+        @apply flex items-center;
+
+        gap: 6px;
+        min-width: 0;
+    }
+
+    /* One line, always - a wrapped run location is what a third row of height is made of. */
+    .fsnip_row_runs {
+        @apply flex items-center gap-1 text-xs text-ink-mid;
+
+        line-height: 20px;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        /* A location too long for the column ends in an ellipsis, not mid-word. */
+        text-overflow: ellipsis;
+
+        .el-icon {
+            @apply flex-none text-ink-light;
+
+            font-size: 11px;
+        }
+    }
+
+    /* The badge keeps its width; the location beside it is what gives way. */
+    .fsnip_row_priority {
+        @apply inline-flex flex-none items-center gap-1 rounded-xs text-xs bg-surface-sunk text-ink-light border border-solid border-hairline;
+
+        padding: 0 5px;
+        line-height: 16px;
+        white-space: nowrap;
+
+        .el-icon {
+            @apply flex-none;
+
+            font-size: 9px;
+        }
+    }
+
+    /* "4 minutes ago" is the longest of these; it gets one line, not two. */
+    .fsnip_row_when {
+        @apply block text-xs text-ink-light;
+
+        line-height: 20px;
+        white-space: nowrap;
+    }
+
+    /* A value the snippet does not have, so the column still reads as a column. */
+    .fsnip_row_blank {
+        @apply text-ink-light;
+    }
+
+    /* --------------------------------------------------------------- tags */
+
+    /*
+     * Tags are stored as one comma-separated string and were printed as one - a chip each
+     * is what makes them read as a set rather than as a sentence. Two lines of them at
+     * most, which is the height the row already is.
+     */
+    .fsnip_row_tags {
+        @apply flex flex-wrap;
+
+        gap: 4px;
+        /* Two rows of chips, which is the height the row already is. */
+        max-height: 40px;
+        overflow: hidden;
+    }
+
+    .fsnip_chip {
+        @include mixins.chip;
+        @apply bg-surface-raised text-ink-mid font-normal;
+
+        /* Unlike the other two, a tag is user-written, so it can be too long for its column. */
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ------------------------------------------------------------ actions */
+
+    /*
+     * On every row, all the time. The negative margin is because each button carries its
+     * own padding, so without it the gap the flex line sets reads about 5px wider than the
+     * 10px it is.
+     */
+    .fsnip_row_actions {
+        @apply flex flex-none items-center;
+
+        gap: 2px;
+        margin-left: -5px;
+    }
+
+    /*
+     * Quiet at rest, because they are on every row and the titles above them are what the
+     * eye should land on first. They come up a step when the pointer is anywhere on the
+     * row, and each one lights properly on its own hover.
+     */
+    .fsnip_row_action {
+        @include mixins.icon-button(24px, 6px, 'raised');
+
+        /* A step quieter than the shared one, because there is a pair of these on every row. */
+        @apply text-ink-light;
+
+        .el-icon {
+            font-size: 14px;
+        }
+
+        &.is_danger:hover {
+            @apply bg-danger-bg text-danger-fg;
+        }
+    }
+
+    .el-table__row:hover .fsnip_row_action {
+        @apply text-ink-mid;
+    }
+}
+
+/*
+ * A snippet that fataled and was paused. The tint is the row's answer to "why is this one
+ * not running", so it stays on whether or not the pointer is over it.
+ */
+.el-table__row.fsnip_status_error,
+.el-table__row.fsnip_status_error:hover > td.el-table__cell {
+    background-color: var(--fsnip-danger-wash);
+}
+
+/* Off, not broken - so it recedes rather than colouring itself. */
+.el-table__row.fsnip_status_draft .fsnip_row_title,
+.el-table__row.fsnip_status_draft .fsnip_row_desc {
+    @apply text-ink-light;
+}
+
+.fct_filter_items {
+    h3 {
+        @apply m-0 text-sm font-medium text-ink-head;
+
+        margin-bottom: 10px;
+    }
+
+    hr {
+        @apply border-0 border-t border-solid border-hairline;
+
+        margin: 12px 0;
+    }
+
+    /* However many columns there are to sort on, the popover stays one screenful. */
+    .fct_sort_options {
+        max-height: 150px;
+        overflow: auto;
+    }
+
+    .fct_sort_apply {
+        margin-top: 20px;
+    }
+}
+
+.fct_radios_blocks {
+    display: block;
+
+    > label {
+        display: block;
+        margin-right: 0;
+    }
+}
+
+.fql_pagi {
+    @apply flex justify-end;
+
+    padding-top: 16px;
+}
+
+/* The list toolbar's search field is a fixed column, not a stretchy one. */
+.fsnip_search.el-input {
+    width: 200px;
+}
+
+/* An icon set into a button's label, before the text. */
+.fsnip_btn_icon {
+    margin-right: 5px;
+}
+
+/* ============================================================== the editor */
+
+/*
+ * The code editor keeps its dark CodeMirror theme in both app themes. It is a code
+ * surface, not a card - the same choice every editor in wp-admin makes - so what is themed
+ * here is the frame around it, not the code inside it.
+ */
+.code_editor_wrap .el-form-item__content {
+    width: 100%;
+    display: block;
+}
+
+/*
+ * The frame the editor sits in. This is the only caller of `.fsnip_code`, which used to
+ * live in _ui.scss described as a block of code to copy out - and was styled like one. It
+ * carried `user-select: all`, which inherits into CodeMirror's contenteditable, so a click
+ * anywhere in a snippet selected the whole of it instead of putting the cursor there.
+ * What is left is the part that was doing the visible work: a well, a hairline, and the
+ * padding that keeps the code off both.
+ */
+.fsnip_code {
+    @apply block bg-surface-sunk text-ink border border-solid border-hairline rounded;
+
+    padding: 12px;
+}
+
+.cm-editor {
+    font-family: var(--fsnip-mono);
+    font-size: 15px;
+    line-height: 1.6;
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: embed;
+    border-radius: 6px;
+    overflow: hidden;
+
+    /*
+     * How tall a snippet is before it starts scrolling inside itself. This used to be an
+     * inline `:style` on the <codemirror> element; it is the editor's own size rather than
+     * something a caller passes in, so it is stated once here. The floor is what stops a
+     * two-line snippet from opening in a box too small to work in, and the ceiling keeps a
+     * long one from pushing the fields beside it off the screen.
+     */
+    min-height: 400px;
+    max-height: 80vh;
+    height: auto;
+}
+
+/*
+ * Deliberately ASCII-only, all of it.
+ *
+ * Sass puts a BOM at the top of a stylesheet the moment its output contains one
+ * non-ASCII byte, and this stylesheet is injected into a <style> tag rather than served
+ * as a file - where a leading BOM is not a signal, it is a character, and it invalidates
+ * whatever rule comes first. That was the theme block, so every token came out unset and
+ * the whole app rendered in Element Plus's defaults.
+ *
+ * The rule that cost us was `.uf1 .cm-scroller` (with CodeMirror's generated Greek class
+ * name) setting a line-height the selector below sets anyway.
+ */
+.cm-scroller {
+    line-height: 1.8;
+}
+
+.cm-gutter.cm-lineNumbers {
+    padding: 0 3px;
+    background: rgb(49, 50, 53);
+}
+
+/*
+ * Each language shows what wraps the snippet on the page, so what is in the editor is
+ * unambiguously only the part you write. The label is painted onto the editor chrome and
+ * is deliberately the CodeMirror theme's own greys rather than the app's - a step lighter
+ * than the theme's comment grey, which at #6b6b6b on this band was 2.4:1 and sat below
+ * every other piece of text on the screen.
+ */
+.cm-editor::before {
+    color: #a0a0a0;
+    font-size: 14px;
+    font-weight: normal;
+    display: block;
+    margin-bottom: 10px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #313235;
+    z-index: 999;
+    padding-left: 45px;
+}
+
+.fsnip_code_PHP {
+    .cm-scroller {
+        padding-top: 35px;
+    }
+
+    .cm-scroller::before {
+        content: "<?php ";
+        color: #999;
+        font-size: 16px;
+        font-weight: bold;
+        display: block;
+        margin-bottom: 10px;
+        position: absolute;
+        top: 0;
+        left: 40px;
+    }
+}
+
+.fsnip_code_php_content,
+.fsnip_code_css,
+.fsnip_code_js {
+    .cm-scroller {
+        padding-top: 35px;
+    }
+
+    .cm-editor {
+        padding-bottom: 35px;
+    }
+
+    .cm-editor::after {
+        color: #a0a0a0;
+        font-size: 14px;
+        font-weight: normal;
+        display: block;
+        margin-bottom: 10px;
+        position: absolute;
+        bottom: 0;
+        left: 40px;
+    }
+}
+
+.fsnip_code_php_content {
+    .cm-editor::before {
+        content: "<!-- begin content (HTML / PHP / Mixed) -->";
+    }
+
+    .cm-editor::after {
+        content: "</-- end content -->";
+    }
+}
+
+.fsnip_code_css {
+    .cm-editor::before {
+        content: "<style>";
+    }
+
+    .cm-editor::after {
+        content: "</style>";
+    }
+}
+
+.fsnip_code_js {
+    .cm-editor::before {
+        content: "<script>";
+    }
+
+    .cm-editor::after {
+        content: "</script>";
+    }
+}
+
+/* The hooks warning under the editor - a note about the code, not an error in it. */
+.fsnip_error_hooks,
+.code_error_block {
+    @include mixins.notice('caution');
+
+    margin-top: 12px;
+    padding: 12px 16px;
+
+    p {
+        margin: 0 0 4px;
+        font-weight: 600;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    pre {
+        margin: 0;
+        text-wrap: unset;
+    }
+
+    ul {
+        margin: 4px 0 0;
+        padding-left: 20px;
+        list-style: disc;
+    }
+}
+
+/* ---------------------------------------------------------- the run selector */
+
+.fsnin_run_wrap > h3 {
+    @apply text-sm font-medium text-ink-head;
+
+    margin: 0 0 8px;
+}
+
+.fsnin_run_selector {
+    position: relative;
+}
+
+/*
+ * The closed state of the "where should this run" picker: a field that opens a panel of
+ * choices rather than a native select, because each choice needs a sentence explaining it.
+ * The chevron is drawn with a mask rather than a background image so it takes the theme's
+ * text colour instead of being a baked-in grey.
+ */
+.run_selected {
+    @apply relative block w-full bg-surface text-ink border border-solid border-hairline-strong rounded cursor-pointer;
+
+    max-width: 500px;
+    min-height: 40px;
+    padding: 8px 34px 8px 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    transition: border-color .15s ease;
+
+    &:hover {
+        border-color: var(--fsnip-accent);
+    }
+
+    &::after {
+        content: '';
+        @apply absolute;
+
+        right: 12px;
+        top: 50%;
+        width: 10px;
+        height: 6px;
+        transform: translateY(-50%);
+        background-color: var(--fsnip-text-light);
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+
+    &.run_box_error {
+        border-color: var(--fsnip-danger-line);
+    }
+
+    p {
+        display: block;
+        margin: 0;
+        padding: 0;
+
+        &.option_label {
+            @apply text-sm font-medium text-ink;
+        }
+
+        &.option_desc {
+            @apply text-xs text-ink-light;
+        }
+    }
+}
+
+.run_selector_options {
+    @apply flex flex-wrap bg-surface-sunk border border-solid border-hairline rounded;
+
+    padding: 12px;
+    margin-top: 10px;
+
+    .selector_option {
+        @apply rounded border border-solid border-transparent;
+
+        min-width: 50%;
+        padding: 14px;
+        cursor: pointer;
+        transition: background-color .15s ease, border-color .15s ease;
+
+        p {
+            @apply text-sm text-ink-mid;
+
+            margin: 0;
+
+            &.option_label {
+                @apply text-base font-medium text-ink-head;
+
+                margin-bottom: 4px;
+            }
+        }
+
+        &:hover,
+        &.selector_option_selected {
+            @apply bg-surface border-hairline-strong;
+
+            box-shadow: var(--fsnip-shadow-card);
+        }
+    }
+}
+
+/* -------------------------------------------------------------- the form bits */
+
+/*
+ * A select with an "add one of these" button on the end: the group field, the tags field.
+ *
+ * The select takes the room that is left and the button keeps its own size, so two of
+ * these stacked in the same column line up. Left alone they do not: Element Plus gives a
+ * single select its intrinsic 200px and lets a multiple select grow with the tags inside
+ * it, which had Snippet Group sitting 34px narrower than Tags directly below it.
+ *
+ * min-width: 0 because a flex item will not shrink below its content otherwise, and a
+ * long group name would push the button off the end of the row.
+ */
+.select_plus_wrap {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+
+    .el-select {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+}
+
+/* The hint beside a field's label - a question mark, not a control. */
+.snip_field_help {
+    font-style: italic;
+}
+
+/* The confirm under a field that adds to a list of its own: a tag, a group. */
+.snip_add_item {
+    margin-top: 10px;
+}
+
+.snippet_tags_item .el-form-item__content {
+    display: block;
+}
+
+.ecm_listed_checkboxes {
+    margin-top: 20px;
+
+    > label {
+        display: block;
+    }
+}
+
+/* The shortcode a content snippet is inserted with, next to a copy button. */
+.snip_shortcode {
+    @apply flex items-center;
+
+    span.snip_code {
+        @apply flex items-center gap-2.5 bg-surface-sunk text-ink border border-solid border-hairline rounded;
+
+        padding: 0 0 0 10px;
+        font-family: var(--fsnip-mono);
+        font-size: 13px;
+
+        i.el-icon {
+            cursor: pointer;
+            margin: 8px 8px 8px 0;
+
+            &:hover {
+                @apply text-ink-link;
+            }
+        }
+    }
+}
+
+/* ================================================= conditional logic filters */
+
+.snip_condition_wrap {
+    margin-top: 20px;
+
+    /* The collapse's own title row: the heading and the tooltip that explains it. */
+    .snip_cond_title {
+        @apply flex items-center;
+
+        gap: 8px;
+
+        h3 {
+            margin: 0;
+        }
+    }
+
+    .snip_cond_toggle {
+        padding: 15px 15px 0;
+
+        .el-switch {
+            margin-right: 10px;
+        }
+    }
+
+    .el-collapse {
+        @apply border-0 rounded overflow-hidden;
+    }
+
+    .el-collapse-item__header {
+        @apply bg-surface-sunk text-ink border-0 border-b border-solid border-hairline;
+
+        padding: 10px 15px;
+    }
+
+    .el-collapse-item .el-collapse-item__wrap {
+        @apply bg-surface-sunk border-b-0;
+    }
+}
+
+.fc_rich_container {
+    overflow: hidden;
+    padding: 15px;
+
+    .fc_rich_filter {
+        @apply bg-surface border border-solid border-hairline rounded;
+
+        margin-bottom: 20px;
+        padding: 8px 12px;
+
+        table {
+            width: 100%;
+            margin-bottom: 16px;
+            border-collapse: collapse;
+            border-spacing: 0;
+            border: 0;
+
+            tr td {
+                padding: 5px;
+
+                .fc_options_selector .el-select__tags {
+                    padding-left: 5px;
+                }
+            }
+        }
+    }
+
+    /*
+     * One rule per row, as three fixed columns and a remove button: what is being tested,
+     * how, and against what. The first two are given a width so the value column - the only
+     * one whose contents vary in length - is what absorbs the rest of the table.
+     */
+    .fc_filter_field {
+        width: 190px;
+        line-height: 110%;
+    }
+
+    .fc_filter_operator {
+        width: 190px;
+    }
+
+    .fc_filter_remove {
+        width: 50px;
+        text-align: right;
+    }
+
+    /* The value control fills whatever the three columns above leave it. */
+    .fc_filter_input {
+        width: 100%;
+    }
+
+    /* Removes the whole group rather than a rule in it, so it sits clear of the rows. */
+    .fc_filter_group_remove {
+        float: right;
+    }
+
+    /* The "or" between two condition groups, sitting on the rule that separates them. */
+    .fc_cond_or {
+        @apply border-0 border-b border-dashed;
+
+        border-color: var(--fsnip-border-strong);
+        margin: 0 0 15px;
+        padding: 0;
+        text-align: center;
+        line-height: 100%;
+
+        em {
+            @apply bg-surface-sunk text-ink-light rounded-xs;
+
+            font-size: 1.1em;
+            font-style: normal;
+            margin: 0 10px;
+            padding: 2px 10px;
+            position: relative;
+            top: 10px;
+        }
+
+        /* The last one is a button: it adds another group rather than labelling one. */
+        em.fc_cond_add {
+            @apply font-medium text-ink-link;
+
+            cursor: pointer;
+
+            &:hover {
+                @apply bg-surface-raised text-ink;
+            }
+        }
+    }
+
+    .fc_rich_wrap > div:last-child .fc_cond_or {
+        display: none;
+    }
+
+    .fsnip_value_help {
+        @apply text-xs text-ink-light;
+
+        margin-top: 0;
+        margin-bottom: -2px;
+    }
+}
+
+/*
+ * The id after an option's title, for the pickers that show one. Not nested with the rest
+ * of the filters above: an el-select's dropdown is teleported to <body>, so a rule scoped
+ * to `.fc_rich_container` would never reach it.
+ */
+.fc_option_id {
+    float: right;
+    font-size: 70%;
+}
+
+/*
+ * A select you can also add to: the field fills the row and the add button is pinned to its
+ * right-hand end rather than sitting after it, so the two read as one control.
+ */
+.fc_option_creatable {
+    @apply block w-full rounded;
+
+    .el-select {
+        width: 100%;
+        float: left;
+
+        input {
+            margin: 0;
+        }
+    }
+
+    .fc_with_select {
+        float: left;
+        position: absolute;
+        right: 0;
+    }
+}
+
+/* ================================================================ settings */
+
+.fsnip_settings {
+    /*
+     * One setting per row: what it is called and what it does on the left, the control on
+     * the right, a hairline between. The explanation is the point - these were four bare
+     * checkboxes whose labels were doing the explaining, and two of them change what
+     * happens when a snippet fatals.
+     */
+    .fsnip_setting {
+        @apply flex items-start justify-between gap-6 border-0 border-b border-solid border-hairline;
+
+        padding: 18px 0;
+
+        &:first-child {
+            padding-top: 0;
+        }
+
+        &:last-child {
+            @apply border-b-0;
+
+            padding-bottom: 0;
+        }
+    }
+
+    .fsnip_setting_text {
+        min-width: 0;
+
+        strong {
+            @apply flex flex-wrap items-center gap-2 text-ink-head font-medium;
+
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        p {
+            @apply m-0 text-sm text-ink-mid;
+
+            margin-top: 4px;
+            line-height: 1.6;
+            max-width: 62ch;
+        }
+    }
+
+    /*
+     * Held to the top of the row rather than centred: the rows are two and three lines
+     * tall, and a switch floating in the middle of a paragraph does not read as belonging
+     * to the line that names it.
+     */
+    .fsnip_setting_control {
+        @apply flex-none;
+
+        padding-top: 2px;
+    }
+
+    /* The consequence of having just turned the row above off. */
+    .fsnip_setting_warning {
+        @include mixins.notice('danger');
+
+        margin-top: 10px;
+        padding: 10px 14px;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    /*
+     * A block inside a card that is not the card's main point: the wp-config alternative
+     * to the Safe Mode URL, the note that standalone is already on. Sunk rather than
+     * outlined so it reads as an aside rather than as a second card.
+     */
+    .fsnip_setting_aside {
+        @apply bg-surface-sunk border border-solid border-hairline rounded;
+
+        margin-top: 20px;
+        padding: 14px 16px;
+
+        &.is_on {
+            @include mixins.notice('ok');
+        }
+
+        strong {
+            @apply block text-ink-head font-medium;
+
+            font-size: 14px;
+        }
+
+        p {
+            @apply m-0 text-sm text-ink-mid;
+
+            margin-top: 4px;
+            line-height: 1.6;
+        }
+
+        code {
+            margin-top: 10px;
+        }
+
+        /* The tinted variant colours the whole block, so its text stops overriding it. */
+        &.is_on strong,
+        &.is_on p {
+            color: inherit;
+        }
+    }
+
+    /* The sentence a card opens with, before anything it asks you to do. */
+    .fsnip_lede {
+        @apply m-0 text-ink-mid;
+
+        margin-bottom: 20px;
+        font-size: 14px;
+        line-height: 1.6;
+        max-width: 68ch;
+    }
+
+    .fsnip_field_label {
+        @apply block text-ink-head font-medium;
+
+        margin-bottom: 6px;
+        font-size: 14px;
+    }
+
+    .fsnip_field_note {
+        @apply m-0 text-xs text-ink-light;
+
+        margin-top: 6px;
+        line-height: 1.6;
+    }
+
+    /*
+     * A button under a field, with the sentence that says what pressing it will do. The
+     * button leads because it is the thing being looked for; the text is there for the
+     * person who is not sure whether they want it yet, and wraps under the button rather
+     * than beside it once the column gets narrow.
+     */
+    .fsnip_field_action {
+        @apply flex flex-wrap items-center;
+
+        margin-top: 12px;
+        gap: 6px 12px;
+
+        span {
+            @apply text-xs text-ink-light;
+
+            flex: 1 1 320px;
+            line-height: 1.6;
+        }
+    }
+}
+
+/* ========================================================== errors and notices */
+
+/* The band at the top of the editor when the snippet on disk has fataled. */
+.snippet_error_wrap {
+    @include mixins.notice('danger');
+
+    margin: 0 0 20px;
+    padding: 15px;
+
+    p {
+        @apply text-danger-fg;
+
+        margin: 0 0 8px;
+    }
+}
+
+/*
+ * The banner on a site where file modifications are off. Cautionary rather than alarming:
+ * nothing is broken and nothing needs fixing, the screen simply does less than usual, and
+ * the snippets it lists are all still running.
+ */
+.fsnip_read_only {
+    @include mixins.notice('caution');
+    @apply flex items-start gap-2;
+
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    line-height: 1.6;
+
+    .dashicons-lock {
+        @apply text-caution-fg flex-none;
+
+        margin-top: 2px;
+    }
+
+    strong {
+        @apply block text-caution-fg;
+
+        font-size: 14px;
+    }
+
+    p {
+        @apply m-0 text-sm text-ink;
+
+        margin-top: 2px;
+        max-width: 78ch;
+    }
+}
+
+/*
+ * The save-failure panel: what went wrong, why, and what to do about it. The one place in
+ * the app that puts three levels of explanation on screen at once, so it is the one place
+ * that earns a left rule and a heading of its own.
+ */
+.fsnip_error_panel {
+    @include mixins.notice('danger');
+
+    margin-top: 12px;
+    border-left: 4px solid var(--fsnip-danger-fg);
+    padding: 14px 18px;
+    line-height: 1.6;
+
+    .fsnip_error_head {
+        @apply flex items-start gap-2;
+
+        .dashicons-warning {
+            @apply text-danger-fg flex-none;
+
+            margin-top: 2px;
+        }
+    }
+
+    .fsnip_error_head_text {
+        @apply flex flex-wrap items-baseline gap-2;
+
+        h4 {
+            @apply m-0 text-danger-fg;
+
+            font-size: 15px;
+        }
+    }
+
+    .fsnip_error_line {
+        @apply rounded-xs text-xs font-semibold;
+
+        background: var(--fsnip-danger-fg);
+        color: var(--fsnip-surface);
+        padding: 1px 7px;
+        white-space: nowrap;
+    }
+
+    /*
+     * What PHP said, promoted out from behind the old "Show technical details" toggle to
+     * sit directly under the headline. Set slightly larger than the other code blocks
+     * because it is the line being read first, and wrapped rather than scrolled: this is
+     * a sentence PHP wrote, not code, and a long one should not need dragging sideways to
+     * reach the part naming the function.
+     */
+    .fsnip_error_raw {
+        /* Two classes beats the `.fsnip_error_panel pre` base rule below on its own. */
+        font-size: 13px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin-top: 10px;
+    }
+
+    .fsnip_error_reason {
+        @apply text-ink;
+
+        margin: 8px 0 0;
+    }
+
+    .fsnip_error_fix {
+        @apply border-0 border-t border-solid border-danger-line;
+
+        margin-top: 12px;
+        padding-top: 12px;
+
+        strong {
+            @apply block text-danger-fg;
+
+            margin-bottom: 2px;
+        }
+
+        p {
+            @apply m-0 text-ink;
+        }
+    }
+
+    /* A stack trace is code, so it stays on the code surface in both themes. */
+    pre {
+        margin: 8px 0 0;
+        padding: 10px 12px;
+        background: #151D26;
+        color: #F5F6F7;
+        border-radius: 4px;
+        font-size: 12px;
+        line-height: 1.5;
+        overflow-x: auto;
+        white-space: pre;
+    }
+
+    .fsnip_error_extra {
+        margin-top: 12px;
+
+        strong {
+            @apply block text-danger-fg;
+        }
+
+        /*
+         * The captured output is the user's own markup and can be any width; it scrolls
+         * rather than stretching the editor column.
+         */
+        pre {
+            max-height: 220px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        a {
+            font-size: 12px;
+            text-decoration: none;
+        }
+    }
+}
+
+/*
+ * A fatal from the server, rendered into a closed shadow root so the page's own HTML
+ * cannot restyle this admin screen. Only the frame around it is ours.
+ */
+.fluent_snip_server_error {
+    @include mixins.notice('caution');
+
+    padding: 20px;
+    margin: 0 0 20px;
+}
+
+/* Snippets are not running - a state the whole screen needs to know about. */
+.fsnip_safe .fsnip_warn {
+    @include mixins.notice('caution');
+
+    padding: 15px;
+    margin-bottom: 20px;
+
+    h3 {
+        @apply m-0 text-caution-fg;
+
+        padding: 0 0 4px;
+    }
+
+    p {
+        margin: 5px 0;
+    }
+
+    code {
+        display: inline-block;
+    }
+}
+
+/* ======================================================== import and export */
+
+/*
+ * The drawer is teleported to <body>, outside the app root, so anything here that would
+ * normally be inherited from that root has to be said again - see the block in
+ * _element.scss that restates the heading and link colours for the same reason.
+ */
+.ecm_import_export {
+    h3 {
+        @apply text-base font-medium text-ink-head;
+
+        margin: 0 0 12px;
+    }
+
+    /* Which of the two you are here to do. Two equal doors, no default. */
+    .ecm_choices {
+        @apply grid;
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .ecm_choice {
+        @apply flex flex-col items-center justify-center gap-2.5 w-full bg-surface-sunk text-ink border border-solid border-hairline-strong rounded cursor-pointer;
+
+        padding: 32px 20px;
+        font-size: 15px;
+        font-weight: 500;
+        transition: border-color .15s ease, background-color .15s ease;
+
+        .el-icon {
+            @apply text-ink-mid;
+
+            font-size: 28px;
+        }
+
+        &:hover {
+            @apply bg-surface border-hairline-strong;
+
+            box-shadow: var(--fsnip-shadow-card);
+
+            .el-icon {
+                @apply text-ink;
+            }
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fsnip-accent);
+            outline-offset: 2px;
+        }
+    }
+
+    /* One snippet per row in the export picker, so a long list is scannable. */
+    .ecm_listed_checkboxes .el-checkbox {
+        @apply flex items-center w-full;
+
+        height: auto;
+        margin: 0;
+        padding: 6px 0;
+    }
+
+    /* The status beside a snippet's name in either list. */
+    .ecm_row_tag {
+        margin-left: 10px;
+    }
+
+    /* Export, or publish what was imported - the one button at the foot of the drawer. */
+    .ecm_submit {
+        margin-top: 20px;
+    }
+
+    .ecm_upload_icon {
+        font-size: 30px;
+    }
+}
+
+/* ================================================================== about */
+
+/*
+ * The About screen is the one page here that is read rather than used, so it is set as a
+ * page rather than as a form: a masthead that says what the plugin is, and under it four
+ * cards of the ordinary kind. It uses `.box` like every other screen - it had a parallel
+ * set of card classes of its own (`.fss_about`, `.fss_header`, `.fss_content`) that were a
+ * second, slightly different implementation of the same three rules.
+ */
+.fss_about_page {
+    .fss_masthead {
+        text-align: center;
+
+        .box_body {
+            padding: 40px 24px 32px;
+        }
+
+        .fsnip_brand_mark {
+            margin: 0 auto 16px;
+        }
+    }
+
+    .fss_masthead_title {
+        @apply m-0 text-ink-head;
+
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1.2;
+        letter-spacing: -.025em;
+
+        /* The lockup, as in the app bar: a light "fluent" against a bold "Snippets". */
+        span {
+            font-weight: 400;
+        }
+    }
+
+    .fss_masthead_lead {
+        @apply mx-auto text-ink-mid;
+
+        max-width: 620px;
+        margin-top: 12px;
+        margin-bottom: 0;
+        font-size: 15px;
+        line-height: 1.6;
+    }
+
+    /*
+     * The sentence most people came to this screen to check. Set on the success wash
+     * rather than in bold, because "there is no paid tier" is good news and should look
+     * like it.
+     */
+    .fss_masthead_free {
+        @include mixins.notice('ok');
+        @apply mx-auto;
+
+        max-width: 620px;
+        margin-top: 20px;
+        margin-bottom: 0;
+        padding: 12px 18px;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.6;
+    }
+
+    .fss_masthead_actions {
+        @apply flex flex-wrap items-center justify-center gap-2.5;
+
+        margin-top: 24px;
+    }
+
+    /* What the plugin does differently, as a heading and a paragraph each. */
+    .fss_facts {
+        @apply list-none m-0 p-0;
+
+        li {
+            @apply border-0 border-b border-solid border-hairline;
+
+            margin: 0;
+            padding: 0 0 16px;
+
+            & + li {
+                padding-top: 16px;
+            }
+
+            &:last-child {
+                @apply border-b-0;
+
+                padding-bottom: 0;
+            }
+        }
+
+        strong {
+            @apply block text-ink-head font-medium;
+
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        p {
+            @apply m-0 text-sm text-ink-mid;
+
+            line-height: 1.6;
+        }
+    }
+
+    /*
+     * A name and what it is for, on one line each. Two columns rather than a bulleted
+     * list, because the point of the list is the pairing.
+     */
+    .fss_libraries,
+    .fss_links {
+        @apply list-none m-0 p-0;
+
+        li {
+            @apply flex flex-wrap items-baseline gap-2 border-0 border-b border-solid border-hairline;
+
+            margin: 0;
+            padding: 10px 0;
+
+            &:last-child {
+                @apply border-b-0;
+            }
+        }
+
+        a {
+            @apply font-medium no-underline;
+
+            font-size: 14px;
+        }
+
+        span {
+            @apply text-xs text-ink-light;
+        }
+    }
+
+    /*
+     * The other plugins by the same team.
+     *
+     * Set as a list of rows rather than as a grid of marketing cards, and given no colour
+     * of its own: this is the last card on an About page, and it should read as a list of
+     * facts like the two above it, not as an advertisement wedged into the same page that
+     * promises there are none.
+     */
+    .fss_team_lead {
+        @apply m-0 text-sm text-ink-mid;
+
+        max-width: 640px;
+        line-height: 1.6;
+    }
+
+    /*
+     * One plugin per row. Ruled like the two lists opposite it rather than spaced apart,
+     * which a single column can do and a wrapping grid cannot: the number of columns
+     * there comes from the width, so "last in its column" is not a thing CSS can say and
+     * a partial final row ends up underlined in some columns and not others.
+     */
+    .fss_team_grid {
+        @apply list-none m-0 p-0;
+
+        margin-top: 4px;
+    }
+
+    .fss_team_item {
+        @apply flex items-start border-0 border-b border-solid border-hairline;
+
+        margin: 0;
+        padding: 14px 0;
+        gap: 12px;
+
+        &:last-child {
+            @apply border-b-0;
+
+            padding-bottom: 0;
+        }
+    }
+
+    .fss_team_icon {
+        @apply block shrink-0 border border-solid border-hairline;
+
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        margin-top: 2px;
+    }
+
+    /* Shown when the directory's icon does not load: the initial, on a plain tile. */
+    .fss_team_icon_fallback {
+        @apply flex items-center justify-center bg-surface-sunk text-ink-light font-medium;
+
+        font-size: 16px;
+        line-height: 1;
+    }
+
+    .fss_team_text {
+        @apply grow;
+
+        min-width: 0;
+
+        p {
+            @apply m-0 text-xs text-ink-light;
+
+            margin-top: 2px;
+            line-height: 1.5;
+        }
+    }
+
+    .fss_team_name {
+        @apply block font-medium no-underline;
+
+        font-size: 14px;
+    }
+
+    /*
+     * The action column holds a button on one row and a word on the next, and a column
+     * that changes width per row reads as ragged. This is wide enough for the longest
+     * button label and fixed there.
+     */
+    .fss_team_action {
+        @apply flex shrink-0 items-center justify-end;
+
+        min-width: 130px;
+        margin-top: 2px;
+    }
+
+    .fss_team_active {
+        @apply inline-flex items-center text-xs font-medium text-ok-fg;
+
+        &::before {
+            @apply inline-block bg-ok-fg;
+
+            content: '';
+            width: 6px;
+            height: 6px;
+            margin-right: 6px;
+            border-radius: 50%;
+        }
+    }
+
+    .fss_team_fallback {
+        @apply text-xs no-underline text-right;
+    }
+
+    .fss_contributors_link {
+        @apply block no-underline;
+    }
+
+    /* Who wrote it: avatars in a row that wraps, not a list of names. */
+    .fss_contributors {
+        @apply flex flex-row flex-wrap list-none m-0 p-0;
+
+        gap: 8px;
+        margin-top: 4px;
+
+        li {
+            margin: 0;
+        }
+
+        img {
+            @apply block border border-solid border-hairline;
+
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+        }
+    }
+}

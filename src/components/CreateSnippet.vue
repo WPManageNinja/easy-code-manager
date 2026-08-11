@@ -1,8 +1,8 @@
 <template>
     <div class="box_wrapper">
-        <div class="box dashboard_box">
-            <div class="box_header" style="padding: 15px;font-size: 16px;">
-                <div style="padding-top: 5px;" class="box_head">
+        <div class="box">
+            <div class="box_header">
+                <div class="box_head">
                     <el-breadcrumb separator="/">
                         <el-breadcrumb-item :to="{ name: 'dashboard' }">{{ $t('Code Snippets') }}</el-breadcrumb-item>
                         <el-breadcrumb-item>
@@ -10,8 +10,8 @@
                         </el-breadcrumb-item>
                     </el-breadcrumb>
                 </div>
-                <div v-if="snippet" style="display: flex;" class="box_actions">
-                    <el-button @click="saveCode()" :disabled="saving" v-loading="saving" type="success">
+                <div v-if="snippet && canEdit" class="box_actions">
+                    <el-button @click="saveCode()" :disabled="saving" v-loading="saving" type="primary">
                         {{ $t('Create Snippet') }}
                     </el-button>
                 </div>
@@ -72,6 +72,12 @@ export default {
     },
     methods: {
         saveCode() {
+            // Same reasoning as SnippetEditView.saveCode(): the button is gone, the
+            // keyboard shortcut and the confirm dialog are not.
+            if (!this.canEdit) {
+                return;
+            }
+
             // validate the code
             if (!this.snippet.code) {
                 this.$notify.error(this.$t('Please enter some code to save'));

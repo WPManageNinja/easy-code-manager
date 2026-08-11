@@ -3,8 +3,8 @@
         <el-collapse v-model="activeName">
             <el-collapse-item name="condition">
                 <template #title>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <h3 style="margin: 0;">{{ $t('Advanced Conditional Logic') }}</h3>
+                    <div class="snip_cond_title">
+                        <h3>{{ $t('Advanced Conditional Logic') }}</h3>
                         <el-tooltip
                             placement="top-start"
                             class="box-item"
@@ -18,9 +18,9 @@
                     </div>
                 </template>
 
-                <div style="padding: 15px 15px 0;">
+                <div class="snip_cond_toggle">
                     <el-form-item>
-                        <el-switch style="margin-right: 10px;" v-model="condition.status" active-color="#13ce66"
+                        <el-switch v-model="condition.status"
                                    active-value="yes" inactive-value="no"></el-switch>
                         {{ $t('Enable Conditional Logic') }}
                     </el-form-item>

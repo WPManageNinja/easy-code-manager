@@ -1,11 +1,17 @@
 <template>
+    <!--
+        `disabled` is CodeMirror's read-only mode: the code still highlights, still
+        scrolls and can still be selected and copied, which is the whole point of the
+        screen when nothing here can be saved. Autofocus goes with it - putting a cursor
+        in a box that will not accept typing is a small lie.
+    -->
     <codemirror
         v-if="appReady"
         :class="'fsnip_code fsnip_code_'+langType"
         v-model="code"
         :placeholder="placeholder"
-        :style="{ minHeight: '400px', maxHeight: '80vh', height: 'auto'}"
-        :autofocus="true"
+        :autofocus="canEdit"
+        :disabled="!canEdit"
         :indent-with-tab="true"
         :tab-size="4"
         :extensions="extensions"

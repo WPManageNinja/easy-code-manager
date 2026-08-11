@@ -650,7 +650,10 @@ class CodeRunner
                         }, $this->get($snippet, 'priority', 10));
                     }
 
-                    if (($runAt == 'everywehere' && is_admin()) || $runAt == 'admin_head') {
+                    // Kept in step with CodeRunner::runSnippets(): 'everywhere' was
+                    // misspelled here, so the CSS "Both Backend and Frontend" option
+                    // never applied in the admin.
+                    if (($runAt == 'everywhere' && is_admin()) || $runAt == 'admin_head') {
                         $runAt = 'admin_head';
                     } else {
                         $runAt = 'wp_head';

@@ -1,0 +1,103 @@
+/*
+ * The ground the app stands on: how it sits inside wp-admin, and the two or three things
+ * that are true of every element in it.
+ *
+ * Nothing here is a component. If a rule needs a class of its own it belongs in _ui.scss
+ * or with the screen that uses it.
+ */
+
+@use "mixins";
+
+/* --------------------------------------------------------------- wp-admin fit */
+
+/*
+ * Deliberately unscoped - it has to reach wp-admin's own elements - but narrowed to this
+ * plugin's screen by the body class WordPress puts there.
+ */
+body.toplevel_page_fluent-snippets {
+    /*
+     * FluentCart's page background, copied from its `--body-bg` rather than approximated -
+     * wp-admin's own grey is #f0f0f1, a warmer and flatter one, and the difference is plain
+     * when two Fluent plugins sit next to each other in the same menu.
+     */
+    background-color: var(--fsnip-body-bg);
+
+    /*
+     * Everything that shows code wears this: the editor, a shortcode to copy, a stack
+     * trace. Declared on <body> rather than on the app root so the drawers and dialogs
+     * Element Plus teleports out of it are still writing code in the same face.
+     */
+    --fsnip-mono: Menlo, Consolas, Monaco, "Courier New", monospace;
+
+    /*
+     * wp-admin's footer is left in place - it carries this plugin's own thank-you and
+     * review link (see AdminMenuHandler::render) - but its greys are picked for a light
+     * page and go invisible on a dark one, so it is recoloured rather than hidden.
+     */
+    #wpfooter {
+        color: var(--fsnip-text-light);
+        border-top-color: var(--fsnip-border);
+
+        a {
+            color: var(--fsnip-text-mid);
+
+            &:hover {
+                color: var(--fsnip-text);
+            }
+        }
+    }
+}
+
+/* ------------------------------------------------------------------ app root */
+
+#fluent_snippets_app {
+    /* How wide a settings-style column is allowed to get, cards and header alike. */
+    --fsnip-content-width: 1040px;
+
+    /*
+     * Anything the app draws that nobody thought to colour. Without this those elements
+     * inherit wp-admin's own #3c434a, which is invisible on a dark card. Set on the root so
+     * it is inherited, and so it loses to every rule that does have an opinion - including
+     * the ones that colour a heading red or amber on purpose.
+     */
+    color: var(--fsnip-text);
+
+    /*
+     * Tailwind's preflight normally sets the box model, but preflight is off here because
+     * it would restyle the whole of wp-admin. Without it these elements inherit wp-admin's
+     * content-box, which makes every `min-h-*` and `h-*` utility add its padding on top of
+     * the height instead of inside it.
+     */
+    &,
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    h1, h2, h3, h4, h5 {
+        color: var(--fsnip-heading);
+    }
+
+    /*
+     * Not `a` alone: Element Plus renders a button as an <a> whenever it is given an href,
+     * and this rule carries the app root's id, so it beat `.el-button--primary` and painted
+     * a near-black label onto a near-black button. A button that happens to be a link is
+     * still a button, and takes its colour from the button.
+     */
+    a:not(.el-button) {
+        color: var(--fsnip-link);
+    }
+
+    .fsnip_app_bar a {
+        @include mixins.focus-ring;
+    }
+
+    /* What is on screen between the stylesheet loading and Vue mounting over it. */
+    .fsnip_booting {
+        @apply text-ink-mid;
+
+        text-align: center;
+        margin-top: 100px;
+    }
+}

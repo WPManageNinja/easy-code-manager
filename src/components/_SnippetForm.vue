@@ -41,10 +41,10 @@
                             {{$t('Snippet Group')}} <el-tooltip
                             class="box-item"
                             effect="dark"
-                            :content="$t('You may group your snippets for better organization and easy to find.')"
+                            :content="$t('Group your snippets to keep them organized and easy to find.')"
                             placement="top-start"
                         >
-                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"></el-button>
                           </el-tooltip>
                         </span>
                     </template>
@@ -56,10 +56,10 @@
                             {{$t('Priority')}} <el-tooltip
                             class="box-item"
                             effect="dark"
-                            :content="$t('The lower the number, the earlier to execute the snippet.')"
+                            :content="$t('The lower the number, the earlier the snippet runs.')"
                             placement="top-start"
                         >
-                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"></el-button>
                           </el-tooltip>
                         </span>
                     </template>
@@ -71,10 +71,10 @@
                             {{$t('Tags')}} <el-tooltip
                             class="box-item"
                             effect="dark"
-                            :content="$t('For easily filter your snippets.')"
+                            :content="$t('Makes your snippets easier to filter.')"
                             placement="top-start"
                         >
-                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"></el-button>
                           </el-tooltip>
                         </span>
                     </template>
@@ -88,10 +88,10 @@
                             {{$t('Load as Stylesheet File')}} <el-tooltip
                             class="box-item"
                             effect="dark"
-                            :content="$t('if you enable this then the snippet will be loaded as a stylesheet file.')"
+                            :content="$t('When enabled, this snippet is served as a separate stylesheet file.')"
                             placement="top-start"
                         >
-                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"></el-button>
                           </el-tooltip>
                         </span>
                         </template>
@@ -107,10 +107,10 @@
                                 {{$t('Block Editor Styles?')}} <el-tooltip
                                 class="box-item"
                                 effect="dark"
-                                :content="$t('if you enable this then the snippet will be loaded in the block editor (Gutenberg).')"
+                                :content="$t('When enabled, this snippet also loads in the block editor (Gutenberg).')"
                                 placement="top-start"
                             >
-                                <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                                <el-button class="snip_field_help" text size="small" :icon="InfoField"></el-button>
                               </el-tooltip>
                             </span>
                         </template>

@@ -101,18 +101,18 @@ class SnippetErrors
             case 'syntax_error':
                 return self::make('code', [
                     'title'  => __('This snippet has a PHP syntax error', 'easy-code-manager'),
-                    'reason' => self::sentence(sprintf(
-                        /* translators: %s: the error message reported by PHP */
-                        __('PHP could not parse the snippet, so nothing was saved — it would have taken the site down on the very next page load, because snippets run on every request. PHP reported: %s', 'easy-code-manager'),
-                        $raw
-                    )),
+                    /*
+                     * PHP's own wording is not repeated here: the panel prints it above
+                     * this paragraph, where it is the first thing read.
+                     */
+                    'reason' => __('PHP could not parse the snippet, so nothing was saved — it would have taken the site down on the very next page load, because snippets run on every request.', 'easy-code-manager'),
                     'fix'    => __('Look at the reported line and the one above it for a missing closing brace, semicolon, bracket or quote.', 'easy-code-manager'),
                     'line'   => $line,
                     'raw'    => $raw,
                 ]);
 
             case 'duplicate_error':
-                return self::describeDuplicate($data, $raw, $line);
+                return self::describeDuplicate($data, $line);
 
             case 'runtime_error':
                 return self::describeRuntime($raw, $line);
@@ -122,10 +122,10 @@ class SnippetErrors
             // apart; it is still matched so an older cached build cannot slip through
             // to the generic branch.
             case 'has_buffer':
-                return self::describeOutput($data, $raw);
+                return self::describeOutput($data);
 
             case 'has_return':
-                return self::describeReturn($raw);
+                return self::describeReturn();
         }
 
         return self::make('code', [
@@ -143,7 +143,7 @@ class SnippetErrors
      * is usually with something the user never looked at — another active snippet, the
      * theme's functions.php, or a plugin.
      */
-    private static function describeDuplicate($data, $raw, $line)
+    private static function describeDuplicate($data, $line)
     {
         $identifier = Arr::get((array)$data, 'identifier');
         $structure = Arr::get((array)$data, 'structure', 'function');
@@ -174,7 +174,11 @@ class SnippetErrors
             'fix'     => __('Give it a name nobody else is likely to use (prefix it, for example my_site_), or guard the declaration so it only happens once:', 'easy-code-manager'),
             'example' => $example,
             'line'    => $line,
-            'raw'     => $raw,
+            /*
+             * No `raw`. The validator's wording here is "Cannot redeclare function foo.",
+             * which is the title again in different words - and the panel prints `raw` in
+             * its loudest position, which is not somewhere to repeat yourself.
+             */
         ]);
     }
 
@@ -188,13 +192,12 @@ class SnippetErrors
      */
     private static function describeRuntime($raw, $line)
     {
-        // PHP's own messages have no terminating punctuation, and this one is quoted
-        // mid-paragraph with more text after it.
-        $reason = self::sentence(sprintf(
-            /* translators: %s: the error message reported by PHP */
-            __('FluentSnippets runs every PHP snippet once before saving it, so that broken code can never reach your site. PHP stopped with: %s', 'easy-code-manager'),
-            $raw
-        ));
+        /*
+         * What PHP stopped with is not quoted here. The panel prints it as the first
+         * thing under the headline, so a paragraph that repeated it just pushed the
+         * useful half of this explanation further down the screen.
+         */
+        $reason = __('FluentSnippets runs every PHP snippet once before saving it, so that broken code can never reach your site. This one did not survive that run.', 'easy-code-manager');
 
         if (preg_match('/Call to undefined function\s+([^\s(]+)/i', $raw, $matches)) {
             return self::make('code', [
@@ -239,7 +242,7 @@ class SnippetErrors
     /**
      * The snippet printed something while merely being loaded.
      */
-    private static function describeOutput($data, $raw)
+    private static function describeOutput($data)
     {
         $output = Arr::get((array)$data, 'output', '');
 
@@ -248,8 +251,13 @@ class SnippetErrors
             'reason'  => __('PHP snippets are loaded on every request, before the page has decided what to send. Anything echoed at that point lands at the very top of the site and breaks headers, redirects and REST responses — so FluentSnippets refuses to save it.', 'easy-code-manager'),
             'fix'     => __('Print inside a hook or a shortcode instead of at the top level — or change the snippet type to PHP Content, which is built for producing HTML. Also check for stray text or a blank line outside the PHP code.', 'easy-code-manager'),
             'example' => "add_action('wp_footer', function () {\n    echo '<p>Hello</p>';\n});",
+            /*
+             * The output itself is the technical detail worth showing, and it has its own
+             * block below. `raw` here would be the validator's "PHP code should not have
+             * print / echo statement" - our own sentence, untranslated, saying what the
+             * title already says.
+             */
             'output'  => is_string($output) ? $output : '',
-            'raw'     => $raw,
         ]);
     }
 
@@ -259,13 +267,14 @@ class SnippetErrors
      * Nearly always a `return` that was meant to sit inside a callback and ended up
      * outside it — which also means everything below it is dead code.
      */
-    private static function describeReturn($raw)
+    private static function describeReturn()
     {
         return self::make('code', [
             'title'  => __('This snippet returns a value at the top level', 'easy-code-manager'),
             'reason' => __('A return statement outside of any function ends the snippet right there, so anything written below it never runs, and the returned value has nowhere to go.', 'easy-code-manager'),
             'fix'    => __('Move the return inside the function or hook callback it belongs to. If you meant to stop early, do that inside a hook callback instead.', 'easy-code-manager'),
-            'raw'    => $raw,
+            // As above: the validator's own wording restates the title, so it is not
+            // worth the panel's most prominent block.
         ]);
     }
 
@@ -308,23 +317,6 @@ class SnippetErrors
             ),
             'fix'    => __('Copy your code somewhere safe, go back to the snippet list and create it again.', 'easy-code-manager'),
         ]);
-    }
-
-    /**
-     * Close a sentence that ends with text PHP handed us.
-     *
-     * @param string $text
-     * @return string
-     */
-    private static function sentence($text)
-    {
-        $text = rtrim($text);
-
-        if ($text === '' || strpos('.!?:', substr($text, -1)) !== false) {
-            return $text;
-        }
-
-        return $text . '.';
     }
 
     /**

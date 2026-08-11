@@ -31,6 +31,16 @@ mix.webpackConfig({
     }
 });
 
+// Tailwind is a PostCSS plugin, so it has to be handed to Mix rather than imported from
+// the stylesheet. Its own config (tailwind.config.js) scopes every utility it emits to
+// #fluent_snippets_app so nothing escapes into the rest of wp-admin.
+mix.options({
+    postCss: [
+        require('tailwindcss'),
+        require('autoprefixer')
+    ]
+});
+
 mix.js('src/app.js', 'dist').vue({ version: 3 })
     .copy('src/images', 'dist/images')
     .setPublicPath('dist');
