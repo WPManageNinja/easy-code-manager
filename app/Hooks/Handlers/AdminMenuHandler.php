@@ -395,7 +395,14 @@ class AdminMenuHandler
             'has_fluentcrm'              => defined('FLUENTCRM'),
             'has_fluentform'             => defined('FLUENTFORM'),
             'has_ninja_tables'           => defined('NINJA_TABLES_VERSION'),
-            'has_line_wrap'              => isset($indexConfig['meta']['enable_line_wrap']) ? $indexConfig['meta']['enable_line_wrap'] : 'no',
+            /*
+             * Localised as 'has_line_wrap' until 2026-08-11, but _CodeEditor.vue reads
+             * appVars.enable_line_wrap — so the editor never saw this value on page load.
+             * Turning line wrap on, reloading, and finding it off again was the visible
+             * symptom; it only ever took effect after visiting the Settings screen, which
+             * sets the key client-side. Renamed to what the editor actually reads (M3).
+             */
+            'enable_line_wrap'           => Arr::get($indexConfig, 'meta.enable_line_wrap', 'no'),
             'disable_recommendation'     => apply_filters('fluentmail_disable_recommendation', false),
         ]);
 

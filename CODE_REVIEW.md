@@ -10,13 +10,13 @@ The architecture is sound: flat-file storage, an `index.php` manifest so nothing
 
 | Status | Count |
 |---|---|
-| ✅ Fixed | 25 |
-| 🔧 Open | 2 |
+| ✅ Fixed | 26 |
+| 🔧 Open | 1 |
 | ⛔️ Withdrawn | 11 |
 
 *Counted per finding, not per heading — several headings cover more than one (`C3 + C4 + H5`, the cleanup pass). Recounted on 2026-08-11 after the counting scheme was found to be inconsistent: Open had been counted by heading while Fixed was counted by finding.*
 
-**The two still open are both L-level and both deliberate:** L7 (duplicate REST routes — removing a registered route risks breaking an unknown integration) and L9 (`Tested up to:` needs a human who knows what WordPress has actually shipped).
+**One remains open:** L9 (`Tested up to:`), which needs a human who knows what WordPress has actually shipped. Deferred by the maintainer — no release is planned yet.
 
 ---
 
@@ -257,9 +257,9 @@ The static cache was *never* invalidated by `saveIndexedConfig()`. That had alwa
 
 **L1 — `escCssJs()` closing tags.** `<\/script>` and `<\/style>` missed `</script >`, `</script\n>` and `</SCRIPT>`, all of which HTML parsers treat as terminators, so one could survive into the page and break out of the block. Now `/<\/\s*(script|style)[^>]*>/i`, applied identically in `Helper` and `CodeRunner` (and mirrored into `mu.stub`).
 
-The *lossy* half is deliberately unchanged: `Helper::updateSnippet()` uses this as a detector and rejects the save if the code differs, so `document.write('</script>')` is still refused. That's correct — a literal closing tag inside a JS string genuinely does end the block in a browser, and `'<\/script>'` is the standard way to write it.
+**Revised the same day — the lossy half is fixed too.** See "L1 revisited" below.
 
-**M3** — dropped the dead `has_line_wrap` default (the setting is stored as `enable_line_wrap`) and settled the three-way disagreement on its default. `getSettings()` said `'yes'` while `saveSettings()` and the editor bootstrap both said `'no'`, so the settings screen showed the toggle on while wrapping was off. Aligned to `'no'`; the editor is unchanged.
+**M3** — dropped the dead `has_line_wrap` default (the setting is stored as `enable_line_wrap`) and settled the three-way disagreement on its default. `getSettings()` said `'yes'` while `saveSettings()` and the editor bootstrap both said `'no'`, so the settings screen showed the toggle on while wrapping was off. Aligned to `'no'`. **A second, live bug behind the same key surfaced afterwards — see "M3 revisited" below.**
 
 **M11** — import now checks `$_FILES['file']` exists, that `error` is `UPLOAD_ERR_OK`, and that `tmp_name` passes `is_uploaded_file()`; export coerces a non-array `snippets` parameter instead of fataling in `array_map()`. Confirmed during the permissions pass that none of this was a traversal risk — PHP populates `$_FILES` itself. The gain is a real error message instead of a warning cascade.
 
@@ -270,6 +270,34 @@ The *lossy* half is deliberately unchanged: `Helper::updateSnippet()` uses this 
 **L8** — `$isEnable == 'yes'` compared a bool to a string and worked by accident under loose comparison. Now `if ($isEnable)`.
 
 **L10** — `.DS_Store` added to `.gitignore`. It was never tracked; `build.sh` already excluded it from the zip.
+
+### L1 revisited, M3 revisited, L7 — the second pass over the three left half-done
+
+**Fixed 2026-08-11**, after the maintainer asked for all three to be finished. No release was pending, which is what made the API removal in L7 reasonable to do now.
+
+**L1 revisited — the lossy half.** The first pass fixed the leaky half (the closing-tag patterns) and left the lossy half alone, on the grounds that a literal `</script>` in a JS string really does end the block. That reasoning was sound but the conclusion was too pessimistic, because it missed a simpler fact:
+
+*Inside a `<script>` or `<style>` element the HTML parser looks for nothing but the closing tag — an **opening** `<script>` is ordinary text.* So stripping opening tags was never needed for correctness, and it was the half that corrupted `document.write('<script src="..."></script>')`. That stripping is now gone entirely.
+
+The closing tag is **escaped rather than deleted**: `<\/script` is identical to `</script` everywhere it can legally appear in JS or CSS — string literals, regex literals, comments — so the code keeps working *and* the block cannot be terminated early. Deleting changed behaviour; escaping preserves it.
+
+That left the save-time rejection, which used `escCssJs()` as a detector and refused anything it would alter. Replaced with `Helper::detectWrappingTag()`, which refuses only what is actually a mistake: code pasted **wrapped** in its own `<script>`/`<style>` tag, where the editor already emits the surrounding element and the pasted tag would land as literal text. A mere *mention* of a tag is now accepted and escaped on output.
+
+*Behaviour change:* inline CSS/JS snippets containing a closing tag are emitted escaped instead of stripped. Previously such a snippet could not be saved at all, so no existing saved snippet is affected — only hand-edited or legacy files, which are now emitted more faithfully than before.
+
+**M3 revisited — the dead key was hiding a live bug.** Dropping the unused `has_line_wrap` default was only half the story. `AdminMenuHandler::render()` was localising the setting as `has_line_wrap`, while `_CodeEditor.vue:159` reads `appVars.enable_line_wrap`. Confirmed against the built bundle: `dist/app.js` contains `enable_line_wrap` once and `has_line_wrap` never.
+
+So **the editor never received the setting on page load.** Turning line wrap on, reloading, and finding it off again was the visible symptom; it only ever took effect after visiting the Settings screen, which sets the key client-side. Renamed to what the editor actually reads. No `dist` rebuild needed — the fix is entirely on the PHP side, since the Vue code was already correct.
+
+This also settles the default question the first pass raised: because the value never reached the editor, "no wrap on load" is what every site has always experienced, so keeping `'no'` as the unset default changes nothing anyone has seen.
+
+**L7 — one way in per operation.** Removed three REST routes that nothing called: `POST snippets`, `snippets/create` and `snippets/update`. The editor uses admin-ajax (`fluent_snippet_create` / `fluent_snippet_update`) for both operations — verified by enumerating every `$get`/`$post`/`$ajax` call in `src/`. `SnippetsController::createSnippet()` and `updateSnippet()` went with them; both were thin wrappers over `Helper::createSnippet()`/`updateSnippet()`, which the admin-ajax handlers already call, so no logic was lost and no behaviour changed.
+
+**This is a public API removal**, which is why the first pass declined to do it unprompted: a third-party integration could have been calling those routes. Done on the maintainer's explicit instruction, with no release pending. `routes.php` carries a comment saying what was removed and how to restore it.
+
+`SnippetsController::validateMeta()` stays as an entry point because the importer calls it, but it now delegates to `Helper::validateMeta()` instead of duplicating it byte for byte.
+
+**Verified** — `tests/cleanup-pass.php` grew to 38 checks: every closing-tag spelling neutralised *and* confirmed escaped rather than deleted; a `document.write()` script loader surviving untouched; opening tags no longer stripped; and the save-time detector accepting a loader, plain JS, plain CSS and a mention of a closing tag while refusing wrapped `<script>`/`<style>` with or without leading whitespace.
 
 ### M1 + REST permission callback
 
@@ -282,20 +310,8 @@ The *lossy* half is deliberately unchanged: `Helper::updateSnippet()` uses this 
 
 ## 🔧 Open — worth doing
 
-Nothing above L-level remains. The 2026-08-11 cleanup pass cleared H3, M3, M8, M9,
-M11, M12, M14, M15, L1, L5, L8 and L10; see **Fixed** below.
-
-### L7. Snippet create/update exist twice
-
-**File:** `app/Http/routes.php:8-11` vs `AdminMenuHandler::saveSnippet()/createSnippet()`
-
-The UI uses admin-ajax; the REST routes appear unused. Both are guarded identically now,
-so this is duplication rather than a gap — but two paths to the same operation is how
-they drift. `SnippetsController::validateMeta()` was a byte-for-byte duplicate of
-`Helper::validateMeta()` and now delegates to it, so only the routes remain.
-
-Left alone deliberately: removing a registered REST route is the kind of change that
-breaks a third-party integration nobody knew existed.
+One finding left, and it needs a person rather than a patch. The 2026-08-11 passes
+cleared everything else — see **Fixed** above.
 
 ### L9. `readme.txt` says `Tested up to: 7.0`
 
@@ -383,5 +399,6 @@ Investigated and retired — **not** carried as debt. Recorded so they don't get
 | 7 | **H3 + I7** prune `error_files` | ✅ done | Self-heals stale entries already on disk |
 | 8 | **M6** stop rebuilding on read | ✅ done | Removes the write-on-read that made C1 reachable |
 | 9 | **M3, M8, M9, M11, M12, M14, M15, L1, L5, L8, L10** | ✅ done | Cleanup pass (**M1** done early with M6; **L6** with the permissions pass) |
+| — | **L1, M3, L7** second pass | ✅ done | Finished the three the cleanup pass left half-done; L7 removed public routes, so it needed the maintainer's call |
 | 10 | **I6** static analysis | next | Locks the fixes in — 5 harness suites exist now, but nothing runs them automatically |
 | — | **S1 + S2, H6, L6, I2** permissions pass | ✅ done | Import could introduce code without `unfiltered_html`; forged `@status` defeated its forced draft |

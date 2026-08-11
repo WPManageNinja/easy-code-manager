@@ -204,23 +204,53 @@ check(
     Helper::getIndexedConfig() == readIndex($storage)
 );
 
-echo "\nescCssJs catches the closing tags a browser accepts (L1)\n";
-$cases = [
-    '</script>'                 => 'the plain form',
-    '</script >'                => 'a trailing space',
-    "</script\n>"               => 'a newline',
-    '</SCRIPT>'                 => 'uppercase',
-    '</ script>'                => 'a space after the slash',
-    '</style >'                 => 'a style tag with a space',
-    '</STYLE>'                  => 'an uppercase style tag',
+echo "\nescCssJs neutralises every closing tag a browser accepts (L1)\n";
+
+// Each of these ends an inline <script>/<style> block as far as an HTML parser is
+// concerned, so none may survive verbatim in the output.
+$closers = [
+    '</script>'   => 'the plain form',
+    '</script >'  => 'a trailing space',
+    "</script\n>" => 'a newline',
+    '</SCRIPT>'   => 'uppercase',
+    '</ script>'  => 'a space after the slash',
+    '</style >'   => 'a style tag with a space',
+    '</STYLE>'    => 'an uppercase style tag',
 ];
 
-foreach ($cases as $tag => $label) {
+foreach ($closers as $tag => $label) {
     $code = 'alert(1); ' . $tag . ' more';
-    check("stripped: $label", Helper::escCssJs($code) !== $code, 'survived: ' . $tag);
+    $escaped = Helper::escCssJs($code);
+    check("neutralised: $label", stripos($escaped, $tag) === false, 'survived: ' . $tag);
+    check("  ...by escaping, not deleting: $label", strpos($escaped, '<\\/') !== false, 'got: ' . $escaped);
 }
 
+// The lossy half. An *opening* tag does not end the block — inside <script> it is
+// ordinary text — so stripping it only ever corrupted valid code.
+$loader = 'document.write(\'<script src="https://example.test/a.js"><\/script>\');';
+check(
+    'a document.write() script loader survives untouched',
+    Helper::escCssJs($loader) === $loader,
+    'got: ' . Helper::escCssJs($loader)
+);
+
+check(
+    'an opening tag is no longer stripped',
+    Helper::escCssJs('var t = "<script src=x>";') === 'var t = "<script src=x>";',
+    'got: ' . Helper::escCssJs('var t = "<script src=x>";')
+);
+
 check('ordinary code is left alone', Helper::escCssJs('var a = 1 < 2;') === 'var a = 1 < 2;');
+check('CSS is left alone', Helper::escCssJs('.a { color: red; }') === '.a { color: red; }');
+
+echo "\nSaving only rejects a wrapping tag, not a mention of one (L1)\n";
+check('code wrapped in <script> is rejected', is_wp_error(Helper::detectWrappingTag("<script>\nalert(1);\n</script>")));
+check('code wrapped in <style> is rejected', is_wp_error(Helper::detectWrappingTag('<style>.a{color:red}</style>')));
+check('leading whitespace does not hide it', is_wp_error(Helper::detectWrappingTag("\n  <script >alert(1);</script>")));
+check('a document.write() loader is accepted', Helper::detectWrappingTag($loader) === false);
+check('plain JS is accepted', Helper::detectWrappingTag('alert(1);') === false);
+check('plain CSS is accepted', Helper::detectWrappingTag('.a { color: red; }') === false);
+check('a mention of a closing tag is accepted', Helper::detectWrappingTag('var s = "<\\/script>";') === false);
 
 echo "\nSearch is case-insensitive (L5)\n";
 makeSnippet($storage, 'header script');

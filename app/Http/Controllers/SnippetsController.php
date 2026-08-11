@@ -2,7 +2,6 @@
 
 namespace FluentSnippets\App\Http\Controllers;
 
-use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Model\Snippet;
 
@@ -85,73 +84,6 @@ class SnippetsController
 
         return [
             'snippet' => $snippet
-        ];
-    }
-
-    public static function createSnippet(\WP_REST_Request $request)
-    {
-        if ($restricted = self::denyUnlessCanAuthorSnippets()) {
-            return $restricted;
-        }
-
-        // json_decode returns null on malformed input, and indexing that warns before
-        // failing further down with nothing useful to say (M9).
-        $meta = json_decode($request->get_param('meta'), true);
-
-        if (!is_array($meta)) {
-            return new \WP_Error('invalid_meta', __('Snippet meta could not be read', 'easy-code-manager'));
-        }
-
-        $code = Arr::get($meta, 'code', '');
-
-        unset($meta['code']);
-
-        $snippet = Helper::createSnippet([
-            'meta' => $meta,
-            'code' => $code
-        ]);
-
-        if (is_wp_error($snippet)) {
-            return $snippet;
-        }
-
-        return [
-            'snippet' => $snippet,
-            'message' => __('Snippet created successfully', 'easy-code-manager')
-        ];
-    }
-
-    public static function updateSnippet(\WP_REST_Request $request)
-    {
-        if ($restricted = self::denyUnlessCanAuthorSnippets()) {
-            return $restricted;
-        }
-
-        $fileName = sanitize_file_name($request->get_param('fluent_saving_snippet_name'));
-
-        $meta = json_decode($request->get_param('meta'), true);
-
-        if (!is_array($meta)) {
-            return new \WP_Error('invalid_meta', __('Snippet meta could not be read', 'easy-code-manager'));
-        }
-
-        $code = Arr::get($meta, 'code', '');
-        unset($meta['code']);
-
-        $snippet = Helper::updateSnippet([
-            'meta'       => $meta,
-            'code'       => $code,
-            'file_name'  => $fileName,
-            'reactivate' => $request->get_param('reactivate')
-        ]);
-
-        if (is_wp_error($snippet)) {
-            return $snippet;
-        }
-
-        return [
-            'snippet' => $snippet,
-            'message' => 'Snippet updated successfully'
         ];
     }
 

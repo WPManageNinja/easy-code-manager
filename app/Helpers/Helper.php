@@ -745,27 +745,54 @@ PHP;
     }
 
     /**
-     * Strip style/script tags from CSS and JS snippet code.
+     * Make snippet code safe to print inside an inline <script> or <style> block.
      *
-     * Kept identical to CodeRunner::escCssJs(). Note the two are used for opposite
-     * purposes: there it sanitises code on the way out, here updateSnippet() uses it as
-     * a *detector* — if the result differs from the input, the save is rejected.
+     * Kept byte-identical to CodeRunner::escCssJs() (and its mu.stub copy).
      *
-     * The closing-tag patterns used to be the literal `<\/script>` and `<\/style>`, which
-     * missed `</script >`, `</script\n>` and `</SCRIPT>`. HTML parsers do treat all three
-     * as terminators, so one could survive into the page and break out of the block the
-     * code is printed inside (L1).
+     * Inside those two elements the HTML parser looks for nothing but the closing tag —
+     * an *opening* `<script>` is ordinary text. Stripping opening tags was therefore
+     * never needed for correctness, and it silently corrupted legitimate code such as
+     * `document.write('<script src="..."></script>')`. That half is gone.
      *
-     * The rejection stays strict on purpose: a literal closing tag inside a JS string
-     * genuinely does end the block in the browser, so code like
-     * document.write('</script>') has to be written as '<\/script>' either way.
+     * The closing tag is now escaped rather than deleted. `<\/script` is identical to
+     * `</script` everywhere it can legally appear in JS or CSS — string literals, regex
+     * literals, comments — so the code keeps working *and* the block cannot be
+     * terminated early. Deleting it changed behaviour; escaping preserves it.
+     *
+     * Case-insensitive and whitespace-tolerant because `</script >`, `</script\n>` and
+     * `</SCRIPT>` are all terminators as far as an HTML parser is concerned (L1).
      */
     public static function escCssJs($code)
     {
-        $code = preg_replace('/<script[^>]*>/i', '', $code);
-        $code = preg_replace('/<\/\s*script[^>]*>/i', '', $code);
-        $code = preg_replace('/<style[^>]*>/i', '', $code);
-        return preg_replace('/<\/\s*style[^>]*>/i', '', $code);
+        return preg_replace_callback('#</(\s*)(script|style)#i', function ($matches) {
+            return '<\\/' . $matches[1] . $matches[2];
+        }, $code);
+    }
+
+    /**
+     * Reject CSS or JS that has been pasted wrapped in its own <script>/<style> tag.
+     *
+     * The editor already emits the surrounding element, so a leading tag ends up as
+     * literal text inside it and breaks the snippet. That is a genuine mistake worth
+     * refusing at save time.
+     *
+     * What is no longer refused: code that merely *mentions* a tag.
+     * `document.write('<script src="...">')` is valid JavaScript and used to be rejected,
+     * because the old check compared the code against escCssJs() output and treated any
+     * difference as an error. Mentions are escaped on output instead.
+     *
+     * @param string $code
+     * @return \WP_Error|false
+     */
+    public static function detectWrappingTag($code)
+    {
+        if (!preg_match('/^\s*<\s*(script|style)\b/i', $code)) {
+            return false;
+        }
+
+        return new \WP_Error('invalid_code', __('Please remove the wrapping style or script tag — the editor adds it for you.', 'easy-code-manager'), [
+            'original' => $code
+        ]);
     }
 
     public static function updateSnippet($data)
@@ -797,12 +824,9 @@ PHP;
                 return $code;
             }
         } else {
-            $sanitizedCode = Helper::escCssJs($code);
-            if ($sanitizedCode !== $code) {
-                return new \WP_Error('invalid_code', 'Please remove any any style or script tag from the code', [
-                    'santized' => $sanitizedCode,
-                    'original'  => $code
-                ]);
+            $wrappingTag = self::detectWrappingTag($code);
+            if ($wrappingTag) {
+                return $wrappingTag;
             }
         }
 

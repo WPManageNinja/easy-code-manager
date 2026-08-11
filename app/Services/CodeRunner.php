@@ -375,20 +375,28 @@ class CodeRunner
 
 
     /**
-     * Strip style/script tags from CSS and JS snippet code before it is echoed inline.
+     * Make snippet code safe to print inside an inline <script> or <style> block.
      *
-     * The closing-tag patterns used to be the literal `<\/script>` and `<\/style>`, which
-     * missed `</script >`, `</script\n>` and `</SCRIPT>` — all of which HTML parsers do
-     * treat as terminators, so a closing tag could survive into the page and break out of
-     * the block this code is printed inside (L1). Not a privilege boundary, since only
-     * unfiltered_html users author snippets, but an output-integrity bug.
+     * Kept byte-identical to Helper::escCssJs().
+     *
+     * Inside those two elements the HTML parser looks for nothing but the closing tag —
+     * an *opening* `<script>` is ordinary text. Stripping opening tags was therefore
+     * never needed for correctness, and it silently corrupted legitimate code such as
+     * `document.write('<script src="..."></script>')`. That half is gone.
+     *
+     * The closing tag is now escaped rather than deleted. `<\/script` is identical to
+     * `</script` everywhere it can legally appear in JS or CSS — string literals, regex
+     * literals, comments — so the code keeps working *and* the block cannot be
+     * terminated early. Deleting it changed behaviour; escaping preserves it.
+     *
+     * Case-insensitive and whitespace-tolerant because `</script >`, `</script\n>` and
+     * `</SCRIPT>` are all terminators as far as an HTML parser is concerned (L1).
      */
     private function escCssJs($code)
     {
-        $code = preg_replace('/<script[^>]*>/i', '', $code);
-        $code = preg_replace('/<\/\s*script[^>]*>/i', '', $code);
-        $code = preg_replace('/<style[^>]*>/i', '', $code);
-        return preg_replace('/<\/\s*style[^>]*>/i', '', $code);
+        return preg_replace_callback('#</(\s*)(script|style)#i', function ($matches) {
+            return '<\\/' . $matches[1] . $matches[2];
+        }, $code);
     }
 
     private function getCachedFileUrl($fileName)
