@@ -217,6 +217,55 @@ class Helper
     }
 
     /**
+     * Drop an .htaccess into the storage directory denying direct access to its .php
+     * files.
+     *
+     * Defence in depth, not a fix for a live hole. Every snippet file and index.php
+     * already opens with an ABSPATH guard, so a request that PHP actually processes
+     * returns nothing. This covers the case where it stops being processed — an
+     * .htaccess lost in a migration, an nginx location block that never matched, a host
+     * serving .php as text/plain. In that state the directory hands out every snippet's
+     * source and the index's kill-switch secret.
+     *
+     * Scoped to .php deliberately: cached/ serves .css and .js to visitors and inherits
+     * this file, so it has to stay publicly readable. Both Apache generations are
+     * covered via IfModule so an older server does not 500 on an unknown directive.
+     * Written once — an existing file is never overwritten — and skippable entirely
+     * with the filter for anyone whose host dislikes it.
+     */
+    public static function protectStorageDir()
+    {
+        if (!apply_filters('fluent_snippets/protect_storage_dir', true)) {
+            return;
+        }
+
+        $dir = self::getStorageDir();
+
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $file = $dir . '/.htaccess';
+
+        if (file_exists($file)) {
+            return;
+        }
+
+        $rules = '# Added by Fluent Snippets. Snippet source and the kill-switch secret live here.' . PHP_EOL
+            . '<FilesMatch "\.php$">' . PHP_EOL
+            . '    <IfModule mod_authz_core.c>' . PHP_EOL
+            . '        Require all denied' . PHP_EOL
+            . '    </IfModule>' . PHP_EOL
+            . '    <IfModule !mod_authz_core.c>' . PHP_EOL
+            . '        Order allow,deny' . PHP_EOL
+            . '        Deny from all' . PHP_EOL
+            . '    </IfModule>' . PHP_EOL
+            . '</FilesMatch>' . PHP_EOL;
+
+        @file_put_contents($file, $rules);
+    }
+
+    /**
      * A cheap signature of the snippet files currently on disk.
      *
      * Stat only — no file is opened. Covers create, delete, rename and in-place
@@ -300,6 +349,10 @@ class Helper
             'draft'     => [],
             'hooks'     => []
         ];
+
+        // Hooked here rather than only at install so existing sites pick it up: a rebuild
+        // happens on every create, update, delete and import. No-ops once the file exists.
+        self::protectStorageDir();
 
         // Taken before the snippets are read, not after. If a file changes midway
         // through the rebuild, the stored signature describes the older state and the
@@ -601,6 +654,26 @@ PHP;
         return $formattedRoles;
     }
 
+    /**
+     * Make a meta value safe to write into a snippet's docblock.
+     *
+     * Every value ends up in the file as `* @key: value`, and Snippet::parseBlock()
+     * reads that block by splitting on `*` and keeping the LAST value it sees for any
+     * key. So a value containing a `*` opens a new chunk, and a chunk that reads
+     * `@status: published` overrides the status the server itself just wrote. That is
+     * not theoretical: it is how an import, which forces every snippet to 'draft',
+     * could produce a published — and therefore executing — PHP snippet.
+     *
+     * A newline is not required for this; a bare `*` is enough. Both are neutralised.
+     *
+     * `*` is turned into a space rather than dropped so values stay readable. The one
+     * value where that would lose meaning is `condition`, which is JSON: Snippet::
+     * getMetaData() escapes any `*` there as * before this runs, so it round-trips
+     * through json_decode() untouched.
+     *
+     * @param mixed $value
+     * @return mixed
+     */
     public static function sanitizeMetaValue($value)
     {
         if (is_numeric($value)) {
@@ -611,11 +684,11 @@ PHP;
             return $value;
         }
 
-        if (str_contains($value, '*/')) {
-            $value = str_replace('*/', '', $value); // we will not allow */ in meta values
-        }
+        // `*/` first, so a closing comment marker cannot survive as `/` next to a
+        // space and be reassembled by anything downstream.
+        $value = str_replace('*/', '', $value);
 
-        return $value;
+        return str_replace(["\r\n", "\r", "\n", '*'], ' ', $value);
     }
 
     public static function handleDeactivate()

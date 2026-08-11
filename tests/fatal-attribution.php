@@ -235,7 +235,8 @@ function makeStorage($label)
 
 function cleanup($storage)
 {
-    foreach (glob($storage . '/*') as $file) {
+    foreach (glob($storage . '/{,.}*', GLOB_BRACE) as $file) {
+        if (basename($file) === '.' || basename($file) === '..') { continue; }
         is_dir($file) ? @rmdir($file) : @unlink($file);
     }
     @rmdir($storage);

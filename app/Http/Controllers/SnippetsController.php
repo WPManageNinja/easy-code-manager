@@ -90,7 +90,7 @@ class SnippetsController
 
     public static function createSnippet(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanAuthorSnippets()) {
             return $restricted;
         }
 
@@ -116,7 +116,7 @@ class SnippetsController
 
     public static function updateSnippet(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanAuthorSnippets()) {
             return $restricted;
         }
 
@@ -145,7 +145,7 @@ class SnippetsController
 
     public static function updateSnippetStatus(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanAuthorSnippets()) {
             return $restricted;
         }
 
@@ -178,7 +178,7 @@ class SnippetsController
 
     public static function deleteSnippet(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanAuthorSnippets()) {
             return $restricted;
         }
 
@@ -215,7 +215,16 @@ class SnippetsController
         return true;
     }
 
-    private static function isBlockedRequest()
+    /**
+     * Guard for anything that writes, publishes or removes a snippet — all of which
+     * amount to putting code on the site.
+     *
+     * Route registration already requires install_plugins; this is the second half.
+     * Deliberately NOT the same test as SettingsController::denyUnlessCanManageSettings(),
+     * which also wants manage_options. The two used to share the name isBlockedRequest(),
+     * which made the difference look accidental.
+     */
+    private static function denyUnlessCanAuthorSnippets()
     {
         if (current_user_can('unfiltered_html')) {
             return false;

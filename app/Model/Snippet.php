@@ -357,7 +357,12 @@ class Snippet
         $snippetDir = Helper::getStorageDir();
         $file = $snippetDir . '/' . $fileName;
 
-        if (!is_file($file) && ($fileName === 'index.php' || $fileName === 'cached')) {
+        // `&&` here meant the guard never fired for the files it names: index.php exists,
+        // so !is_file() was false and the whole condition collapsed to false, falling
+        // through to unlink(). Unreachable in practice — the only caller runs
+        // findByFileName() first, which rejects index.php — but the protection this reads
+        // as providing was not there at all.
+        if (!is_file($file) || $fileName === 'index.php' || $fileName === 'cached') {
             return new \WP_Error('file_not_found', 'File not found');
         }
 
@@ -503,6 +508,12 @@ class Snippet
         }
 
         $metaData['condition'] = json_encode($metaData['condition']);
+
+        // Helper::sanitizeMetaValue() has to neutralise `*` in every meta value, because
+        // parseBlock() splits the docblock on it. For this one value that would corrupt
+        // real data, so escape it as a JSON unicode escape instead — json_decode() turns
+        // * back into `*`, and the docblock never sees a literal one.
+        $metaData['condition'] = str_replace('*', '\\u002a', $metaData['condition']);
 
         $docBlockString = '<?php' . PHP_EOL . '// <Internal Doc Start>' . PHP_EOL . '/*' . PHP_EOL . '*';
 

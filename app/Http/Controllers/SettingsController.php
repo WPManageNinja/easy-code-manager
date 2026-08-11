@@ -11,7 +11,7 @@ class SettingsController
 {
     public static function getSettings(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanManageSettings()) {
             return $restricted;
         }
 
@@ -42,7 +42,7 @@ class SettingsController
 
     public static function saveSettings(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanManageSettings()) {
             return $restricted;
         }
 
@@ -94,7 +94,7 @@ class SettingsController
 
     public static function disableSafeMode(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanManageSettings()) {
             return $restricted;
         }
 
@@ -115,7 +115,7 @@ class SettingsController
 
     public static function configStandAloneSystem(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanManageSettings()) {
             return $restricted;
         }
 
@@ -139,7 +139,13 @@ class SettingsController
         ];
     }
 
-    private static function isBlockedRequest()
+    /**
+     * Guard for the settings surface: plugin-wide behaviour, safe mode, standalone mode,
+     * and the kill-switch URL. Stricter than
+     * SnippetsController::denyUnlessCanAuthorSnippets() on purpose — it also wants
+     * manage_options.
+     */
+    private static function denyUnlessCanManageSettings()
     {
         if (current_user_can('unfiltered_html') && current_user_can('manage_options')) {
             return false;
@@ -150,6 +156,17 @@ class SettingsController
 
     public static function getRestOptions(\WP_REST_Request $request)
     {
+        /*
+         * This was the one method here without the guard. It returns titles of draft and
+         * private posts across every public post type, plus every taxonomy term — content
+         * an install_plugins user can already reach, so nothing was exposed that should
+         * not have been. It only serves the condition builder on the snippet edit screen,
+         * which is unusable without the capabilities below anyway.
+         */
+        if ($restricted = self::denyUnlessCanManageSettings()) {
+            return $restricted;
+        }
+
         $optionKey = $request->get_param('rest_key');
         $options = [];
 

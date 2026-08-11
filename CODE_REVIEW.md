@@ -10,9 +10,9 @@ The architecture is sound: flat-file storage, an `index.php` manifest so nothing
 
 | Status | Count |
 |---|---|
-| ✅ Fixed | 9 |
-| 🔧 Open | 15 |
-| ⛔️ Withdrawn | 12 |
+| ✅ Fixed | 13 |
+| 🔧 Open | 14 |
+| ⛔️ Withdrawn | 11 |
 
 *Counted per finding, not per heading — several headings cover more than one (`C3 + C4 + H5`, `L6 / L7 / L8`, `L9 / L10`). The Open figure was recounted on 2026-08-11; it reads the same as the first pass because the earlier number had been counting headings for Open and findings for Fixed. Fixed has genuinely gone 6 → 8 since, and Withdrawn 11 → 12.*
 
@@ -143,6 +143,66 @@ Also forced regardless of the file signature, since neither shows up in it: `cac
 
 **Worth knowing, not changed:** `getIndexedConfig()` holds a `static` cache that `saveIndexedConfig()` does not refresh, so the old forced rebuild in `getSnippets()` never affected the response it ran in — the current request kept serving the pre-rebuild config and only the *next* request saw the new index. Moving the rebuild to its own request is therefore no loss in freshness. Left alone deliberately: changing static-cache semantics would alter behaviour on the write paths too, which is out of scope here.
 
+### S1 + S2. Import could introduce code without `unfiltered_html`, and its forced "draft" could be overridden
+
+**Fixed 2026-08-11.** `app/Hooks/Handlers/AdminMenuHandler.php`, `app/Helpers/Helper.php`, `app/Model/Snippet.php`, new `tests/docblock-injection.php`
+
+Found in a permissions-focused pass over every entry point (REST routes, admin-ajax actions, the shortcode, and the unauthenticated kill switch). Two defects that compounded.
+
+**S1 — `importSnippets()` required only `install_plugins`.** Every other authoring path requires `unfiltered_html` as well: `saveSnippet()`, `createSnippet()`, and all four REST write routes via `SnippetsController::denyUnlessCanAuthorSnippets()`. Import didn't — and it calls `Helper::validateCode()`, which for a PHP snippet reaches `PhpValidator::checkRunTimeError()` and **`eval()`s the code** to report runtime errors. So the imported code executed at import time, before any publishing decision.
+
+**S2 — the forced `draft` could be overridden from meta.** Import sets `$meta['status'] = 'draft'` on every snippet. But every meta value is written into the file as `* @key: value`, and `parseBlock()` reads the docblock by splitting on `*` and keeping the **last** value for a key. `Helper::sanitizeMetaValue()` stripped `*/` but nothing else, so any value could open a new chunk reading `@status: published` and win.
+
+A newline was never needed — a bare `*` is enough, since the split is on the character, not the line. That also means fields written *before* `status` were just as dangerous as ones after, so switching the parser to first-wins would have swapped the vulnerable set rather than closed it.
+
+Verified against the real `createSnippet()` → `parseBlock()` → `cacheSnippetIndex()` path before fixing: `run_at` of `"wp\n* @status: published"` produced `parsed status: 'published'`, `indexed as published: YES`, `hooked to run: {"wp":["1-imported-snippet.php"]}`.
+
+**Net effect:** `install_plugins` + a valid nonce, with no `unfiltered_html`, could land a published PHP snippet running on every request.
+
+**Severity, stated honestly.** `install_plugins` normally implies code execution anyway — that capability installs plugins. This granted something new only where that isn't true, realistically a site running **`DISALLOW_UNFILTERED_HTML`**, where admins keep `install_plugins`, lose `unfiltered_html`, and every other authoring path correctly closes. So: a bypass of an intentional hardening control, not a break from an unauthenticated or low-privileged user. (`DISALLOW_FILE_MODS` removes `install_plugins` outright and closes every route here.) S2 is a file-format bug worth fixing on its own merits regardless.
+
+**Fixes.** Import now requires `unfiltered_html && install_plugins`, matching every sibling path. `sanitizeMetaValue()` — the single chokepoint every docblock write passes through, so fixing it there closes the injection for all paths at once — now replaces `*`, `\r` and `\n` with spaces after stripping `*/`.
+
+Order matters there: stripping `*/` alone is defeatable, because `**//` collapses back into a terminator in one `str_replace` pass. It is the `*` → space pass running *afterwards* that makes it safe, and the test pins that specific input.
+
+One value would have been corrupted by blanking `*`: `condition`, which is JSON and can legitimately contain one in a URL pattern. `Snippet::getMetaData()` now escapes it as a `*` unicode escape before sanitising, so `json_decode()` restores it exactly. That also fixes a pre-existing bug — a `*` anywhere in a condition previously broke docblock parsing for the whole snippet.
+
+**Verified** — `tests/docblock-injection.php`, 27 checks: forged `@status` via bare `*`, via `\n`, via `\r\n`, and from a field written before `status`; forging a different key; `**//` not collapsing; the generated file still passing `php -l`; the code section untouched; ordinary names and descriptions round-tripping unchanged; a `*` in a condition URL surviving intact; plus the delete guard and the storage rules below.
+
+### H6. `deleteSnippet()`'s guard protected nothing
+
+**Fixed 2026-08-11.** `app/Model/Snippet.php` — *previously withdrawn as unreachable; the withdrawal reasoning was right, the code was still wrong.*
+
+```php
+if (!is_file($file) && ($fileName === 'index.php' || $fileName === 'cached')) {
+```
+
+`index.php` exists, so `!is_file()` is false, the whole condition is false, and it falls through to `unlink()`. The guard never fired for either file it names. Still unreachable — `SnippetsController::deleteSnippet()` calls `findByFileName()` first, which rejects `index.php` — so the withdrawal was correct that nothing was exploitable. But it read as protection while providing none, one `&&` away from mattering. Now `||`.
+
+### L6. Two guards with the same name and different meanings
+
+**Fixed 2026-08-11.** `app/Http/Controllers/SnippetsController.php`, `app/Http/Controllers/SettingsController.php`
+
+Both controllers had a private `isBlockedRequest()`. `SnippetsController`'s checked `unfiltered_html`; `SettingsController`'s checked `unfiltered_html` **and** `manage_options`. Same name, same codebase, different contract — which made a deliberate difference look accidental. Renamed to `denyUnlessCanAuthorSnippets()` and `denyUnlessCanManageSettings()`, each documenting why it differs from the other.
+
+`getRestOptions()` was the one method in `SettingsController` with no guard at all. It returns titles of **draft and private** posts across every public post type, plus every taxonomy term. Nothing was exposed that an `install_plugins` user couldn't already reach, and it only serves the condition builder on the edit screen — unusable without those capabilities anyway — so the guard is now applied for consistency.
+
+*Behaviour change worth knowing:* on a site where someone holds `install_plugins` but not `unfiltered_html` + `manage_options`, the condition-builder dropdowns will now return 422 instead of data. That user could never save a snippet, so the screen was already read-only for them.
+
+### I2. The storage directory now carries its own access rules
+
+**Implemented 2026-08-11.** `app/Helpers/Helper.php` — promoted from "improvement idea" after the security pass.
+
+`wp-content/fluent-snippet-storage/` holds every snippet's source **and** the kill-switch secret inside `index.php`. Every file already opens with an `ABSPATH` guard, so a request PHP actually processes returns nothing — that guard is real and this does not replace it. What it covers is the server no longer *processing* PHP there: an `.htaccess` lost in a migration, an nginx `location` that never matched, a host serving `.php` as `text/plain`. In that state the directory hands out all snippet source and the secret.
+
+`Helper::protectStorageDir()` writes an `.htaccess` denying direct access, called from `cacheSnippetIndex()` so existing installs pick it up on their next rebuild rather than only on fresh ones. Three deliberate constraints:
+
+- **Scoped to `.php`.** `cached/` serves `.css` and `.js` to visitors and inherits this file, so it has to stay publicly readable.
+- **Both Apache generations, each behind `IfModule`.** An unknown directive in `.htaccess` returns 500 for the directory, and on this directory that would break cached asset delivery. `AllowOverride None` ignores the file entirely, which is harmless.
+- **Never overwrites an existing file,** and the whole thing is skippable via `apply_filters('fluent_snippets/protect_storage_dir', ...)` for hosts that dislike it.
+
+This is the one change in this pass with any real-world risk attached, which is why it is bounded this tightly.
+
 ### H2. Fatal-error auto-disable missed most real-world fatals
 
 **Fixed 2026-08-11.** `app/Hooks/Handlers/CodeHandler.php`, `app/Services/CodeRunner.php`, `app/Services/mu.stub`, new `tests/fatal-attribution.php`
@@ -253,7 +313,7 @@ PHP 8 warnings on a fresh install (before the first snippet) or on configs writt
 
 ### L6 / L7 / L8. Consistency
 
-- `installPlugin()` and `getRestOptions()` skip the `isBlockedRequest()` guard every other `SettingsController` method starts with (`SettingsController.php:313, 151`). No actual hole — the route-level `install_plugins` capability covers them — but the inconsistency invites one.
+- `installPlugin()` still skips the guard every other `SettingsController` method starts with. Unlike `getRestOptions()` (fixed above), leaving it is defensible: it is allowlisted to four plugin slugs and honours `DISALLOW_FILE_MODS`, so the route-level `install_plugins` is the meaningful check.
 - Snippet create/update exist **twice**: REST routes (`routes.php:8-11`) and admin-ajax (`AdminMenuHandler::saveSnippet/createSnippet`). The UI uses admin-ajax; the REST routes appear unused. `SnippetsController::validateMeta()` is a byte-for-byte duplicate of `Helper::validateMeta()`.
 - `SettingsController.php:122-124` compares a bool to a string (`$isEnable == 'yes'`). Works by accident under loose comparison (verified) — just use `if ($isEnable)`.
 
@@ -261,6 +321,32 @@ PHP 8 warnings on a fresh install (before the first snippet) or on configs writt
 
 - `readme.txt:9` — `Tested up to: 7.0`; confirm this matches a released WordPress version before the next release, or the compatibility badge degrades. Consider adding `Update URI:` to the plugin header.
 - `.DS_Store` files in the tree; `build.sh` excludes them from the zip but they shouldn't be committed. Add to `.gitignore`.
+
+---
+
+---
+
+## 🔐 Permissions pass — checked and clean
+
+A pass over every entry point on 2026-08-11, prompted by the plugin's install base. Recorded so the *absence* of a finding is traceable and nobody re-audits the same ground blind. Findings it produced are S1, S2, H6 and L6 above.
+
+**Entry points enumerated:** 13 REST routes (`app/Http/routes.php`), 4 admin-ajax actions, `admin_menu` / `admin_init`, the `fluent_snippet` shortcode, and the unauthenticated kill switch in `CodeHandler::isDisabled()`.
+
+| Area | Verdict |
+|---|---|
+| **The unauthenticated kill switch** | **Sound.** `isDisabled()` runs on every request and can set `force_disabled`, but compares with `hash_equals()` against a 128-bit `random_bytes` secret — constant-time, adequate entropy. No CSRF delta: forging the request requires already knowing the secret, which *is* the authorisation. The secret is emitted only by `getSettings()`, behind `unfiltered_html + manage_options`; it is never localised to JS and never appears in list or find responses. |
+| **REST CSRF** | Handled by core — cookie auth requires `X-WP-Nonce`. Every route has a `permission_callback`, and since `12ff007` an empty capability array fails closed instead of returning `true`. |
+| **admin-ajax** | All four handlers check capability **first**, then nonce. `wp_ajax_*` fires for any logged-in user, so both are required; both are present. |
+| **Path traversal** | `sanitize_file_name()` on every filename parameter (it strips `/`, so `..` cannot compose). Export intersects against the real `glob()` result — a genuinely effective defence. `findByFileName()` rejects `index.php`. |
+| **Docblock code injection** | Blocked. Meta cannot inject *executable* code even before S2 — `sanitizeMetaValue()` prevented closing the comment. S2 was forged *meta*, not forged code, which mattered only because `@status` decides whether attacker-supplied code runs. |
+| **`$_FILES` handling** | PHP populates `$_FILES` from the multipart body, so `tmp_name` cannot be aimed at an arbitrary local file. The missing `isset` / `UPLOAD_ERR_OK` checks (**M11**, still open) are robustness, not a hole. |
+| **`snippets/sync-index`** | Gated at `install_plugins` like the other reads, though it does write `index.php`. Deliberate: gating it at `unfiltered_html` would stop a read-only admin's list from ever self-healing, and it accepts no input — it only reflects what is already on disk. |
+
+**Known and accepted, not defects:**
+
+- **`install_plugins` is the floor, and it already implies code execution.** Requiring `unfiltered_html` on top is defence in depth. The one setup where it is a real boundary is `DISALLOW_UNFILTERED_HTML`, which is exactly what S1 broke.
+- **Shortcode attribute pass-through.** `handleShortcode()` deliberately forwards unknown attributes into `$atts` (documented in the code). Anyone who can insert a shortcode — a contributor — can therefore feed arbitrary values to an admin-authored `php_content` snippet with `run_at = shortcode`. Only snippets explicitly created that way are reachable, so this is design. But it means snippet authors are handling untrusted input, and nothing in the UI says so. Worth a line in the docs rather than a code change.
+- **M10** (`hash_equals()` fatals on an array `snippet_secret`) stays withdrawn as a self-DoS. Re-checked against H2: the running-snippet stack is empty at `register()` time, so this cannot be steered into quarantining a snippet.
 
 ---
 
@@ -273,7 +359,6 @@ Investigated and retired — **not** carried as debt. Recorded so they don't get
 | — | `startsWith` / `endsWith` operators are commented out and silently return `false` | **Unreachable.** Those operators only render for `itemConfig.type == 'extended_text'` (`FilterItem.vue:119`), and no condition in this plugin uses that type — `grep` for `extended_text` hits only the Vue file. Inherited from FluentCRM. |
 | H1 | Standalone (MU) mode has no fatal-error recovery — neither the `shutdown` quarantine nor the secret kill-switch URL exists in `mu.stub`, so standalone on → plugin deactivated → a snippet fatals → white screen, recoverable only by setting `FLUENT_SNIPPETS_SAFE_MODE` in `wp-config.php` | **Retired by the maintainer, 2026-08-11:** enabling standalone mode is a deliberate opt-in that happens *after* the snippets have been running and proving themselves under the active plugin, so a snippet that fatals the moment the plugin is deactivated is not a case real users land in. **Residual, recorded so it is not re-raised as "impossible":** a snippet can still start fatalling without being edited — a PHP version upgrade, a plugin or theme being removed out from under a snippet that calls its functions, a core deprecation. Those are the only paths left, they need no bad edit, and `wp-config.php` remains the only way out. **I5** (WP-CLI `safe-mode`) would give that residual a recovery path without touching the stub at all |
 | H4 | `CodeRunner::parseBlock()` breaks on CRLF | **Self-consistent.** `PHP_EOL` is used for both the write (`parseInputMeta`) and the read (`explode`), so it matches on any single server, Windows included. Only breaks if files move between platforms. |
-| H6 | `deleteSnippet()` guard uses `&&` where it needs `||`, could `unlink()` `index.php` | **Unreachable.** `SnippetsController::deleteSnippet()` calls `findByFileName()` first, which rejects `index.php` (`Snippet.php:271`). |
 | M2 | `saveSettings()` reads keys `array_filter()` may have removed | **Not hit.** `ConfigSettings.vue` always sends all four keys. |
 | M4 | Text domain loaded from `fluent-snippets/language`, wrong folder | **Inert.** No `.mo` files ship — `language/` contains only the `.pot`. WP.org's just-in-time loading from `wp-content/languages/plugins/` covers translated languages regardless. |
 | M5 | No `uninstall.php`; mu-plugin survives plugin deletion | **By design.** The README sells it: *"keep running your snippets in stand-alone mode. No lock-in."* The `remove_on_uninstall` checkbox is knowingly disabled in the UI (`ConfigSettings.vue:40`). |
@@ -315,5 +400,6 @@ Investigated and retired — **not** carried as debt. Recorded so they don't get
 | 6 | **H2** fatal attribution | ✅ done | Restores the auto-disable guarantee the plugin ships on by default |
 | 7 | **H3 + I7** prune `error_files` | next | Self-heals stale entries already on disk |
 | 8 | **M6** stop rebuilding on read | ✅ done | Removes the write-on-read that made C1 reachable |
-| 9 | **M3, M8, M9, M11, M12, M14, M15, L1, L5–L10** | | Cleanup pass (**M1** done early, with M6) |
+| 9 | **M3, M8, M9, M11, M12, M14, M15, L1, L5, L7–L10** | | Cleanup pass (**M1** done early with M6; **L6** with the permissions pass) |
+| — | **S1 + S2, H6, L6, I2** permissions pass | ✅ done | Import could introduce code without `unfiltered_html`; forged `@status` defeated its forced draft |
 | 10 | **I6** static analysis | | Locks the fixes in |

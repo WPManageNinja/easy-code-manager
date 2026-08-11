@@ -123,10 +123,19 @@ class AdminMenuHandler
 
     public function importSnippets()
     {
-        if (!current_user_can('install_plugins')) {
+        /*
+         * Importing authors code: every snippet in the file is written to disk, and a PHP
+         * one is executed on the spot by Helper::validateCode() -> PhpValidator, which
+         * eval()s it to report runtime errors. So this needs the same capability pair as
+         * every other authoring path (saveSnippet, createSnippet, and the REST routes via
+         * SnippetsController::denyUnlessCanAuthorSnippets). It previously required only
+         * install_plugins, which meant a site using DISALLOW_UNFILTERED_HTML — where every
+         * other way of adding code is closed — could still have code introduced here.
+         */
+        if (!current_user_can('unfiltered_html') || !current_user_can('install_plugins')) {
             wp_send_json([
                 'status'  => false,
-                'message' => __('You do not have permission to perform this action.', 'easy-code-manager')
+                'message' => __('You do not have permission to perform this action. Required Permission: unfiltered_html and install_plugins', 'easy-code-manager')
             ], 422);
         }
 

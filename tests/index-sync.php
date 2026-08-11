@@ -36,7 +36,8 @@ if (!is_dir($storage)) {
 }
 
 register_shutdown_function(function () use ($storage) {
-    foreach (glob($storage . '/*') as $file) {
+    foreach (glob($storage . '/{,.}*', GLOB_BRACE) as $file) {
+        if (basename($file) === '.' || basename($file) === '..') { continue; }
         is_dir($file) ? @rmdir($file) : @unlink($file);
     }
     @rmdir($storage);
