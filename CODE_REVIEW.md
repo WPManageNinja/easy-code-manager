@@ -10,8 +10,8 @@ The architecture is sound: flat-file storage, an `index.php` manifest so nothing
 
 | Status | Count |
 |---|---|
-| ✅ Fixed | 8 |
-| 🔧 Open | 16 |
+| ✅ Fixed | 9 |
+| 🔧 Open | 15 |
 | ⛔️ Withdrawn | 12 |
 
 *Counted per finding, not per heading — several headings cover more than one (`C3 + C4 + H5`, `L6 / L7 / L8`, `L9 / L10`). The Open figure was recounted on 2026-08-11; it reads the same as the first pass because the earlier number had been counting headings for Open and findings for Fixed. Fixed has genuinely gone 6 → 8 since, and Withdrawn 11 → 12.*
@@ -143,6 +143,36 @@ Also forced regardless of the file signature, since neither shows up in it: `cac
 
 **Worth knowing, not changed:** `getIndexedConfig()` holds a `static` cache that `saveIndexedConfig()` does not refresh, so the old forced rebuild in `getSnippets()` never affected the response it ran in — the current request kept serving the pre-rebuild config and only the *next* request saw the new index. Moving the rebuild to its own request is therefore no loss in freshness. Left alone deliberately: changing static-cache semantics would alter behaviour on the write paths too, which is out of scope here.
 
+### H2. Fatal-error auto-disable missed most real-world fatals
+
+**Fixed 2026-08-11.** `app/Hooks/Handlers/CodeHandler.php`, `app/Services/CodeRunner.php`, `app/Services/mu.stub`, new `tests/fatal-attribution.php`
+
+"Automatically Disable Script on fatal error" is on by default, so this is the safety net users actually rely on. Three separate things stopped it firing:
+
+**1. Only `E_ERROR` counted.** `$error['type'] === 1` missed `E_PARSE`, `E_COMPILE_ERROR`, `E_CORE_ERROR` and `E_USER_ERROR`. A truncated or hand-edited snippet file produces a *parse* error, never `E_ERROR` — so the one failure mode most likely to need quarantining was the one guaranteed not to trigger it, and the site stayed broken on every subsequent request. Now matched against `CodeHandler::FATAL_ERROR_TYPES`.
+
+`E_RECOVERABLE_ERROR` is deliberately **not** in that list: a custom error handler can recover from one, and acting on a handled error would disable working code. The type filter has to stay narrow for a different reason too — `error_get_last()` returns the last error of *any* severity, including a deprecation notice on a request that finished perfectly well.
+
+**2. The snippet was identified by `dirname($error['file'])`.** That only matches when the fatal's deepest frame *is* the snippet file. The common real failure — a snippet calling a WordPress or third-party function that then fatals — reports `wp-includes/…`, so the snippet was never blamed and the site stayed down.
+
+Fixed by tracking rather than inferring: `CodeRunner` keeps a stack of the snippets currently mid-execution, pushed and popped around every `require_once` (and around the shortcode `include` in `CodeHandler`). Anything still on that stack at shutdown never finished.
+
+**3. A symlinked storage directory defeated the path comparison** — found while writing the test, not in the first review pass. PHP reports the **resolved** path in `$error['file']`, while `Helper::getStorageDir()` returns whatever `WP_CONTENT_DIR` (or `FLUENT_SNIPPETS_STORAGE_DIR`) was set to. On a host serving the site through a symlinked directory — release-based deploys do this as a matter of course — those are two different strings for the same file, and the existing check silently failed for *every* fatal, including the ones it used to catch. `CodeHandler::isSnippetFile()` now falls back to comparing `realpath()`. macOS made this visible because `/tmp` and `/var` are themselves symlinks; on a Linux host with a conventional layout it would have stayed hidden.
+
+**The load-bearing detail: the pop is in a `finally`, deliberately.** A fatal error does not unwind the stack, so `finally` does **not** run and the snippet stays on the list to be blamed — which is the entire point. An exception *does* unwind, so the pop runs and the stack cannot be left dirty by a throw that something upstream swallows.
+
+That trade is intentional and it does cost something: a snippet whose *uncaught exception* is thrown inside core rather than in the snippet itself is no longer attributable. Taken knowingly — a wrongly quarantined working snippet is a silent, confusing regression on ~50K sites, while missing that case only preserves today's behaviour. Fatals proper (`E_ERROR`, memory exhaustion, timeouts) are unaffected, and an exception thrown *in* the snippet is still caught by the path check.
+
+Two further guards on the new path: the tracked name is only quarantined if the index actually knows it (`published` or `draft`), since it now comes from runtime state rather than from the file that faulted; and the message keeps the downstream location — trimmed of `ABSPATH` so the admin screen shows `wp-includes/…` rather than a full server path — prefixed with *"Fatal error while this snippet was running"*.
+
+**Verified** — `tests/fatal-attribution.php`, 26 checks. The core assumption cannot be tested in-process, because a fatal ends the process, so six scenarios run in **child processes that really do fatal** and the parent asserts on what ended up in `error_files`: a fatal downstream of a running snippet (quarantined, with the right message), a parse error in a snippet file (quarantined), a caught exception followed by an unrelated fatal (**not** quarantined — proves the stack is not left dirty), a warning-only request (nothing), a fatal with nothing running (nothing), and a tracked name absent from the index (nothing). Plus the stack's own nesting behaviour and the full type list in both directions.
+
+*Test note:* the first run failed on the fixture guard rather than on an assertion — the parent process had not defined `ABSPATH`, so every `include` of a generated `index.php` hit its own `if (!defined("ABSPATH")) { return; }` guard and came back empty, which would have made several checks pass vacuously. Worth keeping in mind for any future test that reads a generated index.
+
+**`mu.stub` carries the same `CodeRunner` changes** even though nothing there reads them — the standalone runner has no fatal handler at all (H1, withdrawn). Mirroring keeps `tests/mu-stub-drift.php` comparing member bodies byte for byte; an exemption would have hidden real drift. It now compares 20 members, up from 16.
+
+**Release note:** `mu.stub` changed, and `Helper::maybeUpdateStandAlone()` only rewrites an installed runner when its version differs from `FLUENT_SNIPPETS_PLUGIN_VERSION`. Standalone sites therefore pick this up on the next **version bump**, not on this commit.
+
 ### M1 + REST permission callback
 
 **Fixed 2026-08-02** (commit `12ff007`), recorded here after the fact.
@@ -153,19 +183,6 @@ Also forced regardless of the file signature, since neither shows up in it: `cac
 ---
 
 ## 🔧 Open — worth doing
-
-### H2. Fatal-error auto-disable misses most real-world fatals
-
-**File:** `app/Hooks/Handlers/CodeHandler.php:20-31, 177-180`
-
-Two over-narrow filters:
-
-1. `$error['type'] === 1` is `E_ERROR` only — misses `E_PARSE`, `E_COMPILE_ERROR`, `E_CORE_ERROR`, `E_USER_ERROR`, `E_RECOVERABLE_ERROR`. A truncated or hand-edited snippet file produces `E_PARSE` and is never quarantined, so the site stays broken on every subsequent request.
-2. `dirname($error['file']) === storageDir` only catches fatals whose *deepest frame* is the snippet file. The common case — a snippet calling a WP or third-party function that then fatals — reports `wp-includes/…`, so the snippet is never blamed, never disabled, and the site stays down.
-
-**Fix for (2):** track the currently-executing snippet instead of inferring it from the stack — set `$GLOBALS['fluent_snippets_running_file']` before the `require` and unset after; if it's still set at shutdown, that snippet was mid-execution. Attributes fatals anywhere in a snippet's call stack.
-
-This is the feature users actually rely on ("Automatically Disable Script on fatal error" is on by default), so the gap between what it promises and what it catches matters.
 
 ### H3. Deleting a snippet leaves a permanent orphan in `error_files`
 
@@ -295,8 +312,8 @@ Investigated and retired — **not** carried as debt. Recorded so they don't get
 | 3 | **C2b** `catch \Throwable` | ✅ done | Turns a raw 500 on save into a real message |
 | 4 | **C3 + C4 + H5** + drift test | ✅ done | One change, three findings |
 | 5 | ~~**H1** port recovery into the stub~~ | ⛔️ withdrawn | Standalone mode is opted into after the snippets have proven themselves — see Withdrawn |
-| 6 | **H2** fatal attribution | next | Restores the auto-disable guarantee the plugin ships on by default |
-| 7 | **H3 + I7** prune `error_files` | | Self-heals stale entries already on disk |
+| 6 | **H2** fatal attribution | ✅ done | Restores the auto-disable guarantee the plugin ships on by default |
+| 7 | **H3 + I7** prune `error_files` | next | Self-heals stale entries already on disk |
 | 8 | **M6** stop rebuilding on read | ✅ done | Removes the write-on-read that made C1 reachable |
 | 9 | **M3, M8, M9, M11, M12, M14, M15, L1, L5–L10** | | Cleanup pass (**M1** done early, with M6) |
 | 10 | **I6** static analysis | | Locks the fixes in |

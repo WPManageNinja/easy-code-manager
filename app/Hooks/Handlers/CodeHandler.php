@@ -12,6 +12,20 @@ class CodeHandler
 {
     protected $storageDir;
 
+    /**
+     * Error types that end the request.
+     *
+     * error_get_last() reports the last error of any severity, including notices on a
+     * request that finished perfectly well, so the shutdown handler has to filter by
+     * type or it would quarantine snippets over deprecation warnings. This previously
+     * matched E_ERROR alone, which missed the parse and compile errors a truncated or
+     * hand-edited snippet file actually produces.
+     *
+     * E_RECOVERABLE_ERROR is deliberately absent: a custom error handler can recover
+     * from it, and acting on one that was handled would disable a working snippet.
+     */
+    const FATAL_ERROR_TYPES = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+
     public function register()
     {
         $this->storageDir = Helper::getStorageDir();
@@ -20,7 +34,7 @@ class CodeHandler
             add_action('shutdown', function () {
                 $error = error_get_last();
 
-                if ($error && $error['type'] === 1) {
+                if ($error && in_array($error['type'], self::FATAL_ERROR_TYPES, true)) {
                     $this->maybeHandleFatalError([
                         'response' => 500
                     ], $error);
@@ -105,7 +119,15 @@ class CodeHandler
         
         ob_start();
 
-        $maybeReturn = include $snippet['file'];
+        // Tracked like the hook-run snippets, so a shortcode snippet that fatals inside a
+        // function it calls is attributed to the snippet rather than to that function.
+        CodeRunner::pushRunningSnippet($fileName);
+
+        try {
+            $maybeReturn = include $snippet['file'];
+        } finally {
+            CodeRunner::popRunningSnippet();
+        }
 
         $result = ob_get_clean();
 
@@ -173,16 +195,40 @@ class CodeHandler
         }
 
         $file = $error['file'];
-        if ($this->storageDir !== dirname($file)) {
+
+        $isSnippetFile = $this->isSnippetFile($file);
+
+        if ($isSnippetFile) {
+            $fileName = basename($file);
+        } else {
+            /*
+             * The fatal surfaced outside the storage directory, so $error['file'] is of
+             * no use on its own — the common real-world failure is a snippet calling a
+             * WordPress or third-party function that then fatals, which reports
+             * wp-includes/… and left the snippet unblamed and the site broken on every
+             * subsequent request.
+             *
+             * A snippet still on the running stack at shutdown never finished, because a
+             * fatal does not unwind. That snippet is the one that led here.
+             */
+            $fileName = CodeRunner::getRunningSnippet();
+        }
+
+        if (!$fileName) {
             return $args;
         }
 
         // let's get the indexed config
         $config = Helper::getIndexedConfig();
 
-        $fileName = basename($file);
-
         if (empty($config)) {
+            return $args;
+        }
+
+        // Only ever quarantine something the index actually knows about. Matters for the
+        // tracked path, where the name comes from runtime state rather than from the file
+        // that faulted.
+        if (!isset($config['published'][$fileName]) && !isset($config['draft'][$fileName])) {
             return $args;
         }
 
@@ -197,7 +243,15 @@ class CodeHandler
             // get the first line of the message
             $message = explode("\n", $message)[0];
 
-            $message = str_replace($file, 'SNIPPET', $message);
+            if ($isSnippetFile) {
+                $message = str_replace($file, 'SNIPPET', $message);
+            } else {
+                // Keep the location — it is the useful part when the fault is downstream —
+                // but trim the absolute path so the admin screen shows wp-includes/… rather
+                // than the full server path.
+                $message = str_replace(ABSPATH, '', $message);
+                $message = 'Fatal error while this snippet was running: ' . $message;
+            }
         }
 
         $config['error_files'][$fileName] = $message;
@@ -205,6 +259,33 @@ class CodeHandler
         Helper::saveIndexedConfig($config, $this->storageDir . '/index.php');
 
         return $args;
+    }
+
+    /**
+     * Does this path point at a file in the snippet storage directory?
+     *
+     * A plain string comparison is not enough. PHP reports the *resolved* path in
+     * $error['file'], while getStorageDir() hands back whatever WP_CONTENT_DIR — or the
+     * FLUENT_SNIPPETS_STORAGE_DIR override — was configured as. On a host that serves
+     * the site through a symlinked directory, which release-based deploys do routinely,
+     * those are two different strings for the same file, and a snippet that fataled was
+     * silently never blamed.
+     *
+     * @param string $file
+     * @return bool
+     */
+    private function isSnippetFile($file)
+    {
+        $dir = dirname($file);
+
+        if ($this->storageDir === $dir) {
+            return true;
+        }
+
+        $realStorageDir = realpath($this->storageDir);
+        $realDir = realpath($dir);
+
+        return $realStorageDir && $realDir && $realStorageDir === $realDir;
     }
 
     private function isDisabled()

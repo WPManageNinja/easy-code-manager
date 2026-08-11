@@ -8,6 +8,44 @@ class CodeRunner
     private $storageDir = '';
     private $storageUrl = '';
 
+    /**
+     * File names of the snippets currently mid-execution, innermost last.
+     *
+     * A fatal error does not unwind the stack, so a snippet that fatals never reaches
+     * its pop and stays on this list. Whatever is left here when the request dies is
+     * the snippet that was running — which is how the shutdown handler can blame the
+     * right snippet for a fatal raised deep inside WordPress or another plugin, where
+     * $error['file'] points at core rather than at the snippet.
+     *
+     * A stack rather than a single value because a snippet can fire a hook that runs
+     * another snippet; the innermost one is the culprit.
+     */
+    private static $runningSnippets = [];
+
+    /**
+     * The snippet that was executing when the request died, or '' if none was.
+     *
+     * @return string
+     */
+    public static function getRunningSnippet()
+    {
+        if (!self::$runningSnippets) {
+            return '';
+        }
+
+        return end(self::$runningSnippets);
+    }
+
+    public static function pushRunningSnippet($fileName)
+    {
+        self::$runningSnippets[] = $fileName;
+    }
+
+    public static function popRunningSnippet()
+    {
+        array_pop(self::$runningSnippets);
+    }
+
     public function __construct()
     {
         $this->storageDir = \FluentSnippets\App\Helpers\Helper::getStorageDir();
@@ -86,7 +124,7 @@ class CodeRunner
                         $hookName = 'setup_theme';
                     }
 
-                    add_action($hookName, function () use ($file, $snippet, $conditionalClass) {
+                    add_action($hookName, function () use ($file, $fileName, $snippet, $conditionalClass) {
                         if (!$conditionalClass->evaluate($snippet['condition'])) {
                             return;
                         }
@@ -94,12 +132,12 @@ class CodeRunner
                         $runAt = $this->get($snippet, 'run_at', 'all');
                         if ($runAt == 'backend') {
                             if (is_admin()) {
-                                require_once $file;
+                                $this->runSnippetFile($file, $fileName);
                             }
                             return;
                         }
 
-                        require_once $file;
+                        $this->runSnippetFile($file, $fileName);
                     }, $this->get($snippet, 'priority', 10));
 
                     break;
@@ -203,16 +241,16 @@ class CodeRunner
                 case 'php_content':
                     $runAt = $snippet['run_at'];
                     if (in_array($runAt, ['wp_footer', 'wp_head', 'wp_body_open'])) {
-                        add_action($runAt, function () use ($file, $snippet, $conditionalClass) {
+                        add_action($runAt, function () use ($file, $fileName, $snippet, $conditionalClass) {
                             if (!$conditionalClass->evaluate($snippet['condition'])) {
                                 return;
                             }
-                            require_once $file;
+                            $this->runSnippetFile($file, $fileName);
                         }, $snippet['priority']);
                     }
                     if (isset($filterMaps[$runAt])) {
                         $filter = $filterMaps[$runAt];
-                        add_filter($filter['hook'], function ($content) use ($file, $snippet, $conditionalClass, $filter) {
+                        add_filter($filter['hook'], function ($content) use ($file, $fileName, $snippet, $conditionalClass, $filter) {
                             if (!empty($filter['is_single'])) {
                                 if (!is_singular() || !in_the_loop() || !is_main_query()) {
                                     return $content;
@@ -224,7 +262,7 @@ class CodeRunner
                             }
 
                             ob_start();
-                            require_once $file;
+                            $this->runSnippetFile($file, $fileName);
                             $result = ob_get_clean();
                             if ($result) {
                                 if ($filter['insert'] == 'before') {
@@ -248,6 +286,28 @@ class CodeRunner
         do_action('fluent_snippets/after_run_snippets');
     }
 
+
+    /**
+     * Run a snippet file with the running-snippet stack maintained around it.
+     *
+     * The pop is in a finally deliberately. A fatal error (E_ERROR and friends) does
+     * not unwind, so finally does NOT run and the snippet stays on the stack to be
+     * blamed — which is the case this whole mechanism exists for. An exception does
+     * unwind, so the pop runs and the stack cannot be left dirty by a throw that
+     * something upstream catches. That trade costs attribution for a snippet whose
+     * uncaught exception is thrown inside core rather than in the snippet itself; a
+     * wrongly quarantined working snippet is the worse outcome of the two.
+     */
+    private function runSnippetFile($file, $fileName)
+    {
+        self::pushRunningSnippet($fileName);
+
+        try {
+            require_once $file;
+        } finally {
+            self::popRunningSnippet();
+        }
+    }
 
     private function get($array, $key, $default = null)
     {
