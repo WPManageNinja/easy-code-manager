@@ -1,5 +1,10 @@
 {
   "__SNIPPET_FATAL_ERROR__": "The snippet encountered a fatal error and has been deactivated automatically. Please review your code, fix the issue, and reactivate it.",
   "__SNIPPET_AUTO_DISABLE_INS__": "We highly recommend enabling this option. If it is disabled, your site may go down when one of your scripts has an error.",
-  "Add a new filter to run your snippet only under specific conditions.": "Add a new filter to run your snippet only under specific conditions."
+  "Add a new filter to run your snippet only under specific conditions.": "Add a new filter to run your snippet only under specific conditions.",
+  "Snippets": "Snippets",
+  "Edit snippet": "Edit snippet",
+  "Create new snippet": "Create new snippet",
+  "Settings": "Settings",
+  "About": "About"
 }

@@ -1,6 +1,8 @@
 <template>
     <div class="select_plus_wrap">
-        <el-select :fit-input-width="true" allow-create @change="updated()" :multiple="true" filterable clearable :placeholder="$t('Select Snippet Tags')" v-model="dynamicTags">
+        <el-select :fit-input-width="true" allow-create @change="updated()" :multiple="true" filterable clearable
+                   :aria-label="$t('Snippet tags')"
+                   :placeholder="$t('Select Snippet Tags')" v-model="dynamicTags">
             <el-option v-for="tag in appVars.tags" :label="tag" :value="tag"></el-option>
         </el-select>
         <!--
@@ -12,9 +14,11 @@
         -->
         <el-popover v-model:visible="createPop" placement="left" :width="400" trigger="click">
             <template #reference>
-                <el-button>+</el-button>
+                <!-- "+" is not a name. What it adds is. -->
+                <el-button :aria-label="$t('Create new tag')">+</el-button>
             </template>
             <el-input
+                :aria-label="$t('New tag name')"
                 :placeholder="$t('Create new tag')"
                 v-model="inputValue"
             >

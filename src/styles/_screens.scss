@@ -20,24 +20,49 @@
         padding: 0 0 16px;
     }
 
+    /*
+     * The group's name is an <h2> wrapping the button that collapses it, so the heading
+     * list a screen reader builds has the groups in it. Both are reset to look like the
+     * plain bold line they always did.
+     */
     .group_name {
-        @apply flex items-center gap-1.5 text-sm font-semibold text-ink-head;
+        @apply text-sm font-semibold text-ink-head;
 
-        padding: 6px 0;
+        margin: 0;
+        padding: 0;
 
-        > span,
-        i,
-        .el-icon {
-            cursor: pointer;
+        /*
+         * As wide as its label, not as wide as the row. The clickable area was the folder
+         * icon and the words before this was a button, and a full-width button would both
+         * change that and draw a focus ring the length of the card - a ring is only useful
+         * if it outlines the thing that is actually focused.
+         */
+        button {
+            @apply inline-flex items-center gap-1.5 text-sm font-semibold text-ink-head bg-transparent cursor-pointer;
+
+            padding: 6px 0;
+            border: 0;
+            font-family: inherit;
+            text-align: left;
             user-select: none;
 
             &:hover {
                 @apply text-ink-link;
             }
+
+            @include mixins.focus-ring(2px);
         }
     }
 
-    /* Only shown on the row the pointer is over - see the hover rule below. */
+    /*
+     * Only shown on the row the pointer is over - see the hover rule below.
+     *
+     * `:focus-within` is not a nicety here. These are the row's delete, download and
+     * activate controls, and `display: none` does not merely hide them - it takes them out
+     * of the tab order entirely. Without this rule there is no way to reach any of them
+     * from the keyboard, because they cannot be shown without a pointer and cannot be
+     * focused while hidden.
+     */
     .group_file_meta {
         display: none;
     }
@@ -59,7 +84,8 @@
                 @apply border-b-0;
             }
 
-            &:hover {
+            &:hover,
+            &:focus-within {
                 @apply bg-surface-sunk;
 
                 .group_file_meta {
@@ -69,12 +95,23 @@
         }
     }
 
+    /*
+     * The row title is a link now rather than a div with a click handler on it, so it takes
+     * the underline off and puts a focus ring on - the two things that change when an <a>
+     * replaces a <div>.
+     */
     .group_file_name {
-        @apply flex items-center gap-2 text-sm text-ink;
+        @apply flex items-center gap-2 text-sm text-ink no-underline;
 
         line-height: 24px;
         min-width: 0;
         cursor: pointer;
+
+        &:hover {
+            @apply text-ink;
+        }
+
+        @include mixins.focus-ring(2px);
 
         > span:first-of-type {
             @apply truncate;
@@ -102,16 +139,29 @@
         margin-right: 2px;
     }
 
-    /* The two that do something, as against the timestamp and description beside them. */
+    /*
+     * The two that do something, as against the timestamp and description beside them.
+     *
+     * Both are <button>s now. They were <span>s, which meant neither could be tabbed to,
+     * neither announced itself as anything, and the delete confirmation anchored to one of
+     * them could not be opened without a mouse. The reset below is what makes a button look
+     * like the plain word it looked like before.
+     */
     .fsnip_delete,
     .fsnip_download {
-        @apply text-ink-mid;
+        @apply inline-flex items-center text-ink-mid bg-transparent cursor-pointer;
 
-        cursor: pointer;
+        padding: 0;
+        border: 0;
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
 
         &:hover {
             @apply text-ink-link;
         }
+
+        @include mixins.focus-ring(2px);
     }
 
     .snippet_desc {
@@ -611,6 +661,20 @@
 }
 
 /* The hooks warning under the editor - a note about the code, not an error in it. */
+/*
+ * How to get the keyboard out of the code editor.
+ *
+ * Visible, not hidden from sight and left to screen readers. A sighted keyboard user is
+ * every bit as stuck in an editor where Tab indents instead of moving on, and they have no
+ * screen reader to read them a hidden note - so the way out is written where anyone can
+ * read it. Quiet enough to ignore once you know it.
+ */
+.fsnip_editor_help {
+    @apply text-xs text-ink-light;
+
+    margin: 6px 0 0;
+}
+
 .fsnip_error_hooks,
 .code_error_block {
     @include mixins.notice('caution');
@@ -641,7 +705,8 @@
 
 /* ---------------------------------------------------------- the run selector */
 
-.fsnin_run_wrap > h3 {
+/* An h2: it is a section of the editor screen, under that screen's h1. */
+.fsnin_run_wrap > h2 {
     @apply text-sm font-medium text-ink-head;
 
     margin: 0 0 8px;
@@ -657,6 +722,10 @@
  * The chevron is drawn with a mask rather than a background image so it takes the theme's
  * text colour instead of being a baked-in grey.
  */
+/*
+ * It is a <button> now rather than a div, so the type's own styles are reset - a button
+ * inherits neither the page's font nor its text alignment - and it takes a focus ring.
+ */
 .run_selected {
     @apply relative block w-full bg-surface text-ink border border-solid border-hairline-strong rounded cursor-pointer;
 
@@ -665,11 +734,15 @@
     padding: 8px 34px 8px 12px;
     font-size: 14px;
     line-height: 1.6;
+    font-family: inherit;
+    text-align: left;
     transition: border-color .15s ease;
 
     &:hover {
         border-color: var(--fsnip-accent);
     }
+
+    @include mixins.focus-ring(1px);
 
     &::after {
         content: '';
@@ -688,18 +761,20 @@
         border-color: var(--fsnip-danger-line);
     }
 
-    p {
+    /* Spans rather than paragraphs - a <p> is not allowed inside a <button>. */
+    .option_label,
+    .option_desc {
         display: block;
         margin: 0;
         padding: 0;
+    }
 
-        &.option_label {
-            @apply text-sm font-medium text-ink;
-        }
+    .option_label {
+        @apply text-sm font-medium text-ink;
+    }
 
-        &.option_desc {
-            @apply text-xs text-ink-light;
-        }
+    .option_desc {
+        @apply text-xs text-ink-light;
     }
 }
 
@@ -709,24 +784,30 @@
     padding: 12px;
     margin-top: 10px;
 
+    /*
+     * Each option is a <label> wrapping a visually hidden radio. The radio is what carries
+     * the state and the keyboard behaviour; the label is what you see and what a click or a
+     * tap lands on, which is why it needs no handler of its own.
+     */
     .selector_option {
-        @apply rounded border border-solid border-transparent;
+        @apply block rounded border border-solid border-transparent;
 
         min-width: 50%;
         padding: 14px;
         cursor: pointer;
         transition: background-color .15s ease, border-color .15s ease;
 
-        p {
-            @apply text-sm text-ink-mid;
+        .option_label,
+        .option_desc {
+            @apply block text-sm text-ink-mid;
 
             margin: 0;
+        }
 
-            &.option_label {
-                @apply text-base font-medium text-ink-head;
+        .option_label {
+            @apply text-base font-medium text-ink-head;
 
-                margin-bottom: 4px;
-            }
+            margin-bottom: 4px;
         }
 
         &:hover,
@@ -734,6 +815,16 @@
             @apply bg-surface border-hairline-strong;
 
             box-shadow: var(--fsnip-shadow-card);
+        }
+
+        /*
+         * The ring goes on the label, because the input it belongs to is clipped to a
+         * single pixel and a ring drawn around that is invisible. Without this there is no
+         * way to see where you are while arrowing through the group.
+         */
+        &:focus-within {
+            outline: 2px solid var(--fsnip-accent);
+            outline-offset: 1px;
         }
     }
 }
@@ -795,13 +886,19 @@
         font-family: var(--fsnip-mono);
         font-size: 13px;
 
-        i.el-icon {
-            cursor: pointer;
+        /* A button now, not a bare icon - see the template for why. */
+        .snip_copy {
+            @apply flex items-center bg-transparent text-ink cursor-pointer;
+
             margin: 8px 8px 8px 0;
+            padding: 0;
+            border: 0;
 
             &:hover {
                 @apply text-ink-link;
             }
+
+            @include mixins.focus-ring(2px);
         }
     }
 }
@@ -817,7 +914,10 @@
 
         gap: 8px;
 
-        h3 {
+        /* An h2 for the same reason as the run selector's heading. */
+        h2 {
+            @apply text-sm font-medium text-ink-head;
+
             margin: 0;
         }
     }
@@ -911,9 +1011,17 @@
         text-align: center;
         line-height: 100%;
 
-        em {
+        /*
+         * The pill sitting on the dashed rule. Two things wear it: the "OR" that separates
+         * two groups, which is a label, and the "OR" that adds one, which is a control -
+         * and the control is a real <button> now rather than an <em> with a click handler,
+         * so both selectors are named here.
+         */
+        em,
+        .fc_cond_add {
             @apply bg-surface-sunk text-ink-light rounded-xs;
 
+            display: inline-block;
             font-size: 1.1em;
             font-style: normal;
             margin: 0 10px;
@@ -923,14 +1031,19 @@
         }
 
         /* The last one is a button: it adds another group rather than labelling one. */
-        em.fc_cond_add {
+        .fc_cond_add {
             @apply font-medium text-ink-link;
 
+            border: 0;
+            font-family: inherit;
+            line-height: inherit;
             cursor: pointer;
 
             &:hover {
                 @apply bg-surface-raised text-ink;
             }
+
+            @include mixins.focus-ring(2px);
         }
     }
 

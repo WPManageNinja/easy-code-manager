@@ -82,6 +82,11 @@
         }
     }
 
+    /* The <nav> landmark. It is the flex child; the list inside it is the row. */
+    .fsnip_app_nav_wrap {
+        @apply flex flex-none;
+    }
+
     .fsnip_app_nav {
         @apply flex items-center justify-center gap-1 m-0 p-0 list-none flex-none;
 
@@ -164,6 +169,16 @@
  */
 .fsnip_page {
     padding: 28px 30px;
+
+    /*
+     * <main> carries tabindex="-1" so the skip link can move the keyboard into it. That
+     * makes it focusable, and a focused element gets a ring - but this one is never
+     * focused by tabbing, only landed on, so a ring around the entire page says nothing
+     * and looks like a bug. The controls inside it keep their own rings.
+     */
+    &:focus {
+        outline: none;
+    }
 }
 
 .fsnip_page_inner {
@@ -219,17 +234,22 @@
          * Below this width the nav is a stack under the bar rather than a row in it, so
          * it takes the full width and only appears once the toggle has been pressed.
          */
-        .fsnip_app_nav {
-            @apply hidden flex-col items-stretch w-full border-0 border-t border-solid border-hairline;
+        .fsnip_app_nav_wrap {
+            @apply hidden w-full border-0 border-t border-solid border-hairline;
 
             order: 4;
             flex-basis: 100%;
             padding: 8px 0;
-            gap: 2px;
 
             &.is-open {
                 @apply flex;
             }
+        }
+
+        .fsnip_app_nav {
+            @apply flex-col items-stretch w-full;
+
+            gap: 2px;
         }
     }
 }

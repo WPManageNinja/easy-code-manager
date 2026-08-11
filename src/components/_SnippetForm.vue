@@ -15,7 +15,7 @@
                             :conditions="snippet.meta.condition"
                         />
                         <save-error-panel v-if="errorDetails" :details="errorDetails" />
-                        <div v-else-if="errors.has('code')" class="code_error_block">
+                        <div v-else-if="errors.has('code')" class="code_error_block" role="alert">
                             <p>{{ errors.get('code') }}</p>
                             <pre class="el-form-item__error_explained">{{ errors.get('code_explanation') }}</pre>
                         </div>
@@ -30,7 +30,14 @@
             <el-col :xs="24" :sm="9" :md="8" :lg="6">
                 <el-form-item :label="$t('Snippet Name')">
                     <el-input :placeholder="$t('Your Snippet Name')" size="large" type="text" v-model="snippet.meta.name" />
-                    <div class="el-form-item__error">{{ errors.get('name') }}</div>
+                    <!--
+                        role="alert" so a validation failure is spoken when it arrives -
+                        otherwise the message appears silently under a field the user has
+                        already tabbed away from. v-if because an empty alert region that is
+                        always in the DOM announces nothing when it is filled in some
+                        screen readers.
+                    -->
+                    <div v-if="errors.has('name')" class="el-form-item__error" role="alert">{{ errors.get('name') }}</div>
                 </el-form-item>
                 <el-form-item :label="$t('Description')">
                     <el-input :placeholder="$t('Internal Description for this snippet')" :rows="3" type="textarea" v-model="snippet.meta.description" />
@@ -44,7 +51,8 @@
                             :content="$t('Group your snippets to keep them organized and easy to find.')"
                             placement="top-start"
                         >
-                            <el-button class="snip_field_help" text size="small" :icon="InfoField"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"
+                                       :aria-label="$t('About snippet groups')"></el-button>
                           </el-tooltip>
                         </span>
                     </template>
@@ -59,7 +67,8 @@
                             :content="$t('The lower the number, the earlier the snippet runs.')"
                             placement="top-start"
                         >
-                            <el-button class="snip_field_help" text size="small" :icon="InfoField"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"
+                                       :aria-label="$t('About priority')"></el-button>
                           </el-tooltip>
                         </span>
                     </template>
@@ -74,7 +83,8 @@
                             :content="$t('Makes your snippets easier to filter.')"
                             placement="top-start"
                         >
-                            <el-button class="snip_field_help" text size="small" :icon="InfoField"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"
+                                       :aria-label="$t('About tags')"></el-button>
                           </el-tooltip>
                         </span>
                     </template>
@@ -91,7 +101,8 @@
                             :content="$t('When enabled, this snippet is served as a separate stylesheet file.')"
                             placement="top-start"
                         >
-                            <el-button class="snip_field_help" text size="small" :icon="InfoField"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"
+                                       :aria-label="$t('About loading as a file')"></el-button>
                           </el-tooltip>
                         </span>
                         </template>
@@ -110,7 +121,8 @@
                                 :content="$t('When enabled, this snippet also loads in the block editor (Gutenberg).')"
                                 placement="top-start"
                             >
-                                <el-button class="snip_field_help" text size="small" :icon="InfoField"></el-button>
+                                <el-button class="snip_field_help" text size="small" :icon="InfoField"
+                                       :aria-label="$t('About block editor styles')"></el-button>
                               </el-tooltip>
                             </span>
                         </template>

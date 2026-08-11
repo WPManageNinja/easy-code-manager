@@ -26,8 +26,10 @@
             <!-- i18n.node.js cannot see a prop default, so it warns about this line. The
                  default text is listed in reserved18n.json to keep it translatable. -->
             {{ $t(add_label) }}
-            <el-button class="fc_filter_group_remove" @click="$emit('maybeRemove')" size="small" type="danger">
-                <el-icon><delete-icon /></el-icon>
+            <!-- Icon only, so the name has to be written down. -->
+            <el-button class="fc_filter_group_remove" @click="$emit('maybeRemove')" size="small" type="danger"
+                       :aria-label="$t('Remove this condition group')">
+                <el-icon aria-hidden="true"><delete-icon /></el-icon>
             </el-button>
         </div>
 

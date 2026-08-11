@@ -4,13 +4,20 @@ import CreateSnippet from './components/CreateSnippet.vue';
 import Settings from './components/ConfigSettings.vue';
 import About from "./components/About.vue";
 
+/*
+ * `title` is the screen's name, and it is here rather than in each component because the
+ * route announcer in App.vue reads it out on every navigation. This app is a single page,
+ * so nothing reloads and a screen reader is told nothing at all when the view swaps -
+ * `active` decides which nav item is lit, `title` says out loud what you just landed on.
+ */
 export var routes = [
     {
         path: '/',
         name: 'dashboard',
         component: Dashboard,
         meta: {
-            active: 'dashboard'
+            active: 'dashboard',
+            title: 'Snippets'
         }
     },
     {
@@ -19,7 +26,8 @@ export var routes = [
         component: SnippetEditView,
         props: true,
         meta: {
-            active: 'dashboard'
+            active: 'dashboard',
+            title: 'Edit snippet'
         }
     },
     {
@@ -27,7 +35,8 @@ export var routes = [
         name: 'create_snippet',
         component: CreateSnippet,
         meta: {
-            active: 'dashboard'
+            active: 'dashboard',
+            title: 'Create new snippet'
         }
     },
     {
@@ -35,7 +44,8 @@ export var routes = [
         name: 'settings',
         component: Settings,
         meta: {
-            active: 'settings'
+            active: 'settings',
+            title: 'Settings'
         }
     },
     {
@@ -43,7 +53,8 @@ export var routes = [
         name: 'about',
         component: About,
         meta: {
-            active: 'about'
+            active: 'about',
+            title: 'About'
         }
     }
 ];

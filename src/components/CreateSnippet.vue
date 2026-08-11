@@ -3,6 +3,13 @@
         <div class="box">
             <div class="box_header">
                 <div class="box_head">
+                    <!--
+                        The screen's heading. It is hidden because the breadcrumb beside it
+                        already says the same thing on screen - but a breadcrumb is a list of
+                        links, so without this the page had no heading at all and did not
+                        appear in the outline a screen reader navigates by.
+                    -->
+                    <h1 class="fsnip_sr_only">{{ $t('Create new snippet') }}</h1>
                     <el-breadcrumb separator="/">
                         <el-breadcrumb-item :to="{ name: 'dashboard' }">{{ $t('Code Snippets') }}</el-breadcrumb-item>
                         <el-breadcrumb-item>

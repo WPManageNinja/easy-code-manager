@@ -1,6 +1,7 @@
 <template>
     <div class="select_plus_wrap">
-        <el-select @change="$emit('update:modelValue', selected)" v-model="selected" clearable allow-create filterable :placeholder="placeholder">
+        <el-select @change="$emit('update:modelValue', selected)" v-model="selected" clearable allow-create filterable
+                   :aria-label="placeholder" :placeholder="placeholder">
             <el-option
                 v-for="item in options"
                 :key="item"
@@ -17,9 +18,11 @@
         -->
         <el-popover v-model:visible="createPop" placement="left" :width="400" trigger="click">
             <template #reference>
-                <el-button>+</el-button>
+                <!-- "+" is not a name. What it adds is. -->
+                <el-button :aria-label="$t('Create new group')">+</el-button>
             </template>
             <el-input
+                :aria-label="pop_placeholder"
                 :placeholder="pop_placeholder"
                 v-model="new_group"
             >

@@ -10,7 +10,8 @@
         <div class="box box_narrow">
             <div class="box_header">
                 <div class="box_head">
-                    <h3>{{ $t('Settings') }}</h3>
+                    <!-- The page's <h1>. The cards below it are its sections, so they are h2. -->
+                    <h1>{{ $t('Settings') }}</h1>
                 </div>
                 <div class="box_actions">
                     <el-button v-if="canEdit" @click="saveSettings()" v-loading="saving" :disabled="fetching || saving"
@@ -27,7 +28,14 @@
                         <p>{{ $t('A snippet runs from the moment you save it. Turn this off and every new snippet is saved as a draft instead, so nothing runs until you say so.') }}</p>
                     </div>
                     <div class="fsnip_setting_control">
-                        <el-switch :disabled="!canEdit" v-model="settings.auto_publish" active-value="yes" inactive-value="no"/>
+                        <!--
+                            The setting's title is in a <strong> beside the toggle, not in a
+                            <label> tied to it, so the toggle itself was announced as an
+                            unnamed switch. Repeating the title as the name is what connects
+                            the two.
+                        -->
+                        <el-switch :disabled="!canEdit" v-model="settings.auto_publish" active-value="yes" inactive-value="no"
+                                   :aria-label="$t('Publish new snippets straight away')"/>
                     </div>
                 </div>
 
@@ -36,12 +44,13 @@
                         <strong>{{ $t('Deactivate a snippet that causes a fatal error') }}</strong>
                         <p>{{ $t('When a snippet throws a fatal error it is switched off on the spot, and the list tells you which one and why. This is what stops one bad snippet from taking the site down with it.') }}</p>
 
-                        <div v-if="settings.auto_disable != 'yes'" class="fsnip_setting_warning">
+                        <div v-if="settings.auto_disable != 'yes'" class="fsnip_setting_warning" role="alert">
                             {{ $t('__SNIPPET_AUTO_DISABLE_INS__') }}
                         </div>
                     </div>
                     <div class="fsnip_setting_control">
-                        <el-switch :disabled="!canEdit" v-model="settings.auto_disable" active-value="yes" inactive-value="no"/>
+                        <el-switch :disabled="!canEdit" v-model="settings.auto_disable" active-value="yes" inactive-value="no"
+                                   :aria-label="$t('Deactivate a snippet that causes a fatal error')"/>
                     </div>
                 </div>
 
@@ -51,7 +60,8 @@
                         <p>{{ $t('A line too long for the editor folds onto the next one instead of scrolling sideways.') }}</p>
                     </div>
                     <div class="fsnip_setting_control">
-                        <el-switch :disabled="!canEdit" v-model="settings.enable_line_wrap" active-value="yes" inactive-value="no"/>
+                        <el-switch :disabled="!canEdit" v-model="settings.enable_line_wrap" active-value="yes" inactive-value="no"
+                                   :aria-label="$t('Wrap long lines in the editor')"/>
                     </div>
                 </div>
 
@@ -65,7 +75,8 @@
                     </div>
                     <div class="fsnip_setting_control">
                         <el-switch :disabled="true" v-model="settings.remove_on_uninstall"
-                                   active-value="yes" inactive-value="no"/>
+                                   active-value="yes" inactive-value="no"
+                                   :aria-label="$t('Delete every snippet when the plugin is uninstalled')"/>
                     </div>
                 </div>
             </div>
@@ -82,7 +93,7 @@
         <div class="box box_narrow">
             <div class="box_header">
                 <div class="box_head">
-                    <h3>{{ $t('Safe Mode') }}</h3>
+                    <h2>{{ $t('Safe Mode') }}</h2>
                 </div>
             </div>
 
@@ -140,7 +151,7 @@
         <div class="box box_narrow">
             <div class="box_header">
                 <div class="box_head">
-                    <h3>{{ $t('Standalone Mode') }}</h3>
+                    <h2>{{ $t('Standalone Mode') }}</h2>
                     <span class="fsnip_tag" :class="is_standalone ? 'is_success' : 'is_neutral'">
                         {{ is_standalone ? $t('On') : $t('Off') }}
                     </span>

@@ -3,6 +3,8 @@
         <div class="box">
             <div class="box_header">
                 <div class="box_head">
+                    <!-- Hidden, for the same reason as on the create screen. -->
+                    <h1 class="fsnip_sr_only">{{ snippet ? snippet.meta.name : $t('Snippet details') }}</h1>
                     <el-breadcrumb separator="/">
                         <el-breadcrumb-item :to="{ name: 'dashboard' }">{{$t('Code Snippets')}}</el-breadcrumb-item>
                         <el-breadcrumb-item>

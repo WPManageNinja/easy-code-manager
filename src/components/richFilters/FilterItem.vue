@@ -11,7 +11,14 @@
             </span>
         </td>
         <td class="fc_filter_operator">
+            <!--
+                This table has no header row, so nothing but position says what the control
+                in a cell is for. On a row of three of them that leaves "Select Operator"
+                as the only clue, and only until something is chosen - after which the cell
+                reads as a bare value belonging to nothing. The name pins it to its rule.
+            -->
             <el-select :disabled="view_only" size="small" :placeholder="$t('Select Operator')"
+                       :aria-label="$t('Operator for the %s condition', itemConfig.label)"
                        @visible-change="maybeOperatorSelected"
                        v-model="item.operator">
                 <el-option v-for="(optionLabel,option) in operatorOptions" :key="option" :value="option"
@@ -80,11 +87,16 @@
             </template>
         </td>
         <td v-if="!view_only" class="fc_filter_remove">
+            <!--
+                One of these on every row, all icon-only and all called nothing. The name
+                says which condition it removes.
+            -->
             <el-button
                 @click="removeItem()"
                 size="small"
-                type="danger">
-                <el-icon>
+                type="danger"
+                :aria-label="$t('Remove the %s condition', itemConfig.label)">
+                <el-icon aria-hidden="true">
                     <DeleteIcon/>
                 </el-icon>
             </el-button>

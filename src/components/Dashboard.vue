@@ -3,15 +3,41 @@
         <div class="box">
             <div class="box_header">
                 <div class="box_head">
-                    {{ $t('Code Snippets') }}
+                    <!--
+                        The screen's <h1>. Every wp-admin page has one, and this app had
+                        none at all - so a screen reader's heading list, which is how most
+                        users move around a page they cannot see, started at h3 in the
+                        middle of the screen with nothing above it saying where they were.
+                    -->
+                    <h1>{{ $t('Code Snippets') }}</h1>
                 </div>
                 <div class="box_actions">
-                    <el-switch activeValue="yes" inactive-value="no" @change="toggleHideInactive" v-model="hideInactive" :active-text="$t('Hide Inactives')" />
+                    <!--
+                        `active-text` draws a word beside the switch, it does not name it -
+                        Element Plus renders it as a sibling span, so the control itself was
+                        still announced as an unnamed switch.
+                    -->
+                    <el-switch activeValue="yes" inactive-value="no" @change="toggleHideInactive"
+                               v-model="hideInactive" :aria-label="$t('Hide Inactives')"
+                               :active-text="$t('Hide Inactives')" />
 
-                    <el-input clearable class="fsnip_search"
+                    <!--
+                        The field filters as you type, so it needs a name of its own: a
+                        placeholder is not a label - it is gone the moment there is a
+                        character in the box, which is exactly when somebody re-reading the
+                        form needs to know what the box is.
+                    -->
+                    <el-input clearable class="fsnip_search" :aria-label="$t('Search snippets')"
                               size="small" type="text" v-model="search" :placeholder="$t('Search')">
                         <template #append>
-                            <el-button :icon="SearchIcon"/>
+                            <!--
+                                A magnifier drawn on the end of the field. There is nothing
+                                to press - the list filters on every keystroke - so it is
+                                hidden from assistive technology and taken out of the tab
+                                order rather than being offered as a button that does
+                                nothing when you activate it.
+                            -->
+                            <el-button :icon="SearchIcon" tabindex="-1" aria-hidden="true"/>
                         </template>
                     </el-input>
                     <el-button v-if="canEdit" @click="createSnippet()" type="primary">{{
@@ -42,25 +68,40 @@
             </div>
             <div v-else class="box_body">
                 <div class="fsnip_secondary_menu">
-                    <ul class="fsnip_menu">
+                    <!--
+                        Buttons, not links. These filter the list where it stands - they
+                        navigate nowhere, and as `href="#"` they were announced as links to
+                        a destination that does not exist, put an entry in the browser
+                        history on every press, and left the back button undoing filter
+                        changes one at a time.
+
+                        aria-current marks the one in force, which is the only thing the
+                        underline was saying.
+                    -->
+                    <ul class="fsnip_menu" :aria-label="$t('Filter by snippet type')" role="list">
                         <li :class="{active_item : 'all' == selectedLang}">
-                            <a @click.prevent="changeLang('all')" href="#">{{ $t('All Snippets') }}</a>
+                            <button type="button" @click="changeLang('all')"
+                                    :aria-current="'all' == selectedLang ? 'true' : null">
+                                {{ $t('All Snippets') }}
+                            </button>
                         </li>
                         <li v-for="(item, itemKey) in appVars.snippet_types" :key="itemKey"
                             :class="{active_item : itemKey == selectedLang}">
-                            <a @click.prevent="changeLang(itemKey)" href="#">
+                            <button type="button" @click="changeLang(itemKey)"
+                                    :aria-current="itemKey == selectedLang ? 'true' : null">
                                 {{ item.label }} <span class="fsn_label" :class="'fsn_'+itemKey">
                                 {{ item.inline_tag }}
                             </span>
-                            </a>
+                            </button>
                         </li>
                     </ul>
                     <div class="snip_right_items">
-                        <el-radio-group @change="$storeLocalData('view_type', viewType)" v-model="viewType">
+                        <el-radio-group @change="$storeLocalData('view_type', viewType)" v-model="viewType"
+                                        :aria-label="$t('List layout')">
                             <el-radio-button value="grouped">{{ $t('Grouped') }}</el-radio-button>
                             <el-radio-button value="table">{{ $t('Table') }}</el-radio-button>
                         </el-radio-group>
-                        <el-select class="snip_ac_item"
+                        <el-select class="snip_ac_item" :aria-label="$t('Filter by tag')"
                                    clearable :placeholder="$t('All tags')"
                                    filterable v-model="selectedTag">
                             <el-option v-for="tag in tags" :key="tag" :label="tag" :value="tag"></el-option>
@@ -129,11 +170,19 @@
                             it, and an overflowing cell renders the ellipsis its
                             text-overflow asks for: a "..." floating beside every toggle.
                         -->
-                        <el-table-column width="80" class-name="fsnip_col_status">
+                        <el-table-column width="80" class-name="fsnip_col_status" :label="$t('Active')">
                             <template #default="scope">
                                 <!-- A snippet that fataled has no toggle; the title says Paused. -->
+                                <!--
+                                    The toggle has to name the snippet it belongs to. A
+                                    column of these is a column of controls called nothing
+                                    but "switch", and the only thing distinguishing one
+                                    from the next is which row it is on - which is the one
+                                    fact a screen reader user does not have.
+                                -->
                                 <el-switch v-if="!scope.row.error" v-model="scope.row.status" active-value="published"
                                            inactive-value="draft" :disabled="!canEdit"
+                                           :aria-label="$t('Activate %s', scope.row.name)"
                                            @change="updateSnippetStatus(scope.row)"></el-switch>
                             </template>
                         </el-table-column>
@@ -170,24 +219,35 @@
                                 -->
                                 <div class="fsnip_row_meta">
                                     <span v-if="scope.row.group" class="fsnip_row_group">
-                                        <el-icon><FolderOpened/></el-icon><span>{{ scope.row.group }}</span>
+                                        <el-icon aria-hidden="true"><FolderOpened/></el-icon><span
+                                        class="fsnip_sr_only">{{ $t('Group') }}: </span><span>{{ scope.row.group }}</span>
                                     </span>
 
+                                    <!--
+                                        Each action names its snippet. "Edit", forty times
+                                        over, is forty controls with the same name and no
+                                        way to tell which row you are on; the visible label
+                                        is the icon's position in the row, and that is
+                                        precisely what is unavailable here.
+                                    -->
                                     <div class="fsnip_row_actions">
-                                        <router-link class="fsnip_row_action" :title="$t('Edit')" :aria-label="$t('Edit')"
+                                        <router-link class="fsnip_row_action" :title="$t('Edit')"
+                                                     :aria-label="$t('Edit %s', scope.row.name)"
                                                      :to="{ name: 'edit_snippet', params: { snippet_name: scope.row.file_name } }">
-                                            <el-icon><EditPen/></el-icon>
+                                            <el-icon aria-hidden="true"><EditPen/></el-icon>
                                         </router-link>
                                         <button type="button" class="fsnip_row_action" :title="$t('Download')"
-                                                :aria-label="$t('Download')" @click="exportSnippets([scope.row.file_name])">
-                                            <el-icon><Download/></el-icon>
+                                                :aria-label="$t('Download %s', scope.row.name)"
+                                                @click="exportSnippets([scope.row.file_name])">
+                                            <el-icon aria-hidden="true"><Download/></el-icon>
                                         </button>
                                         <el-popconfirm v-if="canEdit" width="220" @confirm="confirmDeleteSnippet(scope.row)"
                                                        :title="$t('Are you sure to delete this?')">
                                             <template #reference>
                                                 <button type="button" class="fsnip_row_action is_danger"
-                                                        :title="$t('Delete')" :aria-label="$t('Delete')">
-                                                    <el-icon><Delete/></el-icon>
+                                                        :title="$t('Delete')"
+                                                        :aria-label="$t('Delete %s', scope.row.name)">
+                                                    <el-icon aria-hidden="true"><Delete/></el-icon>
                                                 </button>
                                             </template>
                                         </el-popconfirm>
@@ -233,23 +293,30 @@
                             <template #default="scope">
                                 <div class="fsnip_row_hook">
                                     <span class="fsnip_row_runs">
-                                        <el-icon>
+                                        <el-icon aria-hidden="true">
                                             <svg viewBox="0 0 8 8" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path
                                                 d="M3 0l-3 5h2v3l3-5h-2v-3z" transform="translate(1)"></path></svg>
                                         </el-icon>
                                         {{ getRunAtName(scope.row.run_at) }}
                                     </span>
+                                    <!--
+                                        The word "Priority" is real text now, not an
+                                        aria-label. aria-label is only honoured on
+                                        interactive elements and a handful of roles - on a
+                                        plain <span> most screen readers ignore it outright,
+                                        so this cell was read as a bare number with nothing
+                                        saying what the number was.
+                                    -->
                                     <span class="fsnip_row_priority"
-                                          :title="$t('Priority %s', scope.row.priority)"
-                                          :aria-label="$t('Priority %s', scope.row.priority)">
-                                        <el-icon>
+                                          :title="$t('Priority %s', scope.row.priority)">
+                                        <el-icon aria-hidden="true">
                                             <!-- Descending bars: a queue, shortest last. -->
                                             <svg viewBox="0 0 12 12" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                                                 <rect x="0" y="1" width="12" height="1.7" rx=".85"/>
                                                 <rect x="0" y="5.15" width="8" height="1.7" rx=".85"/>
                                                 <rect x="0" y="9.3" width="4" height="1.7" rx=".85"/>
                                             </svg>
-                                        </el-icon>{{ scope.row.priority }}
+                                        </el-icon><span class="fsnip_sr_only">{{ $t('Priority') }}</span>{{ scope.row.priority }}
                                     </span>
                                 </div>
                             </template>
@@ -273,20 +340,40 @@
                     </div>
                     <div v-else-if="snippets.length && groupedSnippets" v-loading="loading" class="groups_snippets">
                         <div v-for="(group, groupName) in groupedSnippets.groups" :key="groupName" class="fsnip_group">
-                            <div class="group_name">
-                                <el-icon @click="toggleGroupView(groupName)">
-                                    <FolderOpened v-if="!groupCollapsed[groupName]"/>
-                                    <FolderClosed v-else/>
-                                </el-icon>
-                                <span @click="toggleGroupView(groupName)">{{ group.label }}</span>
-                            </div>
-                            <ul v-if="!groupCollapsed[groupName]" class="group_files">
+                            <!--
+                                One button, not a clickable icon beside a clickable span.
+                                Neither of those was reachable by keyboard at all, so a
+                                collapsed group could not be opened without a mouse - and
+                                nothing said the group was collapsed in the first place.
+                                aria-expanded and aria-controls are that missing sentence.
+                            -->
+                            <h2 class="group_name">
+                                <button type="button" @click="toggleGroupView(groupName)"
+                                        :aria-expanded="groupCollapsed[groupName] ? 'false' : 'true'"
+                                        :aria-controls="'fsnip_group_' + groupName">
+                                    <el-icon aria-hidden="true">
+                                        <FolderOpened v-if="!groupCollapsed[groupName]"/>
+                                        <FolderClosed v-else/>
+                                    </el-icon>
+                                    <span>{{ group.label }}</span>
+                                </button>
+                            </h2>
+                            <ul v-if="!groupCollapsed[groupName]" class="group_files"
+                                :id="'fsnip_group_' + groupName">
                                 <li v-for="snippet in group.snippets" :class="'fsnip_status_'+snippet.status"
                                     :key="snippet.file_name" class="group_file">
-                                    <div
-                                        @click="$router.push({ name: 'edit_snippet', params: { snippet_name: snippet.file_name } })"
+                                    <!--
+                                        A link, not a div that calls $router.push. The row
+                                        opens the editor, which is what a link does - and as
+                                        a div it could not be tabbed to, could not be
+                                        activated with Enter, was announced as nothing at
+                                        all, and could not be opened in a new tab by anyone,
+                                        mouse or not.
+                                    -->
+                                    <router-link
+                                        :to="{ name: 'edit_snippet', params: { snippet_name: snippet.file_name } }"
                                         class="group_file_name">
-                                        <el-icon>
+                                        <el-icon aria-hidden="true">
                                             <Document/>
                                         </el-icon>
                                         {{ snippet.name }}
@@ -300,38 +387,52 @@
                                             {{ getLangLabelName(snippet.type) }}
                                     </span>
                                         <span class="fsn_label">
-                                        <el-icon>
+                                        <el-icon aria-hidden="true">
                                                 <svg viewBox="0 0 8 8" fill="currentColor"
                                                      xmlns="http://www.w3.org/2000/svg"><path
                                                     d="M3 0l-3 5h2v3l3-5h-2v-3z" transform="translate(1)"></path></svg>
                                         </el-icon>
                                         {{ getRunAtName(snippet.run_at) }}
                                     </span>
-                                    </div>
+                                    </router-link>
+                                    <!--
+                                        Delete and Download are buttons now. As <span>s they
+                                        took no focus and carried no role, so on this view
+                                        there was no way to delete or download a snippet
+                                        without a mouse - and the popconfirm anchored to the
+                                        delete span could never be opened from the keyboard
+                                        either. The separators are decoration and are hidden
+                                        rather than read out as "pipe" between every action.
+                                    -->
                                     <div class="group_file_meta">
                                         <div class="snippet_actions">
-                                        <span :title="$t('Updated At:') + ' '"><el-icon><Stopwatch/></el-icon> {{
+                                        <span :title="$t('Updated At:') + ' '"><el-icon aria-hidden="true"><Stopwatch/></el-icon>
+                                            <span class="fsnip_sr_only">{{ $t('Updated At:') }} </span>{{
                                                 relativeTimeFromUtc(snippet.updated_at)
                                             }}</span>
-                                            <span class="fc_middot">|</span>
+                                            <span class="fc_middot" aria-hidden="true">|</span>
                                             <el-popconfirm v-if="canEdit" width="220" @confirm="confirmDeleteSnippet(snippet)"
                                                            :title="$t('Are you sure to delete this?')">
                                                 <template #reference>
-                                                    <span class="fsnip_delete">{{ $t('delete') }}</span>
+                                                    <button type="button" class="fsnip_delete"
+                                                            :aria-label="$t('Delete %s', snippet.name)">{{ $t('delete') }}</button>
                                                 </template>
                                             </el-popconfirm>
-                                            <span class="fc_middot">|</span>
-                                            <span class="fsnip_download" @click="exportSnippets([snippet.file_name])">
-                                            <el-icon>
+                                            <span class="fc_middot" aria-hidden="true">|</span>
+                                            <button type="button" class="fsnip_download"
+                                                    :aria-label="$t('Download %s', snippet.name)"
+                                                    @click="exportSnippets([snippet.file_name])">
+                                            <el-icon aria-hidden="true">
                                                 <download />
                                             </el-icon>
                                             {{ $t('Download') }}
-                                        </span>
+                                        </button>
 
-                                            <span class="fc_middot">|</span>
+                                            <span class="fc_middot" aria-hidden="true">|</span>
                                             <span v-if="!snippet.error">
                                             <el-switch size="small" :disabled="!canEdit" v-model="snippet.status" active-value="published"
                                                        inactive-value="draft"
+                                                       :aria-label="$t('Activate %s', snippet.name)"
                                                        @change="updateSnippetStatus(snippet)"></el-switch>
                                             {{ snippet.status }}
                                         </span>
@@ -343,10 +444,11 @@
                         <ul v-if="groupedSnippets.roots.length" class="group_files roots_files">
                             <li v-for="snippet in groupedSnippets.roots" :class="'fsnip_status_'+snippet.status"
                                 :key="snippet.file_name" class="group_file">
-                                <div
-                                    @click="$router.push({ name: 'edit_snippet', params: { snippet_name: snippet.file_name } })"
+                                <!-- A link, for the same reasons as the grouped rows above. -->
+                                <router-link
+                                    :to="{ name: 'edit_snippet', params: { snippet_name: snippet.file_name } }"
                                     class="group_file_name">
-                                    <el-icon>
+                                    <el-icon aria-hidden="true">
                                         <Document/>
                                     </el-icon>
                                     {{ snippet.name }}
@@ -360,39 +462,43 @@
                                         {{ getLangLabelName(snippet.type) }}
                                 </span>
                                     <span class="fsn_label">
-                                    <el-icon>
+                                    <el-icon aria-hidden="true">
                                             <svg viewBox="0 0 8 8" fill="currentColor"
                                                  xmlns="http://www.w3.org/2000/svg"><path
                                                 d="M3 0l-3 5h2v3l3-5h-2v-3z" transform="translate(1)"></path></svg>
                                     </el-icon>
                                     {{ getRunAtName(snippet.run_at) }}
                                 </span>
-                                </div>
+                                </router-link>
                                 <div class="group_file_meta">
                                     <div class="snippet_actions">
                                     <span v-if="!snippet.error"
                                           class="snippet_desc">{{ limitChars(snippet.description, 50) }}</span>
-                                        <span :title="$t('Updated At:')"><el-icon><Stopwatch/></el-icon>
-                                        {{ relativeTimeFromUtc(snippet.updated_at) }}
+                                        <span :title="$t('Updated At:')"><el-icon aria-hidden="true"><Stopwatch/></el-icon>
+                                        <span class="fsnip_sr_only">{{ $t('Updated At:') }} </span>{{ relativeTimeFromUtc(snippet.updated_at) }}
                                     </span>
-                                        <span class="fc_middot">|</span>
+                                        <span class="fc_middot" aria-hidden="true">|</span>
                                         <el-popconfirm v-if="canEdit" width="220" @confirm="confirmDeleteSnippet(snippet)"
                                                        :title="$t('Are you sure to delete this?')">
                                             <template #reference>
-                                                <span class="fsnip_delete">{{ $t('delete') }}</span>
+                                                <button type="button" class="fsnip_delete"
+                                                        :aria-label="$t('Delete %s', snippet.name)">{{ $t('delete') }}</button>
                                             </template>
                                         </el-popconfirm>
-                                        <span class="fc_middot">|</span>
-                                        <span class="fsnip_download" @click="exportSnippets([snippet.file_name])">
-                                        <el-icon>
+                                        <span class="fc_middot" aria-hidden="true">|</span>
+                                        <button type="button" class="fsnip_download"
+                                                :aria-label="$t('Download %s', snippet.name)"
+                                                @click="exportSnippets([snippet.file_name])">
+                                        <el-icon aria-hidden="true">
                                             <download />
                                         </el-icon>
                                         {{ $t('Download') }}
-                                    </span>
-                                        <span class="fc_middot">|</span>
+                                    </button>
+                                        <span class="fc_middot" aria-hidden="true">|</span>
                                         <span>
                                         <el-switch v-if="!snippet.error" size="small" :disabled="!canEdit" v-model="snippet.status"
                                                    active-value="published" inactive-value="draft"
+                                                   :aria-label="$t('Activate %s', snippet.name)"
                                                    @change="updateSnippetStatus(snippet)"></el-switch>
                                         {{ snippet.status }}
                                     </span>

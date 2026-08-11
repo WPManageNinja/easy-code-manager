@@ -44,7 +44,7 @@
                 <div class="box">
                     <div class="box_header">
                         <div class="box_head">
-                            <h3>{{ $t('Contributors') }}</h3>
+                            <h2>{{ $t('Contributors') }}</h2>
                         </div>
                     </div>
                     <div class="box_body">
@@ -73,7 +73,7 @@
                 <div class="box">
                     <div class="box_header">
                         <div class="box_head">
-                            <h3>{{ $t('How it works') }}</h3>
+                            <h2>{{ $t('How it works') }}</h2>
                         </div>
                     </div>
                     <div class="box_body">
@@ -89,7 +89,7 @@
                 <div class="box">
                     <div class="box_header">
                         <div class="box_head">
-                            <h3>{{ $t('Built with') }}</h3>
+                            <h2>{{ $t('Built with') }}</h2>
                         </div>
                     </div>
                     <div class="box_body">
@@ -106,7 +106,7 @@
                 <div class="box">
                     <div class="box_header">
                         <div class="box_head">
-                            <h3>{{ $t('Getting help') }}</h3>
+                            <h2>{{ $t('Getting help') }}</h2>
                         </div>
                     </div>
                     <div class="box_body">

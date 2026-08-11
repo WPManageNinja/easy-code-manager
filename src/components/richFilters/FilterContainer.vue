@@ -10,9 +10,16 @@
                 </div>
             </div>
         </div>
+        <!--
+            "OR" adds another group of conditions. As an <em> with a click handler it could
+            not be tabbed to or activated with a key, and was announced as emphasised text
+            rather than as the control it is - so a keyboard user could build one group of
+            conditions and never a second.
+        -->
         <div class="fc_cond_or">
-            <em class="fc_cond_add" @click="addConditionGroup()"><i
-                class="el-icon-plus"></i> {{$t('OR')}}</em>
+            <button type="button" class="fc_cond_add" @click="addConditionGroup()"
+                    :aria-label="$t('Add another condition group')"><i
+                class="el-icon-plus" aria-hidden="true"></i> {{$t('OR')}}</button>
         </div>
     </div>
 </template>

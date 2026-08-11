@@ -2,7 +2,7 @@
     <div v-if="plugins.length" class="box fss_team">
         <div class="box_header">
             <div class="box_head">
-                <h3>{{ $t('From the same team') }}</h3>
+                <h2>{{ $t('From the same team') }}</h2>
             </div>
         </div>
         <div class="box_body">

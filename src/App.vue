@@ -1,6 +1,24 @@
 <template>
     <div class="fsnip_app">
-        <div class="fsnip_app_bar" :class="{'is-scrolled': scrolled}">
+        <!--
+            First in the tab order and invisible until focused. wp-admin's own skip link
+            stops at the top of the page; nothing skipped this app's bar, so every page load
+            began with the logo, three nav items and the theme menu to tab through.
+        -->
+        <a class="fsnip_skip_link" href="#fsnip_main" @click="focusMain">
+            {{ $t('Skip to main content') }}
+        </a>
+
+        <!--
+            The route announcer. Nothing reloads in a single-page app, so navigating from
+            Snippets to Settings changes the whole screen without a screen reader saying a
+            word - the user is left on a page they have no way of knowing they arrived at.
+            This says the name of it. aria-live="polite" so it waits for whatever is being
+            read to finish rather than cutting across it.
+        -->
+        <div class="fsnip_sr_only" role="status" aria-live="polite">{{ announcement }}</div>
+
+        <header class="fsnip_app_bar" :class="{'is-scrolled': scrolled}">
             <div class="fsnip_app_logo">
                 <router-link :to="{name: 'dashboard'}" aria-label="FluentSnippets">
                     <brand-mark :size="30"/>
@@ -8,26 +26,45 @@
                 </router-link>
             </div>
 
+            <!--
+                aria-expanded is the whole of what this button communicates when it is
+                collapsed to an icon: pressing it does nothing visible to a screen reader
+                unless the button says whether the menu it controls is now open or shut.
+            -->
             <button class="fsnip_app_bar_toggle" type="button" @click="navOpen = !navOpen"
-                    :aria-label="$t('Menu')">
-                <span class="dashicons dashicons-menu-alt3"></span>
+                    :aria-label="$t('Menu')" :aria-expanded="navOpen ? 'true' : 'false'"
+                    aria-controls="fsnip_app_nav">
+                <span class="dashicons dashicons-menu-alt3" aria-hidden="true"></span>
             </button>
 
-            <ul class="fsnip_app_nav" :class="{'is-open': navOpen}">
-                <li v-for="item in menuItems" :key="item.route">
-                    <router-link :to="{name: item.route}"
-                                 :class="{'router-link-active': isActive(item)}">
-                        {{ item.title }}
-                    </router-link>
-                </li>
-            </ul>
+            <!--
+                The <nav> is the flex child of the bar, not the <ul> inside it - the narrow
+                layout orders and stretches this element, and putting a wrapper between it
+                and the bar would have left those rules addressing nothing.
+            -->
+            <nav id="fsnip_app_nav" class="fsnip_app_nav_wrap" :class="{'is-open': navOpen}"
+                 :aria-label="$t('FluentSnippets')">
+                <ul class="fsnip_app_nav">
+                    <li v-for="item in menuItems" :key="item.route">
+                        <!--
+                            aria-current is what tells a screen reader which section it is
+                            already in. The highlight alone says it to everyone else.
+                        -->
+                        <router-link :to="{name: item.route}"
+                                     :aria-current="isActive(item) ? 'page' : null"
+                                     :class="{'router-link-active': isActive(item)}">
+                            {{ item.title }}
+                        </router-link>
+                    </li>
+                </ul>
+            </nav>
 
             <div class="fsnip_app_bar_actions">
                 <theme-switch/>
             </div>
-        </div>
+        </header>
 
-        <div class="fsnip_page">
+        <main id="fsnip_main" class="fsnip_page" tabindex="-1">
             <div class="fsnip_page_inner">
                 <fsnip-promo :config="appVars.safeModes"/>
 
@@ -37,15 +74,26 @@
                     finds the Create button missing needs the reason before they go looking
                     for it in Settings.
                 -->
-                <div v-if="readOnlyNotice" class="fsnip_read_only">
-                    <span class="dashicons dashicons-lock"></span>
+                <div v-if="readOnlyNotice" class="fsnip_read_only" role="note">
+                    <span class="dashicons dashicons-lock" aria-hidden="true"></span>
                     <div>
                         <strong>{{ readOnlyNotice.title }}</strong>
                         <p>{{ readOnlyNotice.reason }}</p>
                     </div>
                 </div>
 
-                <div v-show="hasServerError">
+                <!--
+                    A fatal from the server. role="alert" because it arrives after a save
+                    the user has already been told succeeded or failed by a notification -
+                    without it, the page silently grows a page-long error nobody is told
+                    about. The heading gives it a name in the landmark list too.
+                -->
+                <!--
+                    Named with aria-label rather than a hidden heading: this sits above the
+                    router view in the DOM, so a heading here would come before the screen's
+                    own h1 and put the outline out of order on every page that showed it.
+                -->
+                <div v-show="hasServerError" role="alert" :aria-label="$t('Server error details')">
                     <el-button @click="hideErrors()" v-if="hasServerError">{{ $t('Hide Errors') }}</el-button>
                     <div :class="{fluent_snip_server_error : hasServerError}" id="fsnip_shadow_wrapper">
                         <div id="fluent_snip_500_error"></div>
@@ -54,7 +102,7 @@
 
                 <router-view></router-view>
             </div>
-        </div>
+        </main>
     </div>
 </template>
 
@@ -88,7 +136,8 @@ export default {
                     title: this.$t('About')
                 }
             ],
-            hasServerError: false
+            hasServerError: false,
+            announcement: ''
         }
     },
     computed: {
@@ -108,6 +157,43 @@ export default {
             const active = this.$route.meta ? this.$route.meta.active : '';
 
             return active === item.route;
+        },
+        /*
+         * The skip link's href alone moves the *scroll* position but not the keyboard, so
+         * the next Tab would go back to the second item in the bar - which is the one thing
+         * the link exists to avoid. `tabindex="-1"` on <main> makes it focusable by script
+         * without putting it in the tab order, and focusing it is what actually moves the
+         * caret past the bar.
+         */
+        focusMain(e) {
+            const main = document.getElementById('fsnip_main');
+
+            if (!main) {
+                return;
+            }
+
+            e.preventDefault();
+            main.focus();
+        },
+        /*
+         * Put the name of the screen into the live region.
+         *
+         * Cleared first, then set on the next tick: a live region whose text does not
+         * actually change is not re-announced, and going Snippets -> Edit -> Snippets
+         * would otherwise be silent the second time round.
+         */
+        announceRoute(route) {
+            const title = route && route.meta ? route.meta.title : '';
+
+            if (!title) {
+                return;
+            }
+
+            this.announcement = '';
+
+            this.$nextTick(() => {
+                this.announcement = this.$t(title);
+            });
         },
         onScroll() {
             this.scrolled = window.scrollY > 10;
@@ -178,8 +264,9 @@ export default {
         }
     },
     watch: {
-        $route() {
+        $route(to) {
             this.navOpen = false;
+            this.announceRoute(to);
         }
     },
     created() {

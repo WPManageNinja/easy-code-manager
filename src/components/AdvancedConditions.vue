@@ -4,7 +4,7 @@
             <el-collapse-item name="condition">
                 <template #title>
                     <div class="snip_cond_title">
-                        <h3>{{ $t('Advanced Conditional Logic') }}</h3>
+                        <h2>{{ $t('Advanced Conditional Logic') }}</h2>
                         <el-tooltip
                             placement="top-start"
                             class="box-item"
@@ -18,9 +18,15 @@
                     </div>
                 </template>
 
+                <!--
+                    The words beside the toggle are loose text in the form item, not a
+                    label bound to the control, so the toggle was announced with no name at
+                    all. The name is the same sentence you can already see.
+                -->
                 <div class="snip_cond_toggle">
                     <el-form-item>
                         <el-switch v-model="condition.status"
+                                   :aria-label="$t('Enable Conditional Logic')"
                                    active-value="yes" inactive-value="no"></el-switch>
                         {{ $t('Enable Conditional Logic') }}
                     </el-form-item>
