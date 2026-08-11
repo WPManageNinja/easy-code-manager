@@ -274,6 +274,10 @@ class CodeRunner
                             return $content;
                         }, $this->get($snippet, 'priority', 10));
                     }
+
+                    // Was falling through into an empty default. Harmless while default
+                    // is empty, a trap for whoever adds the next case (M12).
+                    break;
                 default:
                     break;
             }
@@ -370,13 +374,21 @@ class CodeRunner
     }
 
 
+    /**
+     * Strip style/script tags from CSS and JS snippet code before it is echoed inline.
+     *
+     * The closing-tag patterns used to be the literal `<\/script>` and `<\/style>`, which
+     * missed `</script >`, `</script\n>` and `</SCRIPT>` — all of which HTML parsers do
+     * treat as terminators, so a closing tag could survive into the page and break out of
+     * the block this code is printed inside (L1). Not a privilege boundary, since only
+     * unfiltered_html users author snippets, but an output-integrity bug.
+     */
     private function escCssJs($code)
     {
-        $code = preg_replace('/<script[^>]*>/', '', $code);
-        $code = preg_replace('/<\/script>/', '', $code);
-        // remove opening js tag and closing js tag maybe <script type="text/javascript"> too
-        $code = preg_replace('/<style[^>]*>/', '', $code);
-        return preg_replace('/<\/style>/', '', $code);
+        $code = preg_replace('/<script[^>]*>/i', '', $code);
+        $code = preg_replace('/<\/\s*script[^>]*>/i', '', $code);
+        $code = preg_replace('/<style[^>]*>/i', '', $code);
+        return preg_replace('/<\/\s*style[^>]*>/i', '', $code);
     }
 
     private function getCachedFileUrl($fileName)

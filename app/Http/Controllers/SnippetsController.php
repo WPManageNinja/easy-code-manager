@@ -94,8 +94,15 @@ class SnippetsController
             return $restricted;
         }
 
+        // json_decode returns null on malformed input, and indexing that warns before
+        // failing further down with nothing useful to say (M9).
         $meta = json_decode($request->get_param('meta'), true);
-        $code = $meta['code'];
+
+        if (!is_array($meta)) {
+            return new \WP_Error('invalid_meta', __('Snippet meta could not be read', 'easy-code-manager'));
+        }
+
+        $code = Arr::get($meta, 'code', '');
 
         unset($meta['code']);
 
@@ -121,10 +128,15 @@ class SnippetsController
         }
 
         $fileName = sanitize_file_name($request->get_param('fluent_saving_snippet_name'));
-        $meta = json_decode($request->get_param('meta'), true);
-        $code = $meta['code'];
-        unset($meta['code']);
 
+        $meta = json_decode($request->get_param('meta'), true);
+
+        if (!is_array($meta)) {
+            return new \WP_Error('invalid_meta', __('Snippet meta could not be read', 'easy-code-manager'));
+        }
+
+        $code = Arr::get($meta, 'code', '');
+        unset($meta['code']);
 
         $snippet = Helper::updateSnippet([
             'meta'       => $meta,
@@ -200,19 +212,14 @@ class SnippetsController
         ];
     }
 
+    /**
+     * Kept as an entry point because AdminMenuHandler's import calls it, but the rules
+     * live in Helper::validateMeta(). This was a byte-for-byte duplicate of that method,
+     * which is exactly how the two drift apart (L7).
+     */
     public static function validateMeta($meta)
     {
-        $required = ['name', 'status', 'type', 'run_at'];
-
-        foreach ($required as $key) {
-            if (empty($meta[$key])) {
-                return new \WP_Error($key, sprintf(__('%s is required', 'easy-code-manager'), $key), [
-                    $key => sprintf(__('%s is required', 'easy-code-manager'), $key)
-                ]);
-            }
-        }
-
-        return true;
+        return Helper::validateMeta($meta);
     }
 
     /**

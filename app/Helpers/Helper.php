@@ -342,7 +342,15 @@ class Helper
         return true;
     }
 
-    public static function cacheSnippetIndex($fileName = '', $isForced = false, $extraArgs = [])
+    /**
+     * Rebuild index.php from the snippet files on disk.
+     *
+     * Took ($fileName, $isForced, $extraArgs) until 2026-08-11 and used none of them:
+     * $fileName was overwritten by the loop below, $isForced was never read, and
+     * $extraArgs was never passed by any caller. PHP allows extra arguments to a
+     * user-defined function, so anything still calling the old signature keeps working.
+     */
+    public static function cacheSnippetIndex()
     {
         $data = [
             'published' => [],
@@ -379,24 +387,23 @@ class Helper
             $previousConfig['meta']['secret_key'] = bin2hex(random_bytes(16));
         }
 
+        // Arr::get throughout (M9): a config written by an older version, or one that
+        // only just came into existence, can be missing any of these keys, and a direct
+        // index would warn on every rebuild under PHP 8.
         $data['meta'] = [
             'secret_key'          => $previousConfig['meta']['secret_key'],
-            'force_disabled'      => $previousConfig['meta']['force_disabled'],
+            'force_disabled'      => Arr::get($previousConfig['meta'], 'force_disabled', 'no'),
             'cached_at'           => date('Y-m-d H:i:s'),
             'cached_version'      => FLUENT_SNIPPETS_PLUGIN_VERSION,
             'cashed_domain'       => site_url(),
             'files_hash'          => $filesHash,
             'legacy_status'       => Arr::get($previousConfig['meta'], 'legacy_status'),
-            'auto_disable'        => $previousConfig['meta']['auto_disable'],
-            'auto_publish'        => $previousConfig['meta']['auto_publish'],
-            'remove_on_uninstall' => $previousConfig['meta']['remove_on_uninstall']
+            'auto_disable'        => Arr::get($previousConfig['meta'], 'auto_disable', 'yes'),
+            'auto_publish'        => Arr::get($previousConfig['meta'], 'auto_publish', 'no'),
+            'remove_on_uninstall' => Arr::get($previousConfig['meta'], 'remove_on_uninstall', 'no')
         ];
 
-        if ($extraArgs) {
-            $data['meta'] = wp_parse_args($extraArgs, $data['meta']);
-        }
-
-        $errorFiles = $previousConfig['error_files'];
+        $errorFiles = Arr::get($previousConfig, 'error_files', []);
 
         $metaKeys = [
             'name',
@@ -418,7 +425,7 @@ class Helper
 
         if ($snippets) {
             usort($snippets, function ($a, $b) {
-                return $a['meta']['priority'] <=> $b['meta']['priority'];
+                return Arr::get($a, 'meta.priority', 10) <=> Arr::get($b, 'meta.priority', 10);
             });
         }
 
@@ -453,7 +460,18 @@ class Helper
             $data[$snippet['status']][$fileName] = $meta;
         }
 
-        $data['error_files'] = $errorFiles;
+        /*
+         * Prune to snippets that still exist (H3 / I7). Nothing else ever removed an
+         * entry: CodeHandler::handleFileDelete() tried, but it unset() a local copy that
+         * this method then discarded, so a deleted snippet's error stayed in the map
+         * forever and the map only grew. Doing it here also self-heals every stale entry
+         * already sitting on disk.
+         *
+         * This matters more since H2 — the auto-disable now catches parse errors and
+         * downstream fatals it used to miss entirely, so error_files is written far more
+         * often than it used to be.
+         */
+        $data['error_files'] = array_intersect_key($errorFiles, $data['published'] + $data['draft']);
 
         return self::saveIndexedConfig($data);
     }
@@ -496,20 +514,44 @@ PHP;
 
         self::invalidateOpcache($cacheFile);
 
+        // The in-memory copy is now behind the file.
+        self::flushIndexedConfigCache();
+
         return $bytesWritten;
     }
 
+    private static $indexedConfig = null;
+
+    private static $indexedConfigLoaded = false;
+
     public static function getIndexedConfig($cached = true)
     {
-        static $config = null;
-
-        if ($config && $cached) {
-            return $config;
+        // Keyed on a separate flag rather than on the config being truthy: an empty
+        // config is the normal state on a fresh install, and `if ($config && $cached)`
+        // is false for [], so every call re-ran is_file() plus an include for nothing.
+        if (self::$indexedConfigLoaded && $cached) {
+            return self::$indexedConfig;
         }
 
-        $config = self::getConfigFromFile();
+        self::$indexedConfig = self::getConfigFromFile();
+        self::$indexedConfigLoaded = true;
 
-        return $config;
+        return self::$indexedConfig;
+    }
+
+    /**
+     * Drop the in-memory copy so the next read comes from disk.
+     *
+     * Called after every write. Without it the cache goes stale the moment the index is
+     * rebuilt: anything reading the config later in the same request would still see the
+     * pre-rebuild copy. That was already true before M14 — it just never bit, because an
+     * empty config is falsy and the old condition happened to re-read every time. Fixing
+     * the cache made the staleness reachable, so the invalidation has to come with it.
+     */
+    public static function flushIndexedConfigCache()
+    {
+        self::$indexedConfig = null;
+        self::$indexedConfigLoaded = false;
     }
 
     private static function getConfigFromFile()
@@ -527,16 +569,17 @@ PHP;
     {
         $config = self::getIndexedConfig();
 
+        // 'has_line_wrap' used to be declared here and nothing ever wrote or read it —
+        // the setting is stored as 'enable_line_wrap'. Dropped rather than renamed,
+        // because getConfigSettings()'s callers do not use it.
         $defaults = [
             'auto_disable'        => 'yes',
             'auto_publish'        => 'no',
             'remove_on_uninstall' => 'no',
             'legacy_status'       => 'new',
-            'has_line_wrap'       => 'no',
-
         ];
 
-        if (!$config) {
+        if (!$config || empty($config['meta'])) {
             return $defaults;
         }
 
@@ -701,13 +744,28 @@ PHP;
         }
     }
 
+    /**
+     * Strip style/script tags from CSS and JS snippet code.
+     *
+     * Kept identical to CodeRunner::escCssJs(). Note the two are used for opposite
+     * purposes: there it sanitises code on the way out, here updateSnippet() uses it as
+     * a *detector* — if the result differs from the input, the save is rejected.
+     *
+     * The closing-tag patterns used to be the literal `<\/script>` and `<\/style>`, which
+     * missed `</script >`, `</script\n>` and `</SCRIPT>`. HTML parsers do treat all three
+     * as terminators, so one could survive into the page and break out of the block the
+     * code is printed inside (L1).
+     *
+     * The rejection stays strict on purpose: a literal closing tag inside a JS string
+     * genuinely does end the block in the browser, so code like
+     * document.write('</script>') has to be written as '<\/script>' either way.
+     */
     public static function escCssJs($code)
     {
-        $code = preg_replace('/<script[^>]*>/', '', $code);
-        $code = preg_replace('/<\/script>/', '', $code);
-        // remove opening js tag and closing js tag maybe <script type="text/javascript"> too
-        $code = preg_replace('/<style[^>]*>/', '', $code);
-        return preg_replace('/<\/style>/', '', $code);
+        $code = preg_replace('/<script[^>]*>/i', '', $code);
+        $code = preg_replace('/<\/\s*script[^>]*>/i', '', $code);
+        $code = preg_replace('/<style[^>]*>/i', '', $code);
+        return preg_replace('/<\/\s*style[^>]*>/i', '', $code);
     }
 
     public static function updateSnippet($data)

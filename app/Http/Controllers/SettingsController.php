@@ -17,11 +17,15 @@ class SettingsController
 
         $config = Helper::getIndexedConfig();
 
+        // enable_line_wrap defaulted to 'yes' here while saveSettings() and the editor
+        // bootstrap in AdminMenuHandler::render() both defaulted to 'no'. The editor is
+        // what actually decides the behaviour, so the settings screen was showing the
+        // toggle on while wrapping was off. Aligned to 'no'; the editor is unchanged.
         $defaults = [
             'auto_disable'        => 'yes',
             'auto_publish'        => 'no',
             'remove_on_uninstall' => 'no',
-            'enable_line_wrap'    => 'yes'
+            'enable_line_wrap'    => 'no'
         ];
 
         if (!$config || !is_array($config) || empty($config['meta'])) {
@@ -121,7 +125,9 @@ class SettingsController
 
         $isEnable = $request->get_param('enable') == 'yes';
 
-        if ($isEnable == 'yes') {
+        // $isEnable is already a bool; the old `$isEnable == 'yes'` compared a bool to a
+        // string and happened to work under loose comparison (L8).
+        if ($isEnable) {
             $result = Helper::enableStandAlone();
             $message = __('Standalone mode has been activated', 'easy-code-manager');
         } else {

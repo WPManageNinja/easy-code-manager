@@ -52,9 +52,11 @@ class CodeHandler
         add_action('fluent_snippets/snippet_updated', [$this, 'rebuildCache']);
         add_action('fluent_snippets/snippet_deleted', [$this, 'handleFileDelete']);
 
-        add_action('fluent_snippets/rebuild_index', function ($fileName, $isForced) {
-            Helper::cacheSnippetIndex($fileName, $isForced);
-        }, 10, 2);
+        // The action still fires with two arguments from CodeRunner for backwards
+        // compatibility with anything hooking it; cacheSnippetIndex() never used either.
+        add_action('fluent_snippets/rebuild_index', function () {
+            Helper::cacheSnippetIndex();
+        }, 10, 0);
 
     }
 
@@ -84,7 +86,7 @@ class CodeHandler
 
         $config = Helper::getIndexedConfig();
 
-        if ($config['meta']['force_disabled'] == 'yes') {
+        if (Arr::get($config, 'meta.force_disabled') == 'yes') {
             return $this->shortCodeError(__('Snippets are disabled', 'easy-code-manager'));
         }
 
@@ -159,24 +161,23 @@ class CodeHandler
 
     public function rebuildCache($snippetFile)
     {
-        Helper::cacheSnippetIndex($snippetFile);
+        Helper::cacheSnippetIndex();
     }
 
     public function handleFileDelete($fileName)
     {
-        $config = Helper::getIndexedConfig();
-
-        if (isset($config['published'][$fileName])) {
-            unset($config['published'][$fileName]);
-        }
-        if (isset($config['draft'][$fileName])) {
-            unset($config['draft'][$fileName]);
-        }
-
-        if (isset($config['error_files'][$fileName])) {
-            unset($config['error_files'][$fileName]);
-        }
-
+        /*
+         * This used to unset the deleted file from published, draft and error_files
+         * first. All three were dead: they mutated a local copy that cacheSnippetIndex()
+         * then discarded, because it rebuilds published/draft from disk and re-reads
+         * error_files from the file it is about to overwrite. The published/draft entries
+         * disappeared anyway (the file is gone, so the rebuild cannot find it), but the
+         * error_files entry survived forever.
+         *
+         * cacheSnippetIndex() now prunes error_files to snippets that still exist, which
+         * is where the work actually belongs — it also heals entries already stranded on
+         * disk, which an unset() here never could.
+         */
         Helper::cacheSnippetIndex();
     }
 

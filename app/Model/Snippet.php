@@ -144,7 +144,8 @@ class Snippet
 
         if ($search = Arr::get($this->args, 'search')) {
             $snippets = array_filter($snippets, function ($snippet) use ($search) {
-                return (strpos($snippet['name'], $search) !== false) || (strpos($snippet['description'], $search) !== false) || (strpos($snippet['tags'], $search) !== false) || (strpos($snippet['group'], $search) !== false);
+                // stripos, not strpos: searching "Header" should find "header script".
+                return (stripos($snippet['name'], $search) !== false) || (stripos($snippet['description'], $search) !== false) || (stripos($snippet['tags'], $search) !== false) || (stripos($snippet['group'], $search) !== false);
             });
         }
 
@@ -426,6 +427,10 @@ class Snippet
             'type'         => '',
             'run_at'       => '',
             'group'        => '',
+            // Defaulted because a hand-edited or legacy snippet file may have no
+            // @priority line, and cacheSnippetIndex() sorts on it — a missing key warned
+            // on every rebuild under PHP 8. Matches getMetaData()'s own default.
+            'priority'     => 10,
             'condition'    => '',
             'load_as_file' => '',
             'load_in_block_editor' => ''

@@ -10,11 +10,13 @@ The architecture is sound: flat-file storage, an `index.php` manifest so nothing
 
 | Status | Count |
 |---|---|
-| ✅ Fixed | 13 |
-| 🔧 Open | 14 |
+| ✅ Fixed | 25 |
+| 🔧 Open | 2 |
 | ⛔️ Withdrawn | 11 |
 
-*Counted per finding, not per heading — several headings cover more than one (`C3 + C4 + H5`, `L6 / L7 / L8`, `L9 / L10`). The Open figure was recounted on 2026-08-11; it reads the same as the first pass because the earlier number had been counting headings for Open and findings for Fixed. Fixed has genuinely gone 6 → 8 since, and Withdrawn 11 → 12.*
+*Counted per finding, not per heading — several headings cover more than one (`C3 + C4 + H5`, the cleanup pass). Recounted on 2026-08-11 after the counting scheme was found to be inconsistent: Open had been counted by heading while Fixed was counted by finding.*
+
+**The two still open are both L-level and both deliberate:** L7 (duplicate REST routes — removing a registered route risks breaking an unknown integration) and L9 (`Tested up to:` needs a human who knows what WordPress has actually shipped).
 
 ---
 
@@ -233,6 +235,42 @@ Two further guards on the new path: the tracked name is only quarantined if the 
 
 **Release note:** `mu.stub` changed, and `Helper::maybeUpdateStandAlone()` only rewrites an installed runner when its version differs from `FLUENT_SNIPPETS_PLUGIN_VERSION`. Standalone sites therefore pick this up on the next **version bump**, not on this commit.
 
+### Cleanup pass — H3/I7, M3, M8, M9, M11, M12, M14, M15, L1, L5, L8, L10
+
+**Fixed 2026-08-11.** New `tests/cleanup-pass.php` (20 checks) covers the four items that change behaviour; the rest are mechanical.
+
+**H3 + I7 — `error_files` grew forever.** `handleFileDelete()`'s three `unset()` calls mutated a local copy that `cacheSnippetIndex()` then discarded: it rebuilds `published`/`draft` from disk and re-reads `error_files` from the file it is about to overwrite. The published/draft entries vanished anyway (the file is gone, so the rebuild can't find it) — the `error_files` entry was the one that survived, forever. Pruning now happens inside the rebuild via `array_intersect_key()` against `published + draft`, which also heals entries already stranded on disk. The dead `unset()`s are gone.
+
+More urgent since **H2**: the auto-disable now catches parse errors and downstream fatals it used to miss entirely, so `error_files` is written far more often than a map that only grows could tolerate. Drafts are deliberately *not* pruned — a draft can still be published.
+
+*I7's other half (a timestamp so the UI could say "paused 3 days ago") is a feature, not a fix, and would need a `dist` rebuild. Not done.*
+
+**M8 — `Router` destroyed other plugins' output buffers.** A bare `ob_get_clean()` ran after every REST callback with nothing having opened a buffer. Harmless when none is active; when *another plugin* had one open it silently ate their output. Now a buffer is opened in the same scope and torn down only to the depth it was at on entry, inside a `finally` so an early error return can't leak it.
+
+**M9 — unguarded array access.** `Arr::get()` with sane defaults across the rebuild path, the shortcode handler, and both REST decode sites (which now reject a `null` from `json_decode` with a real message instead of warning). The recurring one was `priority`: `parseBlock()`'s defaults omitted it while `cacheSnippetIndex()` sorts on it, so any legacy or hand-edited file without an `@priority` line warned on every rebuild. It's now defaulted in `parseBlock()` *and* read through `Arr::get()` in the sort.
+
+**M14 — and the cache-coherence bug it exposed.** `getIndexedConfig()`'s `if ($config && $cached)` was false for `[]`, so a fresh install re-ran `is_file()` + `include` on every call. Fixed with a separate `$loaded` flag — which promptly broke the test suite, and correctly so.
+
+The static cache was *never* invalidated by `saveIndexedConfig()`. That had always been true (noted under M6 as the reason the old forced rebuild never affected its own response), but it never bit, because an empty config is falsy and the old condition happened to re-read every time. Making the cache actually work made the staleness reachable: a read after a rebuild returned the pre-rebuild copy. So `flushIndexedConfigCache()` now runs on every write. The fix and the invalidation are one change; shipping the first without the second would have been a regression.
+
+**M15 — `cacheSnippetIndex()` takes no parameters.** `$fileName` was overwritten by its own loop, `$isForced` was never read, `$extraArgs` was never passed by anything. PHP allows extra arguments to a user-defined function, so any external caller on the old signature keeps working. The `fluent_snippets/rebuild_index` action still *fires* with two arguments for compatibility; its callback just ignores them.
+
+**L1 — `escCssJs()` closing tags.** `<\/script>` and `<\/style>` missed `</script >`, `</script\n>` and `</SCRIPT>`, all of which HTML parsers treat as terminators, so one could survive into the page and break out of the block. Now `/<\/\s*(script|style)[^>]*>/i`, applied identically in `Helper` and `CodeRunner` (and mirrored into `mu.stub`).
+
+The *lossy* half is deliberately unchanged: `Helper::updateSnippet()` uses this as a detector and rejects the save if the code differs, so `document.write('</script>')` is still refused. That's correct — a literal closing tag inside a JS string genuinely does end the block in a browser, and `'<\/script>'` is the standard way to write it.
+
+**M3** — dropped the dead `has_line_wrap` default (the setting is stored as `enable_line_wrap`) and settled the three-way disagreement on its default. `getSettings()` said `'yes'` while `saveSettings()` and the editor bootstrap both said `'no'`, so the settings screen showed the toggle on while wrapping was off. Aligned to `'no'`; the editor is unchanged.
+
+**M11** — import now checks `$_FILES['file']` exists, that `error` is `UPLOAD_ERR_OK`, and that `tmp_name` passes `is_uploaded_file()`; export coerces a non-array `snippets` parameter instead of fataling in `array_map()`. Confirmed during the permissions pass that none of this was a traversal risk — PHP populates `$_FILES` itself. The gain is a real error message instead of a warning cascade.
+
+**M12** — `php_content` was falling through into an empty `default:`. Harmless today, a trap for the next case added. Mirrored into `mu.stub`.
+
+**L5** — `strpos` → `stripos` in snippet search, so "Header" finds "header script".
+
+**L8** — `$isEnable == 'yes'` compared a bool to a string and worked by accident under loose comparison. Now `if ($isEnable)`.
+
+**L10** — `.DS_Store` added to `.gitignore`. It was never tracked; `build.sh` already excluded it from the zip.
+
 ### M1 + REST permission callback
 
 **Fixed 2026-08-02** (commit `12ff007`), recorded here after the fact.
@@ -244,85 +282,29 @@ Two further guards on the new path: the tracked name is only quarantined if the 
 
 ## 🔧 Open — worth doing
 
-### H3. Deleting a snippet leaves a permanent orphan in `error_files`
+Nothing above L-level remains. The 2026-08-11 cleanup pass cleared H3, M3, M8, M9,
+M11, M12, M14, M15, L1, L5, L8 and L10; see **Fixed** below.
 
-**Files:** `app/Hooks/Handlers/CodeHandler.php:143-159`, `app/Helpers/Helper.php:227, 263, 320`
+### L7. Snippet create/update exist twice
 
-```php
-if (isset($config['error_files'][$fileName])) {
-    unset($config['error_files'][$fileName]);   // mutates a LOCAL copy...
-}
-Helper::cacheSnippetIndex();                    // ...which is then thrown away
-```
+**File:** `app/Http/routes.php:8-11` vs `AdminMenuHandler::saveSnippet()/createSnippet()`
 
-`cacheSnippetIndex()` re-reads `error_files` from disk, so all three `unset()`s are dead code and the entry survives forever.
+The UI uses admin-ajax; the REST routes appear unused. Both are guarded identically now,
+so this is duplication rather than a gap — but two paths to the same operation is how
+they drift. `SnippetsController::validateMeta()` was a byte-for-byte duplicate of
+`Helper::validateMeta()` and now delegates to it, so only the routes remain.
 
-**Correction to my first pass:** I claimed this combines with count-based filenames to silently kill a *later* snippet. I traced it properly and overstated it — `glob()` counts `index.php` too, so numbering works out in the normal create/delete flow. A collision needs deletions to land the count exactly on an existing same-named file, and the user-visible result is an actionable *"Please try a different name"*. Real but uncommon.
+Left alone deliberately: removing a registered REST route is the kind of change that
+breaks a third-party integration nobody knew existed.
 
-So the live issue is just the unbounded orphan map. **Fix:** prune `error_files` inside `cacheSnippetIndex()` to keys that still exist in `published` + `draft` — self-heals every stale entry already on disk.
+### L9. `readme.txt` says `Tested up to: 7.0`
 
-### M15. `cacheSnippetIndex()`'s first two parameters are unused
-
-**File:** `app/Helpers/Helper.php:219` — `cacheSnippetIndex($fileName = '', $isForced = false, $extraArgs = [])`: `$fileName` is overwritten in the loop at `Helper.php:291` and `$isForced` is never referenced. Both are still passed by the `fluent_snippets/rebuild_index` action (`CodeHandler.php:41-43`), so removing them means touching that hook's signature — worth doing in the cleanup pass, not on its own. *(Split out of M6, which was otherwise fixed on 2026-08-11.)*
-
-### M8. `Router` calls `ob_get_clean()` unconditionally on every REST response
-
-**File:** `app/Services/Router.php:31` — nothing in the callback calls `ob_start()`. Harmless when no buffer is active, but when **another plugin** has one open this silently destroys their buffered output. If the intent is to swallow stray snippet output, open the buffer in the same scope.
-
-### M9. Unguarded array access on config that may be empty
-
-PHP 8 warnings on a fresh install (before the first snippet) or on configs written by older versions:
-
-| File:line | Expression |
-|---|---|
-| `CodeHandler.php:73` | `$config['meta']['force_disabled']` |
-| `Helper.php:249-256` | `['force_disabled']`, `['auto_disable']`, `['auto_publish']`, `['remove_on_uninstall']` |
-| `Helper.php:263` | `$previousConfig['error_files']` |
-| `Helper.php:285, 300` | `$a['meta']['priority']` — `parseBlock()`'s defaults (`Snippet.php:416-427`) **omit `priority`**, so any hand-edited or legacy snippet file without an `@priority` line warns on every index rebuild |
-| `SnippetsController.php:87, 114` | `$meta['code']` when `json_decode()` returns `null` |
-
-`Arr::get()` already exists — use it consistently.
-
-### M11. Import/export input handling is unguarded
-
-**File:** `app/Hooks/Handlers/AdminMenuHandler.php:139-144, 59-63` — `$_FILES['file']` read with no `isset()`, no `UPLOAD_ERR_OK` check, no `is_uploaded_file()`, no size cap; and `array_map()` over `$_REQUEST['snippets']` fatals if it arrives as a scalar. Both are nonce + capability gated, so the impact is a broken response rather than a hole.
-
-*(Credit: the export path's `array_intersect()` against the real `glob()` result is a genuinely effective path-traversal defence.)*
-
-### M12. Missing `break` in the `php_content` case
-
-**File:** `app/Services/CodeRunner.php:238-241` (and `mu.stub:665-668`) — falls through into an empty `default:`. Harmless today, a trap for the next case added.
-
-### M14. `getIndexedConfig()`'s static cache misses when the config is empty
-
-**File:** `app/Helpers/Helper.php:366-377` — `if ($config && $cached)` is falsy for `[]` (the fresh-install case), so every call re-runs `is_file()` + `include`. Needs a separate `$loaded` flag.
-
-### M3. Dead config key: `has_line_wrap`
-
-**File:** `app/Helpers/Helper.php:399` — `getConfigSettings()` declares a `has_line_wrap` default that nothing writes or reads; the setting is stored as `enable_line_wrap`. Also, the same setting has three different defaults: `getSettings()` says `'yes'` (`SettingsController.php:24`), `saveSettings()` says `'no'` (`:59`), `render()` says `'no'` (`AdminMenuHandler.php:356`).
-
-### L1. `escCssJs()` is both leaky and lossy
-
-**Files:** `Helper.php:508`, `CodeRunner.php:313`, `mu.stub:740`
-
-`preg_replace('/<\/script>/', '', $code)` misses `</script >` and `</script\n>`, which HTML parsers *do* treat as terminators — and it mangles legitimate JS like `document.write('<script src=…>')`. Not a privilege boundary (only `unfiltered_html` users author snippets), but an output-integrity bug. Use `/<\/\s*script[^>]*>/i`.
-
-### L5. Snippet search is case-sensitive
-
-**File:** `app/Model/Snippet.php:145-149` — `strpos()` means searching "Header" won't find "header script". Use `stripos()`.
-
-### L6 / L7 / L8. Consistency
-
-- `installPlugin()` still skips the guard every other `SettingsController` method starts with. Unlike `getRestOptions()` (fixed above), leaving it is defensible: it is allowlisted to four plugin slugs and honours `DISALLOW_FILE_MODS`, so the route-level `install_plugins` is the meaningful check.
-- Snippet create/update exist **twice**: REST routes (`routes.php:8-11`) and admin-ajax (`AdminMenuHandler::saveSnippet/createSnippet`). The UI uses admin-ajax; the REST routes appear unused. `SnippetsController::validateMeta()` is a byte-for-byte duplicate of `Helper::validateMeta()`.
-- `SettingsController.php:122-124` compares a bool to a string (`$isEnable == 'yes'`). Works by accident under loose comparison (verified) — just use `if ($isEnable)`.
-
-### L9 / L10. Housekeeping
-
-- `readme.txt:9` — `Tested up to: 7.0`; confirm this matches a released WordPress version before the next release, or the compatibility badge degrades. Consider adding `Update URI:` to the plugin header.
-- `.DS_Store` files in the tree; `build.sh` excludes them from the zip but they shouldn't be committed. Add to `.gitignore`.
-
----
+Confirm this matches a released WordPress version before the next release, or the
+compatibility badge degrades on wp.org. **Not touched in the cleanup pass** — picking a
+version number without checking what has actually shipped risks claiming compatibility
+with a release that does not exist, which violates wp.org's guidelines. Needs a human
+with the release calendar in front of them. Consider adding `Update URI:` to the plugin
+header at the same time.
 
 ---
 
@@ -398,8 +380,8 @@ Investigated and retired — **not** carried as debt. Recorded so they don't get
 | 4 | **C3 + C4 + H5** + drift test | ✅ done | One change, three findings |
 | 5 | ~~**H1** port recovery into the stub~~ | ⛔️ withdrawn | Standalone mode is opted into after the snippets have proven themselves — see Withdrawn |
 | 6 | **H2** fatal attribution | ✅ done | Restores the auto-disable guarantee the plugin ships on by default |
-| 7 | **H3 + I7** prune `error_files` | next | Self-heals stale entries already on disk |
+| 7 | **H3 + I7** prune `error_files` | ✅ done | Self-heals stale entries already on disk |
 | 8 | **M6** stop rebuilding on read | ✅ done | Removes the write-on-read that made C1 reachable |
-| 9 | **M3, M8, M9, M11, M12, M14, M15, L1, L5, L7–L10** | | Cleanup pass (**M1** done early with M6; **L6** with the permissions pass) |
+| 9 | **M3, M8, M9, M11, M12, M14, M15, L1, L5, L8, L10** | ✅ done | Cleanup pass (**M1** done early with M6; **L6** with the permissions pass) |
+| 10 | **I6** static analysis | next | Locks the fixes in — 5 harness suites exist now, but nothing runs them automatically |
 | — | **S1 + S2, H6, L6, I2** permissions pass | ✅ done | Import could introduce code without `unfiltered_html`; forged `@status` defeated its forced draft |
-| 10 | **I6** static analysis | | Locks the fixes in |

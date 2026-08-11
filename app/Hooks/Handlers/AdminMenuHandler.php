@@ -59,6 +59,13 @@ class AdminMenuHandler
         $snippetDir = Helper::getStorageDir();
 
         $selectedSnippets = Arr::get($_REQUEST, 'snippets', []);
+
+        // array_map() fatals on a scalar, and `snippets=foo` is a single request
+        // parameter away (M11).
+        if (!is_array($selectedSnippets)) {
+            $selectedSnippets = [];
+        }
+
         $selectedSnippets = array_map(function ($snippet) use ($snippetDir) {
             // add .php
             return $snippetDir . '/' . $snippet . '.php';
@@ -147,9 +154,33 @@ class AdminMenuHandler
             ], 422);
         }
 
-        $file = $_FILES;
+        // Guarded (M11): with none of this, a missing or failed upload produced a chain of
+        // PHP warnings and then the generic "invalid file format" message, which tells the
+        // user nothing about what actually went wrong.
+        if (empty($_FILES['file']) || !is_array($_FILES['file'])) {
+            wp_send_json([
+                'status'  => false,
+                'message' => __('No file was uploaded.', 'easy-code-manager')
+            ], 422);
+        }
 
-        $jsonFile = $file['file'];
+        $jsonFile = $_FILES['file'];
+
+        if (!isset($jsonFile['error']) || $jsonFile['error'] !== UPLOAD_ERR_OK) {
+            wp_send_json([
+                'status'  => false,
+                'message' => __('The file could not be uploaded. Please try again.', 'easy-code-manager')
+            ], 422);
+        }
+
+        // PHP populates $_FILES itself, so tmp_name cannot be pointed at an arbitrary
+        // file by the request — this is a sanity check, not a traversal defence.
+        if (empty($jsonFile['tmp_name']) || !is_uploaded_file($jsonFile['tmp_name'])) {
+            wp_send_json([
+                'status'  => false,
+                'message' => __('The uploaded file could not be read.', 'easy-code-manager')
+            ], 422);
+        }
 
         // get file contents
         $fileContent = file_get_contents($jsonFile['tmp_name']);
