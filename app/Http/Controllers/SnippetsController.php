@@ -8,11 +8,22 @@ use FluentSnippets\App\Model\Snippet;
 
 class SnippetsController
 {
+    /**
+     * Heal an index that has drifted from the files on disk.
+     *
+     * The admin app calls this once when it boots, instead of getSnippets() doing it
+     * on every list load, search keystroke and pagination click. Returns whether a
+     * rebuild happened so the app only re-fetches the list when it would differ.
+     */
+    public static function syncIndex(\WP_REST_Request $request)
+    {
+        return [
+            'changed' => Helper::syncSnippetIndex()
+        ];
+    }
+
     public static function getSnippets(\WP_REST_Request $request)
     {
-
-        Helper::cacheSnippetIndex('', true);
-
         $snippetModel = new Snippet([
             'search'     => sanitize_text_field($request->get_param('search')),
             'type'       => sanitize_text_field($request->get_param('type')),

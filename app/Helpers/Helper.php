@@ -216,6 +216,83 @@ class Helper
         return true;
     }
 
+    /**
+     * A cheap signature of the snippet files currently on disk.
+     *
+     * Stat only — no file is opened. Covers create, delete, rename and in-place
+     * edits, since changing a snippet moves its mtime. The one blind spot is an
+     * edit that lands in the same second AND keeps the byte count identical; that
+     * never matters here because every write path calls cacheSnippetIndex()
+     * directly rather than going through the gate.
+     *
+     * index.php is excluded on purpose: it is the file this hash is stored in, so
+     * counting it would change the signature on every rebuild and the gate would
+     * never match.
+     *
+     * @return string
+     */
+    public static function getSnippetFilesHash()
+    {
+        $files = glob(self::getStorageDir() . '/*.php');
+
+        if (!is_array($files)) {
+            $files = [];
+        }
+
+        sort($files);
+
+        $signature = '';
+
+        foreach ($files as $file) {
+            if (basename($file) === 'index.php') {
+                continue;
+            }
+
+            $signature .= basename($file) . ':' . @filemtime($file) . ':' . @filesize($file) . '|';
+        }
+
+        return md5($signature);
+    }
+
+    /**
+     * Rebuild the index only when the storage directory has actually changed.
+     *
+     * cacheSnippetIndex() re-reads and re-parses every snippet file and rewrites
+     * index.php. That is correct after a write, but the admin also needs to heal
+     * drift caused by changes made outside the plugin — FTP edits, a deploy, a
+     * migration, a deleted index.php. Doing that with a full rebuild costs N file
+     * reads plus a write every time it is checked. This gates it behind the
+     * stat-only fingerprint above, so the overwhelmingly common "nothing changed"
+     * case costs one glob and one stat per file.
+     *
+     * @return bool true when a rebuild was actually performed
+     */
+    public static function syncSnippetIndex()
+    {
+        $config = self::getIndexedConfig(false);
+
+        if (!$config || empty($config['meta'])) {
+            self::cacheSnippetIndex();
+            return true;
+        }
+
+        $meta = $config['meta'];
+
+        // A different plugin version may have changed the shape of the index, and a
+        // different domain means the site was migrated or cloned. Neither shows up
+        // in the file signature, so check them separately.
+        $isStale = Arr::get($meta, 'cached_version') !== FLUENT_SNIPPETS_PLUGIN_VERSION
+            || Arr::get($meta, 'cashed_domain') !== site_url();
+
+        if (!$isStale && Arr::get($meta, 'files_hash') === self::getSnippetFilesHash()) {
+            return false;
+        }
+
+        self::cacheSnippetIndex();
+
+        return true;
+    }
+
     public static function cacheSnippetIndex($fileName = '', $isForced = false, $extraArgs = [])
     {
         $data = [
@@ -223,6 +300,11 @@ class Helper
             'draft'     => [],
             'hooks'     => []
         ];
+
+        // Taken before the snippets are read, not after. If a file changes midway
+        // through the rebuild, the stored signature describes the older state and the
+        // next sync rebuilds again — a wasted rebuild rather than a missed one.
+        $filesHash = self::getSnippetFilesHash();
 
         $previousConfig = self::getIndexedConfig(false);
 
@@ -250,6 +332,7 @@ class Helper
             'cached_at'           => date('Y-m-d H:i:s'),
             'cached_version'      => FLUENT_SNIPPETS_PLUGIN_VERSION,
             'cashed_domain'       => site_url(),
+            'files_hash'          => $filesHash,
             'legacy_status'       => Arr::get($previousConfig['meta'], 'legacy_status'),
             'auto_disable'        => $previousConfig['meta']['auto_disable'],
             'auto_publish'        => $previousConfig['meta']['auto_publish'],

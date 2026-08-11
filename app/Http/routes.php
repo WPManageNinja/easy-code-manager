@@ -7,6 +7,7 @@ $permissions = ['install_plugins'];
 $router->get('snippets', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'getSnippets'], $permissions)
     ->post('snippets', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'createSnippet'], $permissions)
     ->get('snippets/find', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'findSnippet'], $permissions)
+    ->post('snippets/sync-index', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'syncIndex'], $permissions)
     ->post('snippets/create', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'createSnippet'], $permissions)
     ->post('snippets/update', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'updateSnippet'], $permissions)
     ->post('snippets/update_status', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'updateSnippetStatus'], $permissions)

@@ -2,7 +2,7 @@
 
 **Reviewed version:** 10.55
 **Scope:** `easy-code-manager.php`, `app/**` (all PHP), `app/Services/mu.stub`, `src/**` (Vue/JS spot-check), `build.sh`, `readme.txt`
-**First pass:** 2026-07-28 · **Last updated:** 2026-07-28
+**First pass:** 2026-07-28 · **Last updated:** 2026-08-11
 
 The architecture is sound: flat-file storage, an `index.php` manifest so nothing is parsed per request, zero DB queries on the runtime path, and a standalone MU runner so snippets survive plugin deactivation.
 
@@ -10,9 +10,11 @@ The architecture is sound: flat-file storage, an `index.php` manifest so nothing
 
 | Status | Count |
 |---|---|
-| ✅ Fixed | 6 |
+| ✅ Fixed | 8 |
 | 🔧 Open | 16 |
-| ⛔️ Withdrawn | 11 |
+| ⛔️ Withdrawn | 12 |
+
+*Counted per finding, not per heading — several headings cover more than one (`C3 + C4 + H5`, `L6 / L7 / L8`, `L9 / L10`). The Open figure was recounted on 2026-08-11; it reads the same as the first pass because the earlier number had been counting headings for Open and findings for Fixed. Fixed has genuinely gone 6 → 8 since, and Withdrawn 11 → 12.*
 
 ---
 
@@ -24,7 +26,7 @@ The architecture is sound: flat-file storage, an `index.php` manifest so nothing
 
 `file_put_contents()` opens with `O_TRUNC` and then writes. Between those two operations the file on disk is empty or half-written. Every frontend request does `include $storageDir . '/index.php'` and `require_once` for each published snippet — so a visitor landing in that window included a truncated PHP file and got a parse error → **HTTP 500**.
 
-Invisible in support: unreproducible, one request, blamed on the host. Also more reachable than it looks, because `getSnippets()` rewrites `index.php` on every admin list load (see M6, still open).
+Invisible in support: unreproducible, one request, blamed on the host. Also more reachable than it looks, because `getSnippets()` rewrote `index.php` on every admin list load (M6 — since fixed, so that exposure is gone too).
 
 **Fix:** added `Helper::atomicPut()` — write to a temp file in the same directory, then `rename()` over the target. `rename()` is atomic on POSIX within a filesystem, so a reader sees either the whole old file or the whole new one.
 
@@ -113,19 +115,44 @@ Not shipped — `build.sh` only copies `app/`, `dist/`, `language/` and the root
 
 *Caveat on one check:* my first harness asserted "no global `CodeRunner` declared" in a file that itself declared one later — PHP hoists unconditional class declarations, so that assertion was meaningless. Re-run in isolation, it passes properly.
 
+### M6. The snippet index was fully rebuilt on every list request
+
+**Fixed 2026-08-11.** `app/Helpers/Helper.php`, `app/Http/Controllers/SnippetsController.php`, `app/Http/routes.php`, `src/components/Dashboard.vue`, new `tests/index-sync.php`
+
+`SnippetsController::getSnippets()` opened with `Helper::cacheSnippetIndex('', true)` — a full `glob()` + `file_get_contents()` + `parseBlock()` over every snippet, plus a `var_export` and a rewrite of `index.php`, on every list load, **search keystroke, pagination click and filter change**. On a 150-snippet site that was 150 file reads and a write per read request.
+
+That rebuild could not simply be deleted: it is the only thing healing an index that has drifted from disk — an FTP edit, a git deploy, a migration, a hand-deleted `index.php`. Plugin-driven create/update/delete already rebuild through their own `fluent_snippets/snippet_*` hooks, so the read-path rebuild is *purely* a self-heal.
+
+**Fix, in two halves:**
+
+1. **`Helper::syncSnippetIndex()`** — gates the rebuild behind `Helper::getSnippetFilesHash()`, a stat-only fingerprint (`md5` over `basename:mtime:size` for each file). Match → return immediately: no reads, no parse, no write. The idle case drops from *N reads + a write* to *one `glob()` + N `stat()`s*. Returns whether a rebuild actually happened.
+2. **A dedicated endpoint** — `POST snippets/sync-index` → `SnippetsController::syncIndex()`, which the admin app calls **once when it boots** rather than on every list request. `getSnippets()` now does no index work at all. The endpoint returns `{changed: bool}` so `Dashboard.vue` only re-fetches the list when the rebuild would actually change what is on screen.
+
+**Two things the fingerprint deliberately handles:**
+
+1. **`index.php` is excluded from the hash.** It lives in the same globbed directory and is the file the hash is *stored in* — counting it would invalidate the value each rebuild had just written, and the gate would never match. That is an infinite-rebuild bug, and `tests/index-sync.php` pins it.
+2. **The gate is opt-in, not applied to `cacheSnippetIndex()` itself.** Every write path still calls `cacheSnippetIndex()` and still rebuilds unconditionally. This matters: mtime has 1-second granularity, so two edits inside the same second that also keep the byte count identical (`priority: 10` → `priority: 11`) would be invisible to the fingerprint. That blind spot is unreachable because it is never on the write path.
+
+Also forced regardless of the file signature, since neither shows up in it: `cached_version` not matching `FLUENT_SNIPPETS_PLUGIN_VERSION` (the index shape may have changed across an update) and `cashed_domain` not matching `site_url()` (the site was migrated or cloned).
+
+**On the ordering race.** The app fires `sync-index` and the first `getSnippets()` in parallel, so the list renders immediately from the existing index. If the sync reports `changed`, the re-fetch waits for that first request to settle first — otherwise its pre-rebuild response could land last and put the stale list back on screen. A failed sync is swallowed rather than surfaced: the list rendered from the existing index is still usable.
+
+**Verified** — `tests/index-sync.php`, 29 checks against a temp directory with stubbed WP functions. Rebuilds on: fresh install, snippet added, snippet deleted, an in-place edit that keeps the size byte-identical, a version bump, a domain change, a cleared `files_hash`, a deleted `index.php`, and an emptied directory. Does **not** rebuild when nothing changed, or when `index.php` alone is touched. "Did not write" is asserted on the **inode** of `index.php` rather than on mtime — `Helper::atomicPut()` swaps via `rename()`, so a write always moves the inode and cannot be missed. Every scenario also asserts it settles back to no-rebuild on the following call, which is what catches a rebuild loop.
+
+*Not verified:* the browser half. The Vue change is small (one method, one call site) and `dist/app.js` was rebuilt, but the boot sequence has not been exercised in a live wp-admin.
+
+**Worth knowing, not changed:** `getIndexedConfig()` holds a `static` cache that `saveIndexedConfig()` does not refresh, so the old forced rebuild in `getSnippets()` never affected the response it ran in — the current request kept serving the pre-rebuild config and only the *next* request saw the new index. Moving the rebuild to its own request is therefore no loss in freshness. Left alone deliberately: changing static-cache semantics would alter behaviour on the write paths too, which is out of scope here.
+
+### M1 + REST permission callback
+
+**Fixed 2026-08-02** (commit `12ff007`), recorded here after the fact.
+
+- **M1** — `Helper::getCachedDir()` used `is_file()` to test for a directory, which is always `false`, so every call re-ran `wp_mkdir_p()` and rewrote the silence file. Now `is_dir()`.
+- **`Router` permission callback now fails closed.** A route registered with an **empty** capability array previously returned `true` — i.e. was served to anyone. No route in `routes.php` is registered that way, so nothing was actually exposed; the change removes the trapdoor rather than closing a live hole. Not one of the numbered findings.
+
 ---
 
 ## 🔧 Open — worth doing
-
-### H1. Standalone mode has no fatal-error recovery at all
-
-**Files:** `app/Services/mu.stub` vs `app/Hooks/Handlers/CodeHandler.php:19-45, 212-231`
-
-Both safety nets — the `shutdown` handler that quarantines a failing snippet into `error_files`, and the secret kill-switch URL — live in `CodeHandler`, which only loads while the plugin is active. `mu.stub` has neither. So: standalone on → plugin deactivated → a snippet fatals → **white screen with no recovery except editing `wp-config.php`** to set `FLUENT_SNIPPETS_SAFE_MODE`.
-
-~40 lines to port. The secret key is already in the `meta` block the stub loads.
-
-**Now unblocked.** Before the C3 fix this wasn't worth doing — a recovery mechanism added to the stub would never have reached the sites already running an older copy. With `maybeUpdateStandAlone()` in place, a stub change now propagates on the first admin request after an update, and `tests/mu-stub-drift.php` keeps the addition from silently rotting. This is the natural next item.
 
 ### H2. Fatal-error auto-disable misses most real-world fatals
 
@@ -157,19 +184,9 @@ Helper::cacheSnippetIndex();                    // ...which is then thrown away
 
 So the live issue is just the unbounded orphan map. **Fix:** prune `error_files` inside `cacheSnippetIndex()` to keys that still exist in `published` + `draft` — self-heals every stale entry already on disk.
 
-### M1. `getCachedDir()` uses `is_file()` to test for a directory
+### M15. `cacheSnippetIndex()`'s first two parameters are unused
 
-**File:** `app/Helpers/Helper.php:96-108` — `is_file()` on a directory is always `false` (verified), so every call re-runs `wp_mkdir_p()` and rewrites the silence file. Should be `is_dir()`. One word.
-
-### M6. The snippet index is fully rebuilt on every list request
-
-**File:** `app/Http/Controllers/SnippetsController.php:14`
-
-`Helper::cacheSnippetIndex('', true)` on every list load, search keystroke, pagination click and filter change → `glob()` + `file_get_contents()` + `parseBlock()` for all N snippets, plus a full rewrite of `index.php`. On a 150-snippet site that's 150 file reads and a write **per read request**.
-
-Admin-only, so low urgency — but it's what made C1 reachable in the first place, and the index is already rebuilt on create/update/delete via the `fluent_snippets/snippet_*` actions.
-
-Also: `cacheSnippetIndex($fileName = '', $isForced = false, ...)` — **both parameters are unused**. `$fileName` is overwritten in the loop at `Helper.php:291`; `$isForced` is never referenced.
+**File:** `app/Helpers/Helper.php:219` — `cacheSnippetIndex($fileName = '', $isForced = false, $extraArgs = [])`: `$fileName` is overwritten in the loop at `Helper.php:291` and `$isForced` is never referenced. Both are still passed by the `fluent_snippets/rebuild_index` action (`CodeHandler.php:41-43`), so removing them means touching that hook's signature — worth doing in the cleanup pass, not on its own. *(Split out of M6, which was otherwise fixed on 2026-08-11.)*
 
 ### M8. `Router` calls `ob_get_clean()` unconditionally on every REST response
 
@@ -237,6 +254,7 @@ Investigated and retired — **not** carried as debt. Recorded so they don't get
 | # | Finding | Why it was retired |
 |---|---|---|
 | — | `startsWith` / `endsWith` operators are commented out and silently return `false` | **Unreachable.** Those operators only render for `itemConfig.type == 'extended_text'` (`FilterItem.vue:119`), and no condition in this plugin uses that type — `grep` for `extended_text` hits only the Vue file. Inherited from FluentCRM. |
+| H1 | Standalone (MU) mode has no fatal-error recovery — neither the `shutdown` quarantine nor the secret kill-switch URL exists in `mu.stub`, so standalone on → plugin deactivated → a snippet fatals → white screen, recoverable only by setting `FLUENT_SNIPPETS_SAFE_MODE` in `wp-config.php` | **Retired by the maintainer, 2026-08-11:** enabling standalone mode is a deliberate opt-in that happens *after* the snippets have been running and proving themselves under the active plugin, so a snippet that fatals the moment the plugin is deactivated is not a case real users land in. **Residual, recorded so it is not re-raised as "impossible":** a snippet can still start fatalling without being edited — a PHP version upgrade, a plugin or theme being removed out from under a snippet that calls its functions, a core deprecation. Those are the only paths left, they need no bad edit, and `wp-config.php` remains the only way out. **I5** (WP-CLI `safe-mode`) would give that residual a recovery path without touching the stub at all |
 | H4 | `CodeRunner::parseBlock()` breaks on CRLF | **Self-consistent.** `PHP_EOL` is used for both the write (`parseInputMeta`) and the read (`explode`), so it matches on any single server, Windows included. Only breaks if files move between platforms. |
 | H6 | `deleteSnippet()` guard uses `&&` where it needs `||`, could `unlink()` `index.php` | **Unreachable.** `SnippetsController::deleteSnippet()` calls `findByFileName()` first, which rejects `index.php` (`Snippet.php:271`). |
 | M2 | `saveSettings()` reads keys `array_filter()` may have removed | **Not hit.** `ConfigSettings.vue` always sends all four keys. |
@@ -252,7 +270,7 @@ Investigated and retired — **not** carried as debt. Recorded so they don't get
 
 ## Improvement ideas (not bugs)
 
-**I1. ~~Generate `mu.stub` at build time~~ — resolved a different way.** The maintainer chose to keep `mu.stub` hand-maintained and add `tests/mu-stub-drift.php` instead of introducing build machinery, on the grounds that it doesn't disturb the release process. That retired **C3, C4 and H5**, and unblocked **H1**. Worth revisiting only if the drift test starts failing routinely — that would be the signal that hand-maintenance isn't holding. Wire it into CI if one ever exists.
+**I1. ~~Generate `mu.stub` at build time~~ — resolved a different way.** The maintainer chose to keep `mu.stub` hand-maintained and add `tests/mu-stub-drift.php` instead of introducing build machinery, on the grounds that it doesn't disturb the release process. That retired **C3, C4 and H5**. Worth revisiting only if the drift test starts failing routinely — that would be the signal that hand-maintenance isn't holding. Wire it into CI if one ever exists.
 
 **I2. Harden the storage directory.** Ship `.htaccess` / `web.config` alongside the existing `index.php`. The `if (!defined("ABSPATH")) return;` guard in each snippet already handles the normal case; this covers a server misconfigured to serve `.php` as `text/plain`. `cached/` must stay publicly readable.
 
@@ -260,7 +278,7 @@ Investigated and retired — **not** carried as debt. Recorded so they don't get
 
 **I4. A capability filter.** `install_plugins` is hardcoded in six places. `apply_filters('fluent_snippets/manage_capability', 'install_plugins')` would let agencies grant snippet access without granting plugin installation.
 
-**I5. WP-CLI commands.** `wp fluent-snippets list|activate|deactivate|rebuild-index|safe-mode` gives users a recovery path that doesn't require editing `wp-config.php` — directly addresses **H1**.
+**I5. WP-CLI commands.** `wp fluent-snippets list|activate|deactivate|rebuild-index|safe-mode` gives users a recovery path that doesn't require editing `wp-config.php`. Now the most useful idea on this list: it is the only thing that covers the residual left by withdrawing **H1** (a snippet that starts fatalling in standalone mode because the environment changed under it, not because anyone edited it), and it does so without adding recovery machinery to `mu.stub` at all — the CLI runs with the plugin's own code available.
 
 **I6. Static analysis.** No tests, no lint config. PHPStan level 5 would have caught most of M9 and the H6 inverted condition; PHPCS with `WordPress-Extra` for the rest. Highest-value unit tests: `parseBlock()` round-tripping (all four marker variants, empty docblock), `PhpValidator` (valid / invalid / side-effecting code), and `FluentSnippetCondition::checkValues()` across all 25 operators.
 
@@ -275,10 +293,10 @@ Investigated and retired — **not** carried as debt. Recorded so they don't get
 | 1 | **C1** atomic writes | ✅ done | Only finding whose failure mode was a frontend 500 |
 | 2 | **M7** `error_log('OK')` | ✅ done | Free win, one line |
 | 3 | **C2b** `catch \Throwable` | ✅ done | Turns a raw 500 on save into a real message |
-| 4 | **C3 + C4 + H5** + drift test | ✅ done | One change, three findings; unblocked H1 |
-| 5 | **H1** port recovery into the stub | next | Now that stub changes actually reach existing sites |
-| 6 | **H2** fatal attribution | | Restores the auto-disable guarantee the plugin ships on by default |
+| 4 | **C3 + C4 + H5** + drift test | ✅ done | One change, three findings |
+| 5 | ~~**H1** port recovery into the stub~~ | ⛔️ withdrawn | Standalone mode is opted into after the snippets have proven themselves — see Withdrawn |
+| 6 | **H2** fatal attribution | next | Restores the auto-disable guarantee the plugin ships on by default |
 | 7 | **H3 + I7** prune `error_files` | | Self-heals stale entries already on disk |
-| 8 | **M6** stop rebuilding on read | | Removes the write-on-read that made C1 reachable |
-| 9 | **M1, M3, M8, M9, M11, M12, M14, L1, L5–L10** | | Cleanup pass |
+| 8 | **M6** stop rebuilding on read | ✅ done | Removes the write-on-read that made C1 reachable |
+| 9 | **M3, M8, M9, M11, M12, M14, M15, L1, L5–L10** | | Cleanup pass (**M1** done early, with M6) |
 | 10 | **I6** static analysis | | Locks the fixes in |

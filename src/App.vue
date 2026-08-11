@@ -90,8 +90,6 @@ export default {
         hideErrors() {
             let host = document.getElementById("fluent_snip_500_error");
 
-            console.log(host);
-
             // Remove the existing host element
             if (host) {
                 host.parentNode.removeChild(host);
@@ -108,7 +106,6 @@ export default {
         });
 
         this.$eventBus.on("server_error", (error) => {
-            console.log(error);
             this.initShadowDomIframe(error);
         });
     }

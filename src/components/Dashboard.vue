@@ -470,10 +470,30 @@ export default {
             this.paginate.page = 1;
             this.getSnippets();
         },
+        syncIndex(initialLoad) {
+            // Heals an index that has drifted from the files on disk — an FTP edit, a
+            // deploy, a migration, a deleted index.php. Fired once per app boot and
+            // deliberately not awaited, so the list still renders from the existing
+            // index straight away.
+            this.$post('snippets/sync-index')
+                .then(response => {
+                    if (!response.changed) {
+                        return;
+                    }
+
+                    // Wait for the first load to settle before re-fetching, otherwise its
+                    // pre-rebuild response could land last and put the stale list back.
+                    return Promise.resolve(initialLoad).then(() => this.getSnippets());
+                })
+                .catch(() => {
+                    // A failed self-heal is not worth an error in the UI: the list rendered
+                    // from the existing index is still perfectly usable.
+                });
+        },
         getSnippets() {
             this.showingPop = false;
             this.loading = true;
-            this.$get('snippets', {
+            return this.$get('snippets', {
                 per_page: this.paginate.per_page,
                 page: this.paginate.page,
                 type: this.selectedLang,
@@ -682,7 +702,7 @@ export default {
 
         this.loadedDone = true;
 
-        this.getSnippets();
+        this.syncIndex(this.getSnippets());
         this.tags = this.appVars.tags;
     }
 }
