@@ -1,0 +1,285 @@
+/*
+ * Element Plus: the stylesheets it needs, and the shape this app gives it.
+ *
+ * Its colours are deliberately not here. Those are set in _theme.scss, through Element
+ * Plus's own CSS variables, so a shade has one place to change rather than two. What is
+ * here is structure - and mostly it is undoing wp-admin, which styles every input on the
+ * page from underneath and does not know these are components.
+ *
+ * ElementPlusResolver auto-imports the CSS for anything written as a tag in a template.
+ * The three below are not covered by that: they are created from JS (`$notify`,
+ * `ElMessageBox`, the `v-loading` directive), so their CSS is asked for by hand.
+ */
+@import "~element-plus/theme-chalk/base.css";
+@import "~element-plus/theme-chalk/el-notification.css";
+@import "~element-plus/theme-chalk/el-loading.css";
+@import "~element-plus/theme-chalk/el-message-box.css";
+
+/* ------------------------------------------------------------------- inputs */
+
+/*
+ * WordPress core styles every text input in wp-admin from underneath:
+ *
+ *     input[type=text], input[type=search], input[type=number], … {
+ *         padding: 0 12px;
+ *         min-height: 40px;
+ *         border: 1px solid #949494;
+ *         background-color: #fff;
+ *         border-radius: 2px;
+ *         box-shadow: 0 0 0 transparent;
+ *     }
+ *
+ * Element Plus draws all of that on the *wrapper* around the input; the input inside it
+ * is meant to be an invisible text layer filling that wrapper. Left alone you get two
+ * borders, two radii, two focus rings - and a 40px floor on something sitting inside a
+ * 32px control, which is why the list header's search box stood 10px taller than every
+ * button beside it.
+ *
+ * Each selector below carries an element as well as a class, so it matches core's
+ * (0,1,1) specificity and wins on source order rather than on !important. Only the
+ * border keeps its !important, because Element Plus itself re-asserts one in a few
+ * states.
+ */
+input.el-input__inner,
+input.el-select__input {
+    min-height: 0;
+    height: 100%;
+    padding: 0;
+    border: 0 !important;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+    color: inherit;
+
+    &:focus {
+        box-shadow: none !important;
+        outline: 0 !important;
+    }
+}
+
+/*
+ * A plain field, given back the height Element Plus computes for its size.
+ *
+ * The reset above sets `height: 100%`, which resolves against the wrapper - and the
+ * wrapper only has a height where something gives it one, which is inside .el-form-item
+ * (further down) and nowhere else. A bare el-input outside a form therefore collapsed to
+ * the height of its own text: a 19px field above a 32px button, which is what the
+ * "create new group" and "create new tag" popovers looked like.
+ *
+ * Deliberately not .el-select__input as well. That is the filter input inside a select
+ * and it has to stay flexible - it grows with the tags in a multiple select - so pinning
+ * it to this height made every select 6px taller than the "+" button beside it.
+ */
+input.el-input__inner {
+    height: var(--el-input-inner-height, calc(var(--el-input-height, 32px) - 2px));
+}
+
+/*
+ * A textarea is the exception: there is no wrapper, the element itself is the field. So
+ * core's frame is replaced with Element Plus's own rather than removed.
+ */
+textarea.el-textarea__inner {
+    min-height: var(--el-input-height, 32px);
+    border: 0;
+    border-radius: var(--el-input-border-radius, var(--el-border-radius-base));
+    background-color: var(--el-fill-color-blank);
+    color: var(--el-input-text-color, var(--el-text-color-regular));
+}
+
+.el-form-item {
+    .el-input__inner {
+        width: 100%;
+        flex-grow: 1;
+        height: var(--el-input-inner-height);
+        line-height: var(--el-input-inner-height);
+        min-height: auto;
+        padding: 0;
+        border: none;
+        outline: 0;
+        background: 0 0;
+        -webkit-appearance: none;
+        color: var(--el-input-text-color, var(--el-text-color-regular));
+        font-size: inherit;
+
+        --el-input-inner-height: calc(var(--el-input-height, 32px) - 2px);
+
+        &:focus {
+            border-color: inherit;
+            box-shadow: none;
+            outline: inherit;
+        }
+    }
+
+    label.el-form-item__label,
+    &--label-top .el-form-item__label {
+        font-weight: 500;
+        color: var(--fsnip-text);
+    }
+}
+
+/*
+ * A checkbox is a fixed-height row with a nowrap label by default, which is fine for
+ * "Enabled" and not for "Load this CSS in Block Editor (Gutenberg)" in a 300px column -
+ * that ran off the edge of the card. The label wraps and the row grows to fit it.
+ */
+.el-checkbox {
+    height: auto;
+    min-height: 32px;
+    white-space: normal;
+
+    .el-checkbox__label {
+        white-space: normal;
+        line-height: 1.4;
+    }
+}
+
+/* A select fills the space it is given; the input inside it is a display, not a field. */
+.el-select {
+    width: 100%;
+
+    .el-input__inner {
+        cursor: pointer;
+        box-shadow: none;
+        border: 0;
+    }
+
+    input {
+        background: transparent;
+        box-shadow: none;
+    }
+
+    &-multiple input {
+        height: 40px !important;
+    }
+
+    &:hover .el-input input,
+    &:focus .el-input input {
+        box-shadow: none !important;
+    }
+}
+
+input.el-select__input {
+    box-shadow: none !important;
+    border: none;
+    outline: none !important;
+}
+
+.el-select__input-wrapper .el-select__input {
+    min-height: auto;
+}
+
+/*
+ * The button welded onto the end of a field - the Copy beside the Safe Mode URL. Element
+ * Plus strips its background and border and lets it inherit the group's colour, which is
+ * `--el-color-info`: #909399, and that is 2.9:1 on the band it sits on. The button is the
+ * only thing in the group anyone is meant to press.
+ *
+ * Both rules below are scoped to the body class for the same reason the tokens are:
+ * Element Plus's own rules are single classes too, and they are injected into <head>
+ * after this stylesheet, so a bare `.el-input-group__append` would lose on source order.
+ */
+body.toplevel_page_fluent-snippets {
+    .el-input-group__append,
+    .el-input-group__prepend {
+        color: var(--fsnip-text-mid);
+    }
+
+    /*
+     * Element Plus's success green is #67C23A, and white on it is 2.2:1 - the worst number
+     * in either theme, on the one button the About page is asking to be pressed.
+     * FluentCart's own green goes dark enough to carry white text, so the button is
+     * retinted from the app's ramp rather than having its label recoloured.
+     */
+    .el-button--success {
+        --el-button-text-color: #FFFFFF;
+        --el-button-hover-text-color: #FFFFFF;
+        --el-button-active-text-color: #FFFFFF;
+        --el-button-bg-color: #137A5F;
+        --el-button-border-color: #137A5F;
+        --el-button-hover-bg-color: #116A53;
+        --el-button-hover-border-color: #116A53;
+        --el-button-active-bg-color: #116A53;
+        --el-button-active-border-color: #116A53;
+    }
+}
+
+/* ------------------------------------------------------------------ buttons */
+
+/* A button given an href is rendered as an <a>, which wp-admin then underlines. */
+a.el-button {
+    text-decoration: none;
+}
+
+/*
+ * wp-admin puts a blue halo on any focused button and leaves it there after the click,
+ * so the last thing you pressed stays lit in a colour from outside the palette. Keyboard
+ * users still need the ring, so it moves to :focus-visible and is recoloured rather than
+ * removed.
+ */
+#fluent_snippets_app .el-button,
+.el-drawer .el-button,
+.el-dialog .el-button,
+.el-popper .el-button {
+    &:focus {
+        box-shadow: none;
+        outline: none;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--fsnip-accent);
+        outline-offset: 1px;
+    }
+}
+
+/* ---------------------------------------------------------------- teleported */
+
+/*
+ * Popovers, drawers and notifications are teleported to <body>, outside the app root,
+ * where wp-admin's own stacked panels can end up on top of them.
+ */
+
+/*
+ * Being outside the app root also means none of the inherited colour set there reaches
+ * them: a heading inside a drawer inherits wp-admin's near-black instead, which on a dark
+ * card is a heading you cannot read. The tokens themselves are declared on <body> (see
+ * _theme.scss) precisely so these still resolve - it is only the two rules that were
+ * scoped to the root that have to be repeated.
+ */
+.el-drawer,
+.el-dialog,
+.el-message-box,
+.el-notification,
+.el-popper {
+    h1, h2, h3, h4, h5 {
+        color: var(--fsnip-heading);
+    }
+
+    a {
+        color: var(--fsnip-link);
+    }
+}
+.el-popper.is-light.el-popover {
+    z-index: 99999999999 !important;
+}
+
+.el-overlay {
+    z-index: 9999999 !important;
+}
+
+.el-drawer.rtl {
+    max-width: 700px;
+}
+
+.el-notification__content {
+    text-align: left !important;
+}
+
+/* Notifications stack up from the bottom rather than down from under the admin bar. */
+.el-notification.right {
+    top: auto !important;
+    bottom: 10px;
+}
+
+.el-time-spinner__item {
+    margin-bottom: 0;
+}

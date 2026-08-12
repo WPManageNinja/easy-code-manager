@@ -48,6 +48,7 @@ With this native design, FluentSnippets is native, secure by design, and the mos
 - **Automatic Error Handling:** The automatic error hander prevents common errors when adding custom snippets to ensure they never break your site.
 - **Custom Shortcode:** With custom shortcode of your snippets, you can create custom dynamic content blocks and use them across your site and manage them.
 - **Stand-alone Mode:** The most interesting feature is the Stand-alone Mode. With this feature, you can add your snippets, activate the standalone mode, and then you can uninstall and delete the plugin and your snippets will still run via mu-plugins architecture and when you reactivate the plugin you can manage your snippets as before.
+- **Dark Mode:** A full dark theme across every screen, switchable from the admin bar and remembered between visits. The setting is shared with the other Fluent plugins, so switching it in one switches it in all of them.
 
 [youtube https://www.youtube.com/watch?v=-bQPZ23LSdQ]
 
@@ -154,14 +155,21 @@ Absolutely not. Unlike other code snippets plugin, FluentSnippets does not use t
 
 == Screenshots ==
 
-1. FluentSnippets Dashboard
-2. Snippet Editor Screen Overview
-3. Settings Overview
-4. Architectural Design Comparison
+1. All your code snippets in one place, grouped into folders and filtered by type — PHP, Content (PHP + HTML), CSS and JavaScript.
+2. The snippet editor: syntax highlighting, the name, description, group, priority and tags, and a choice of where the snippet runs.
+3. Conditional logic — run a snippet only on the post types, URLs, user roles or login states you choose.
+4. Settings, including the Safe Mode URL that switches every snippet off if you are ever locked out, and Standalone Mode.
+5. Dark mode, on every screen.
 
 == Changelog ==
 
 = Unreleased =
+- Added a dark mode, switchable from the admin bar and shared with the other Fluent plugins
+- Redesigned every screen: the snippet list, the editor, Settings and About
+- Improved colour contrast throughout, so every screen meets WCAG AA in both light and dark
+- Fixed a click in the code editor selecting the whole snippet instead of placing the cursor
+- Fixed error text on the snippet list not showing in the error colour
+- Removed the plugin recommendation panel, and the plugin-installer endpoint behind it
 - Added inactive snippets count and filter reset options when no snippets match the current filter
 - Fixed the welcome screen being skipped on a fresh install when "Hide Inactives" was enabled
 - Fixed a JavaScript error on the dashboard when the site has no snippets

@@ -6,13 +6,25 @@ use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Http\Controllers\SnippetsController;
 use FluentSnippets\App\Model\Snippet;
+use FluentSnippets\App\Services\Permissions;
+use FluentSnippets\App\Services\SnippetErrors;
+use FluentSnippets\App\Services\TeamPlugins;
 use FluentSnippets\App\Services\Trans;
 
 class AdminMenuHandler
 {
+    /**
+     * The class the dark theme hangs off. FluentCart's, deliberately - see
+     * printThemeClass().
+     */
+    const DARK_CLASS = 'fluent_theme_dark';
+
     public function register()
     {
         add_action('admin_menu', array($this, 'addMenu'));
+        add_action('admin_head', array($this, 'printThemeClass'));
+
+        add_action('admin_init', [Helper::class, 'maybeUpdateStandAlone']);
 
         add_action('wp_ajax_fluent_snippets_export_snippets', [$this, 'exportSnippets']);
         add_action('wp_ajax_fluent_snippets_import_json', [$this, 'importSnippets']);
@@ -22,9 +34,67 @@ class AdminMenuHandler
 
     }
 
+    /**
+     * Applies the chosen theme before the page paints.
+     *
+     * The app itself could do this once Vue has booted, but by then the screen has already
+     * been drawn light and the switch reads as a flash. This runs synchronously in <head>,
+     * so the first frame is the right one.
+     *
+     * The Fluent Theme Mode specification puts the class on <body>, and <body> does not
+     * exist yet at this point in the document - so the class goes on <html> first, where
+     * it still resolves for a stylesheet before anything is painted, and is mirrored onto
+     * <body> the moment the element is there. Both carry it from then on; the switch keeps
+     * them in step (see Bits/ThemeSwitch.vue).
+     *
+     * `system` is cached as `system:dark` or `system:light`, which is what makes the fast
+     * path above possible: the last resolution is read straight out of storage instead of
+     * waiting on matchMedia. It is re-checked against the real preference immediately
+     * afterwards and rewritten if the machine has changed its mind since.
+     *
+     * @return void
+     */
+    public function printThemeClass()
+    {
+        if (!isset($_GET['page']) || $_GET['page'] !== 'fluent-snippets') { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            return;
+        }
+
+        ?>
+        <script>
+            (function () {
+                var KEY = 'fluent_theme_mode',
+                    DARK = '<?php echo esc_js(self::DARK_CLASS); ?>',
+                    stored = localStorage.getItem(KEY) || '',
+                    isSystem = stored.indexOf('system') === 0 || stored === '',
+                    dark = stored === 'dark' || stored === 'system:dark';
+
+                // The cached resolution got the first frame right; this is the real answer.
+                if (isSystem && window.matchMedia) {
+                    dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    localStorage.setItem(KEY, dark ? 'system:dark' : 'system:light');
+                }
+
+                document.documentElement.classList.toggle(DARK, dark);
+
+                // <body> is the class's home per the spec, and it is parsed after this.
+                document.addEventListener('DOMContentLoaded', function () {
+                    document.body.classList.toggle(DARK, dark);
+                });
+            })();
+        </script>
+        <?php
+    }
+
     public function addMenu()
     {
-        $permission = 'install_plugins';
+        /*
+         * Not install_plugins directly. On a site with DISALLOW_FILE_MODS set, core takes
+         * that capability away from everybody, and this menu entry used to disappear with
+         * it — snippets still running, no way to look at them, nothing to say why. The
+         * screen it opens is read-only in that case; see Services/Permissions.
+         */
+        $permission = Permissions::viewCapability();
 
         add_menu_page(
             __('Fluent Snippets', 'easy-code-manager'),
@@ -39,7 +109,10 @@ class AdminMenuHandler
 
     public function exportSnippets()
     {
-        if (!current_user_can('install_plugins')) {
+        // Export reads and downloads; it changes nothing on the site, so it stays
+        // available on a read-only screen — where it is arguably the most useful thing
+        // on offer, since editing has to happen somewhere else.
+        if (!Permissions::canView()) {
             wp_send_json([
                 'status'  => false,
                 'message' => __('You do not have permission to perform this action.', 'easy-code-manager')
@@ -57,6 +130,13 @@ class AdminMenuHandler
         $snippetDir = Helper::getStorageDir();
 
         $selectedSnippets = Arr::get($_REQUEST, 'snippets', []);
+
+        // array_map() fatals on a scalar, and `snippets=foo` is a single request
+        // parameter away (M11).
+        if (!is_array($selectedSnippets)) {
+            $selectedSnippets = [];
+        }
+
         $selectedSnippets = array_map(function ($snippet) use ($snippetDir) {
             // add .php
             return $snippetDir . '/' . $snippet . '.php';
@@ -121,10 +201,26 @@ class AdminMenuHandler
 
     public function importSnippets()
     {
-        if (!current_user_can('install_plugins')) {
+        /*
+         * Importing authors code: every snippet in the file is written to disk, and a PHP
+         * one is executed on the spot by Helper::validateCode() -> PhpValidator, which
+         * eval()s it to report runtime errors. So this needs the same capability pair as
+         * every other authoring path (saveSnippet, createSnippet, and the REST routes via
+         * SnippetsController::denyUnlessCanAuthorSnippets). It previously required only
+         * install_plugins, which meant a site using DISALLOW_UNFILTERED_HTML — where every
+         * other way of adding code is closed — could still have code introduced here.
+         */
+        if (!wp_is_file_mod_allowed('capability_update_core')) {
             wp_send_json([
                 'status'  => false,
-                'message' => __('You do not have permission to perform this action.', 'easy-code-manager')
+                'message' => __('Snippets cannot be imported on this site: wp-config.php has DISALLOW_FILE_MODS set, and importing writes a file per snippet into wp-content.', 'easy-code-manager')
+            ], 422);
+        }
+
+        if (!current_user_can('unfiltered_html') || !current_user_can('install_plugins')) {
+            wp_send_json([
+                'status'  => false,
+                'message' => __('You do not have permission to perform this action. Required Permission: unfiltered_html and install_plugins', 'easy-code-manager')
             ], 422);
         }
 
@@ -136,9 +232,33 @@ class AdminMenuHandler
             ], 422);
         }
 
-        $file = $_FILES;
+        // Guarded (M11): with none of this, a missing or failed upload produced a chain of
+        // PHP warnings and then the generic "invalid file format" message, which tells the
+        // user nothing about what actually went wrong.
+        if (empty($_FILES['file']) || !is_array($_FILES['file'])) {
+            wp_send_json([
+                'status'  => false,
+                'message' => __('No file was uploaded.', 'easy-code-manager')
+            ], 422);
+        }
 
-        $jsonFile = $file['file'];
+        $jsonFile = $_FILES['file'];
+
+        if (!isset($jsonFile['error']) || $jsonFile['error'] !== UPLOAD_ERR_OK) {
+            wp_send_json([
+                'status'  => false,
+                'message' => __('The file could not be uploaded. Please try again.', 'easy-code-manager')
+            ], 422);
+        }
+
+        // PHP populates $_FILES itself, so tmp_name cannot be pointed at an arbitrary
+        // file by the request — this is a sanity check, not a traversal defence.
+        if (empty($jsonFile['tmp_name']) || !is_uploaded_file($jsonFile['tmp_name'])) {
+            wp_send_json([
+                'status'  => false,
+                'message' => __('The uploaded file could not be read.', 'easy-code-manager')
+            ], 422);
+        }
 
         // get file contents
         $fileContent = file_get_contents($jsonFile['tmp_name']);
@@ -349,15 +469,26 @@ class AdminMenuHandler
             'is_standalone'              => defined('FLUENT_SNIPPETS_RUNNING_MU'),
             'advanced_condition_options' => $this->getAdvancedConditionOptions(),
             'snippet_types'              => $this->getSnippetTypes(),
-            'has_fluentsmtp'             => defined('FLUENTMAIL_PLUGIN_FILE'),
-            'has_fluentcrm'              => defined('FLUENTCRM'),
-            'has_fluentform'             => defined('FLUENTFORM'),
-            'has_ninja_tables'           => defined('NINJA_TABLES_VERSION'),
-            'has_line_wrap'              => isset($indexConfig['meta']['enable_line_wrap']) ? $indexConfig['meta']['enable_line_wrap'] : 'no',
-            'disable_recommendation'     => apply_filters('fluentmail_disable_recommendation', false),
+            'team_plugins'               => TeamPlugins::get(),
+            'team_plugins_config'        => TeamPlugins::config(),
+            /*
+             * The app hides or disables everything that writes when this is false. That is
+             * a courtesy to the user, not the enforcement — every route and handler checks
+             * for itself, and has to, because nothing stops someone calling them directly.
+             */
+            'can_edit'                   => Permissions::canEdit(),
+            'read_only_notice'           => Permissions::isReadOnly() ? Permissions::readOnlyNotice() : null,
+            /*
+             * Localised as 'has_line_wrap' until 2026-08-11, but _CodeEditor.vue reads
+             * appVars.enable_line_wrap — so the editor never saw this value on page load.
+             * Turning line wrap on, reloading, and finding it off again was the visible
+             * symptom; it only ever took effect after visiting the Settings screen, which
+             * sets the key client-side. Renamed to what the editor actually reads (M3).
+             */
+            'enable_line_wrap'           => Arr::get($indexConfig, 'meta.enable_line_wrap', 'no'),
         ]);
 
-        echo '<div id="fluent_snippets_app"><h3 style="text-align: center; margin-top: 100px;">' . __('Loading Snippets..', 'easy-code-manager') . '</h3></div>';
+        echo '<div id="fluent_snippets_app"><h3 class="fsnip_booting">' . __('Loading Snippets..', 'easy-code-manager') . '</h3></div>';
     }
 
     public function getSafeModeInfo()
@@ -650,35 +781,133 @@ class AdminMenuHandler
 
     }
 
+    /**
+     * The sidebar menu icon.
+     *
+     * Same shield and </> as the official plugin icon on WordPress.org and as Bits/BrandMark.vue
+     * in the app — the paths are lifted from there verbatim, so the listing, the admin bar and
+     * this entry are all the one shape. If the mark changes, it changes on the icon first and is
+     * copied here; don't redraw it.
+     *
+     * Two things are deliberate and easy to undo by accident. The shield and the glyph are one
+     * path with fill-rule="evenodd", so the glyph is a hole rather than a second colour: the
+     * sidebar shows through it, which is what keeps the mark reading as itself when the admin
+     * colour scheme changes underneath it. And the fill is plain white — core dims the icon to
+     * 60% and takes it back to full on hover and on the current screen, so anything pre-dimmed
+     * here (the old artwork drew the shield at 21% opacity) gets dimmed twice and turns to mush
+     * at 20px.
+     *
+     * The viewBox is the shield's exact bounding box, no padding, which is what FluentAuth does
+     * too. Core sizes these with `background-size: 20px auto`, so the viewBox width — not the
+     * shield — is what lands on 20px: any air left inside it shrinks the mark by that much. An
+     * earlier pass here padded the box to about 84% and the shield came out 16.9px against
+     * FluentAuth's 20px, visibly the smaller of the two in the same sidebar. Sitting a little
+     * larger than the dashicons is the correct trade; the icons this one is read against are
+     * the other Fluent plugins, not core's.
+     */
     private function getMenuIcon()
     {
-        return 'data:image/svg+xml;base64,' . base64_encode('<svg width="202" height="204" viewBox="0 0 202 204" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M182.746 23.08C182.746 23.08 171.696 19.83 140.156 11.7C106.776 3.1 91.3961 0 91.3961 0C91.3961 0 75.9961 3.1 42.6361 11.7C11.1061 19.83 0.0561151 23.08 0.0561151 23.08C0.0561151 23.08 -1.57389 55.58 12.7361 114.42C24.2761 161.92 67.3461 188.21 91.3961 203.1C115.456 188.21 158.516 161.92 170.066 114.42C184.366 55.58 182.746 23.08 182.746 23.08Z" fill="white" fill-opacity="0.21"/>
-<path d="M46.4413 87.5247L46.4413 87.5247C45.6523 88.3139 45.2091 89.3841 45.2091 90.5C45.2091 91.6159 45.6523 92.6861 46.4413 93.4753L46.4413 93.4754L61.2716 108.306C61.6592 108.706 62.1225 109.026 62.6346 109.246C63.148 109.466 63.7002 109.582 64.259 109.587C64.8178 109.592 65.3719 109.485 65.8891 109.274C66.4063 109.062 66.8762 108.75 67.2713 108.355C67.6665 107.96 67.9789 107.49 68.1905 106.972C68.4021 106.455 68.5086 105.901 68.5038 105.342C68.4989 104.784 68.3828 104.231 68.1623 103.718C67.9423 103.206 67.6228 102.743 67.2223 102.355L55.3674 90.5L67.2223 78.6451C67.6228 78.2575 67.9423 77.7942 68.1623 77.2821C68.3828 76.7687 68.4989 76.2165 68.5038 75.6577C68.5086 75.0989 68.4021 74.5447 68.1905 74.0276C67.9789 73.5104 67.6665 73.0405 67.2713 72.6454C66.8762 72.2502 66.4063 71.9378 65.8891 71.7262C65.3719 71.5146 64.8178 71.4081 64.259 71.4129C63.7002 71.4178 63.148 71.5339 62.6346 71.7544C62.1225 71.9744 61.6593 72.2939 61.2717 72.6943L46.4413 87.5247ZM126.559 93.4754L126.559 93.4753C127.348 92.6861 127.791 91.6159 127.791 90.5C127.791 89.3841 127.348 88.3139 126.559 87.5247L126.559 87.5247L111.731 72.6975C111.73 72.6964 111.729 72.6953 111.728 72.6943C111.341 72.2938 110.877 71.9744 110.365 71.7544C109.852 71.5339 109.3 71.4178 108.741 71.4129C108.182 71.4081 107.628 71.5146 107.111 71.7262C106.594 71.9378 106.124 72.2502 105.729 72.6454C105.334 73.0405 105.021 73.5104 104.809 74.0276C104.598 74.5447 104.491 75.0989 104.496 75.6577C104.501 76.2165 104.617 76.7687 104.838 77.2821C105.058 77.7941 105.377 78.2574 105.778 78.6449C105.779 78.646 105.78 78.6471 105.781 78.6481L117.633 90.5L105.781 102.352C105.78 102.353 105.779 102.354 105.778 102.355C105.377 102.743 105.058 103.206 104.838 103.718C104.617 104.231 104.501 104.784 104.496 105.342C104.491 105.901 104.598 106.455 104.809 106.972C105.021 107.49 105.334 107.96 105.729 108.355C106.124 108.75 106.594 109.062 107.111 109.274C107.628 109.485 108.182 109.592 108.741 109.587C109.3 109.582 109.852 109.466 110.365 109.246C110.877 109.026 111.341 108.706 111.728 108.306C111.729 108.305 111.73 108.304 111.731 108.302L126.559 93.4754ZM77.9258 120.506L77.9304 120.508C78.3052 120.611 78.692 120.665 79.0808 120.667H79.0837C79.9982 120.666 80.8877 120.367 81.6174 119.816C82.3471 119.265 82.8773 118.491 83.1279 117.611L97.9587 65.7038C98.1319 65.1684 98.196 64.6037 98.1472 64.0431C98.0981 63.4793 97.9359 62.9312 97.6701 62.4316C97.4043 61.932 97.0404 61.4911 96.6003 61.1353C96.1602 60.7796 95.6529 60.5162 95.1087 60.3611C94.5644 60.2059 93.9945 60.1621 93.4329 60.2322C92.8714 60.3024 92.3298 60.4851 91.8405 60.7694C91.3512 61.0538 90.9242 61.4339 90.5852 61.887C90.2481 62.3375 90.0048 62.851 89.8697 63.397L75.0389 115.305C74.7324 116.377 74.8644 117.528 75.4057 118.503C75.947 119.479 76.8535 120.199 77.9258 120.506Z" fill="white" style="mix-blend-mode:darken"/>
-<path d="M46.4413 87.5247L46.4413 87.5247C45.6523 88.3139 45.2091 89.3841 45.2091 90.5C45.2091 91.6159 45.6523 92.6861 46.4413 93.4753L46.4413 93.4754L61.2716 108.306C61.6592 108.706 62.1225 109.026 62.6346 109.246C63.148 109.466 63.7002 109.582 64.259 109.587C64.8178 109.592 65.3719 109.485 65.8891 109.274C66.4063 109.062 66.8762 108.75 67.2713 108.355C67.6665 107.96 67.9789 107.49 68.1905 106.972C68.4021 106.455 68.5086 105.901 68.5038 105.342C68.4989 104.784 68.3828 104.231 68.1623 103.718C67.9423 103.206 67.6228 102.743 67.2223 102.355L55.3674 90.5L67.2223 78.6451C67.6228 78.2575 67.9423 77.7942 68.1623 77.2821C68.3828 76.7687 68.4989 76.2165 68.5038 75.6577C68.5086 75.0989 68.4021 74.5447 68.1905 74.0276C67.9789 73.5104 67.6665 73.0405 67.2713 72.6454C66.8762 72.2502 66.4063 71.9378 65.8891 71.7262C65.3719 71.5146 64.8178 71.4081 64.259 71.4129C63.7002 71.4178 63.148 71.5339 62.6346 71.7544C62.1225 71.9744 61.6593 72.2939 61.2717 72.6943L46.4413 87.5247ZM126.559 93.4754L126.559 93.4753C127.348 92.6861 127.791 91.6159 127.791 90.5C127.791 89.3841 127.348 88.3139 126.559 87.5247L126.559 87.5247L111.731 72.6975C111.73 72.6964 111.729 72.6953 111.728 72.6943C111.341 72.2938 110.877 71.9744 110.365 71.7544C109.852 71.5339 109.3 71.4178 108.741 71.4129C108.182 71.4081 107.628 71.5146 107.111 71.7262C106.594 71.9378 106.124 72.2502 105.729 72.6454C105.334 73.0405 105.021 73.5104 104.809 74.0276C104.598 74.5447 104.491 75.0989 104.496 75.6577C104.501 76.2165 104.617 76.7687 104.838 77.2821C105.058 77.7941 105.377 78.2574 105.778 78.6449C105.779 78.646 105.78 78.6471 105.781 78.6481L117.633 90.5L105.781 102.352C105.78 102.353 105.779 102.354 105.778 102.355C105.377 102.743 105.058 103.206 104.838 103.718C104.617 104.231 104.501 104.784 104.496 105.342C104.491 105.901 104.598 106.455 104.809 106.972C105.021 107.49 105.334 107.96 105.729 108.355C106.124 108.75 106.594 109.062 107.111 109.274C107.628 109.485 108.182 109.592 108.741 109.587C109.3 109.582 109.852 109.466 110.365 109.246C110.877 109.026 111.341 108.706 111.728 108.306C111.729 108.305 111.73 108.304 111.731 108.302L126.559 93.4754ZM77.9258 120.506L77.9304 120.508C78.3052 120.611 78.692 120.665 79.0808 120.667H79.0837C79.9982 120.666 80.8877 120.367 81.6174 119.816C82.3471 119.265 82.8773 118.491 83.1279 117.611L97.9587 65.7038C98.1319 65.1684 98.196 64.6037 98.1472 64.0431C98.0981 63.4793 97.9359 62.9312 97.6701 62.4316C97.4043 61.932 97.0404 61.4911 96.6003 61.1353C96.1602 60.7796 95.6529 60.5162 95.1087 60.3611C94.5644 60.2059 93.9945 60.1621 93.4329 60.2322C92.8714 60.3024 92.3298 60.4851 91.8405 60.7694C91.3512 61.0538 90.9242 61.4339 90.5852 61.887C90.2481 62.3375 90.0048 62.851 89.8697 63.397L75.0389 115.305C74.7324 116.377 74.8644 117.528 75.4057 118.503C75.947 119.479 76.8535 120.199 77.9258 120.506Z" stroke="white"/>
-</svg>');
+        $shield = 'M86.021 23.2424C100.351 26.9727 105.4 28.4285 105.4 28.4285C105.4 28.4285 106.174 43.2132 99.7139 69.9622C94.4735 91.4208 75.1461 103.369 64.1414 110.171L63.9121 110.313L63.6344 110.141C52.6207 103.333 33.298 91.3894 28.1103 69.9622C21.6051 43.2132 22.3329 28.4285 22.3329 28.4285C22.3329 28.4285 27.337 26.9272 41.6668 23.2424C56.861 19.3302 63.8667 17.9199 63.8667 17.9199C63.8667 17.9199 70.8723 19.3302 86.021 23.2424Z';
+
+        $glyph = 'M45.5288 57.7249C45.1648 58.0889 44.9829 58.5893 44.9829 59.0897C44.9829 59.5901 45.1648 60.0905 45.5288 60.4544L52.2615 67.1872C52.4435 67.3691 52.6709 67.5056 52.8984 67.5966C53.1258 67.6876 53.3988 67.7331 53.6262 67.7331C53.8992 67.7331 54.1267 67.6876 54.3541 67.5966C54.5816 67.5056 54.809 67.3691 54.991 67.1872C55.173 67.0052 55.3094 66.7777 55.4004 66.5503C55.4914 66.3228 55.5369 66.0499 55.5369 65.8224C55.5369 65.5495 55.4914 65.322 55.4004 65.0946C55.3094 64.8671 55.173 64.6396 54.991 64.4577L49.623 59.0897L55.0365 53.6762C55.2185 53.4942 55.3549 53.2668 55.4459 53.0393C55.5369 52.8119 55.5824 52.5389 55.5824 52.3115C55.5824 52.0385 55.5369 51.811 55.4459 51.5836C55.3549 51.3561 55.2185 51.1287 55.0365 50.9467C54.8545 50.7647 54.6271 50.6283 54.3996 50.5373C54.1721 50.4463 53.8992 50.4008 53.6717 50.4008C53.3988 50.4008 53.1713 50.4463 52.9439 50.5373C52.7164 50.6283 52.489 50.7647 52.307 50.9467L45.5288 57.7249ZM82.0129 60.4544C82.3769 60.0905 82.5588 59.5901 82.5588 59.0897C82.5588 58.5893 82.3769 58.0889 82.0129 57.7249L75.2802 50.9922C75.0982 50.8102 74.8708 50.6738 74.6433 50.5828C74.4159 50.4918 74.1429 50.4463 73.9155 50.4463C73.6425 50.4463 73.415 50.4918 73.1876 50.5828C72.9601 50.6738 72.7327 50.8102 72.5507 50.9922C72.3687 51.1742 72.2323 51.4016 72.1413 51.6291C72.0503 51.8565 72.0048 52.1295 72.0048 52.3569C72.0048 52.6299 72.0503 52.8573 72.1413 53.0848C72.2323 53.3123 72.3687 53.5397 72.5507 53.7217L77.9642 59.1352L72.5507 64.5487C72.3687 64.7306 72.2323 64.9581 72.1413 65.1855C72.0503 65.413 72.0048 65.686 72.0048 65.9134C72.0048 66.1864 72.0503 66.4138 72.1413 66.6413C72.2323 66.8687 72.3687 67.0962 72.5507 67.2782C72.7327 67.4601 72.9601 67.5966 73.1876 67.6876C73.415 67.7786 73.688 67.8241 73.9155 67.8241C74.1884 67.8241 74.4159 67.7786 74.6433 67.6876C74.8708 67.5966 75.0982 67.4601 75.2802 67.2782L82.0129 60.4544ZM59.8586 72.7371C60.0405 72.7826 60.2225 72.8281 60.4045 72.8281C60.8139 72.8281 61.2233 72.6916 61.5418 72.4187C61.8602 72.1457 62.1332 71.8273 62.2241 71.4179L69.0024 47.8078C69.0934 47.5803 69.0934 47.3074 69.0934 47.0344C69.0934 46.7615 69.0024 46.534 68.8659 46.3066C68.7294 46.0791 68.5929 45.8971 68.3655 45.7152C68.1835 45.5332 67.9561 45.4422 67.6831 45.3513C67.4557 45.2603 67.1827 45.2603 66.9098 45.3058C66.6368 45.3513 66.4094 45.4422 66.1819 45.5332C65.9544 45.6697 65.7725 45.8517 65.5905 46.0336C65.454 46.2611 65.3176 46.4885 65.2721 46.716L58.5393 70.3716C58.4029 70.872 58.4483 71.3724 58.7213 71.8273C58.9488 72.2822 59.4037 72.6007 59.8586 72.7371Z';
+
+        $svg = '<svg viewBox="22.3086 17.9199 83.1204 92.3931" xmlns="http://www.w3.org/2000/svg">'
+            . '<path fill="#ffffff" fill-rule="evenodd" d="' . $shield . ' ' . $glyph . '"/>'
+            . '</svg>';
+
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
+    }
+
+    /**
+     * Capability and nonce gate for the two editor endpoints.
+     *
+     * Both failures are dead ends for the user unless they are told what to do about
+     * them, and the expired-nonce one is worse than it looks: reloading the page is the
+     * fix, and reloading loses whatever they just typed. That warning belongs in the
+     * message, not in a support reply afterwards.
+     *
+     * Sends a 422 and exits when the request cannot proceed.
+     *
+     * @return void
+     */
+    private function guardAuthoringRequest()
+    {
+        /*
+         * DISALLOW_FILE_MODS is checked first because it is not a permissions problem and
+         * saying so saves the user going through their roles looking for one. It takes
+         * install_plugins away from every account on the site, so without this branch the
+         * message below would send an administrator hunting for a capability nobody has.
+         */
+        if (!wp_is_file_mod_allowed('capability_update_core')) {
+            $this->sendError(SnippetErrors::make('file_mods_disabled', [
+                'title'  => __('Snippets cannot be changed on this site', 'easy-code-manager'),
+                'reason' => __('wp-config.php has DISALLOW_FILE_MODS set. Every snippet is a file in wp-content, and that constant tells WordPress nothing may write there — so this is a deliberate setting on this site rather than anything wrong with your account. Snippets that are already active keep running.', 'easy-code-manager'),
+                'fix'    => __('Copy your code somewhere safe before leaving this page. To make the change, either remove that line from wp-config.php, or put the snippet file on the server the same way the rest of wp-content gets there — a deployment, or version control.', 'easy-code-manager'),
+            ]));
+        }
+
+        if (!current_user_can('unfiltered_html') || !current_user_can('install_plugins')) {
+            $this->sendError(SnippetErrors::make('permission_denied', [
+                'title'  => __('You are not allowed to save snippets on this site', 'easy-code-manager'),
+                'reason' => __('Saving a snippet means putting executable code on the site, so it needs both the install_plugins and unfiltered_html capabilities. Your account is missing at least one of them.', 'easy-code-manager'),
+                'fix'    => __('On a multisite, only Super Admins have unfiltered_html by default. Otherwise the usual causes are DISALLOW_UNFILTERED_HTML set in wp-config.php, or a security or role-editor plugin that has removed the capability from your role.', 'easy-code-manager'),
+            ]));
+        }
+
+        $nonce = Arr::get($_REQUEST, '__nonce');
+
+        if (!wp_verify_nonce($nonce, 'fluent-snippets')) {
+            $this->sendError(SnippetErrors::make('invalid_nonce', [
+                'title'  => __('Your security token has expired', 'easy-code-manager'),
+                'reason' => __('WordPress security tokens are only valid for a limited time. This page has been open for too long, or you have signed in again somewhere else since it loaded.', 'easy-code-manager'),
+                'fix'    => __('Copy your code somewhere safe first, then reload this page and paste it back — reloading is what issues a fresh token. If this keeps happening, a caching layer is caching wp-admin pages and needs to be told not to.', 'easy-code-manager'),
+            ]));
+        }
+    }
+
+    /**
+     * @param \WP_Error $error
+     * @return void
+     */
+    private function sendError($error)
+    {
+        wp_send_json([
+            'message' => $error->get_error_message(),
+            'data'    => $error->get_error_data()
+        ], 422);
+    }
+
+    /**
+     * Decode the `meta` payload the editor posts, or explain why it could not be read.
+     *
+     * A truncated or missing payload used to fatal on `$meta['code']` one line later, so
+     * a size limit on the server surfaced as a blank 500 with no clue attached. Large
+     * snippets are exactly what trips `post_max_size`, a ModSecurity body limit, or a
+     * `max_input_vars` cap, so this is a real path and it deserves a real message.
+     *
+     * @return array Decoded meta including the `code` key. Exits on failure.
+     */
+    private function readPostedMeta()
+    {
+        $meta = json_decode(wp_unslash(Arr::get($_REQUEST, 'meta', '')), true);
+
+        if (is_array($meta) && isset($meta['code'])) {
+            return $meta;
+        }
+
+        $this->sendError(SnippetErrors::make('invalid_payload', [
+            'title'  => __('The snippet did not arrive in one piece', 'easy-code-manager'),
+            'reason' => __('The editor sent your snippet, but the server received something incomplete, so nothing was saved and the previous version is still in place.', 'easy-code-manager'),
+            'fix'    => __('This is almost always a size limit on the request. Ask your host to raise post_max_size and max_input_vars, or to relax the firewall rule (often ModSecurity) that is truncating requests to wp-admin. Saving a much shorter snippet is a quick way to confirm that is what is happening.', 'easy-code-manager'),
+        ]));
     }
 
     public function saveSnippet()
     {
-        if (!current_user_can('unfiltered_html') || !current_user_can('install_plugins')) {
-            wp_send_json([
-                'message' => 'You do not have permission to perform this action. Required Permission: unfiltered_html and install_plugins'
-            ], 422);
-        }
-
-        // validate the nonce
-        $nonce = Arr::get($_REQUEST, '__nonce');
-        if (!wp_verify_nonce($nonce, 'fluent-snippets')) {
-            wp_send_json([
-                'message' => 'Invalid nonce. Please refresh the page and try again.'
-            ], 422);
-        }
-
+        $this->guardAuthoringRequest();
 
         $fileName = sanitize_file_name(Arr::get($_REQUEST, 'fluent_saving_snippet_name'));
-        $meta = wp_unslash(Arr::get($_REQUEST, 'meta'));
-        $meta = json_decode($meta, true);
+        $meta = $this->readPostedMeta();
         $code = $meta['code'];
         unset($meta['code']);
 
@@ -706,23 +935,9 @@ class AdminMenuHandler
 
     public function createSnippet()
     {
-        if (!current_user_can('unfiltered_html') || !current_user_can('install_plugins')) {
-            wp_send_json([
-                'message' => 'You do not have permission to perform this action. Required Permission: unfiltered_html and install_plugins'
-            ], 422);
-        }
+        $this->guardAuthoringRequest();
 
-        // validate the nonce
-        $nonce = Arr::get($_REQUEST, '__nonce');
-        if (!wp_verify_nonce($nonce, 'fluent-snippets')) {
-            wp_send_json([
-                'message' => 'Invalid nonce. Please refresh the page and try again.'
-            ], 422);
-        }
-
-
-        $meta = wp_unslash(Arr::get($_REQUEST, 'meta'));
-        $meta = json_decode($meta, true);
+        $meta = $this->readPostedMeta();
         $code = $meta['code'];
         unset($meta['code']);
 

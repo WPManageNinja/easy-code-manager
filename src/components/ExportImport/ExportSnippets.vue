@@ -19,13 +19,13 @@
                 <span v-if="snippet.type" class="fsn_label" :class="'fsn_'+snippet.type.toLowerCase()">
                     {{ getLangLabelName(snippet.type) }}
                 </span>
-                <el-tag v-if="!snippet.error" style="margin-left: 10px;" size="small"
+                <el-tag v-if="!snippet.error" class="ecm_row_tag" size="small"
                         :type="(snippet.status == 'published') ? 'success' : 'warning'">
                     {{ snippet.status }}
                 </el-tag>
             </el-checkbox>
         </el-checkbox-group>
-        <el-button @click="exportSelectedSnippet()" style="margin-top: 20px;" v-loading="exporting"
+        <el-button class="ecm_submit" @click="exportSelectedSnippet()" v-loading="exporting"
                    :disabled="!selectedSnippets.length" type="primary">
            {{$t('Export Select Snippets')}}
         </el-button>

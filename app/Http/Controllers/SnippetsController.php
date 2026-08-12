@@ -2,17 +2,27 @@
 
 namespace FluentSnippets\App\Http\Controllers;
 
-use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Model\Snippet;
 
 class SnippetsController
 {
+    /**
+     * Heal an index that has drifted from the files on disk.
+     *
+     * The admin app calls this once when it boots, instead of getSnippets() doing it
+     * on every list load, search keystroke and pagination click. Returns whether a
+     * rebuild happened so the app only re-fetches the list when it would differ.
+     */
+    public static function syncIndex(\WP_REST_Request $request)
+    {
+        return [
+            'changed' => Helper::syncSnippetIndex()
+        ];
+    }
+
     public static function getSnippets(\WP_REST_Request $request)
     {
-
-        Helper::cacheSnippetIndex('', true);
-
         $snippetModel = new Snippet([
             'search'     => sanitize_text_field($request->get_param('search')),
             'type'       => sanitize_text_field($request->get_param('type')),
@@ -77,64 +87,9 @@ class SnippetsController
         ];
     }
 
-    public static function createSnippet(\WP_REST_Request $request)
-    {
-        if ($restricted = self::isBlockedRequest()) {
-            return $restricted;
-        }
-
-        $meta = json_decode($request->get_param('meta'), true);
-        $code = $meta['code'];
-
-        unset($meta['code']);
-
-        $snippet = Helper::createSnippet([
-            'meta' => $meta,
-            'code' => $code
-        ]);
-
-        if (is_wp_error($snippet)) {
-            return $snippet;
-        }
-
-        return [
-            'snippet' => $snippet,
-            'message' => __('Snippet created successfully', 'easy-code-manager')
-        ];
-    }
-
-    public static function updateSnippet(\WP_REST_Request $request)
-    {
-        if ($restricted = self::isBlockedRequest()) {
-            return $restricted;
-        }
-
-        $fileName = sanitize_file_name($request->get_param('fluent_saving_snippet_name'));
-        $meta = json_decode($request->get_param('meta'), true);
-        $code = $meta['code'];
-        unset($meta['code']);
-
-
-        $snippet = Helper::updateSnippet([
-            'meta'       => $meta,
-            'code'       => $code,
-            'file_name'  => $fileName,
-            'reactivate' => $request->get_param('reactivate')
-        ]);
-
-        if (is_wp_error($snippet)) {
-            return $snippet;
-        }
-
-        return [
-            'snippet' => $snippet,
-            'message' => 'Snippet updated successfully'
-        ];
-    }
-
     public static function updateSnippetStatus(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanAuthorSnippets()) {
             return $restricted;
         }
 
@@ -167,7 +122,7 @@ class SnippetsController
 
     public static function deleteSnippet(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanAuthorSnippets()) {
             return $restricted;
         }
 
@@ -189,27 +144,36 @@ class SnippetsController
         ];
     }
 
+    /**
+     * Kept as an entry point because AdminMenuHandler's import calls it, but the rules
+     * live in Helper::validateMeta(). This was a byte-for-byte duplicate of that method,
+     * which is exactly how the two drift apart (L7).
+     */
     public static function validateMeta($meta)
     {
-        $required = ['name', 'status', 'type', 'run_at'];
-
-        foreach ($required as $key) {
-            if (empty($meta[$key])) {
-                return new \WP_Error($key, sprintf(__('%s is required', 'easy-code-manager'), $key), [
-                    $key => sprintf(__('%s is required', 'easy-code-manager'), $key)
-                ]);
-            }
-        }
-
-        return true;
+        return Helper::validateMeta($meta);
     }
 
-    private static function isBlockedRequest()
+    /**
+     * Guard for anything that writes, publishes or removes a snippet — all of which
+     * amount to putting code on the site.
+     *
+     * Deliberately NOT the same test as SettingsController::denyUnlessCanManageSettings(),
+     * which also wants manage_options. The two used to share the name isBlockedRequest(),
+     * which made the difference look accidental.
+     *
+     * install_plugins is checked here rather than left to route registration. It used to
+     * be safe to assume, because every route in this plugin required it; now that reading
+     * and writing have separate gates (see Http/routes.php), assuming it is how a write
+     * ends up reachable from a read-only screen the first time somebody moves a route
+     * between the two lists.
+     */
+    private static function denyUnlessCanAuthorSnippets()
     {
-        if (current_user_can('unfiltered_html')) {
+        if (current_user_can('install_plugins') && current_user_can('unfiltered_html')) {
             return false;
         }
 
-        return new \WP_Error('invalid_request', 'You do not have permission to perform this action. Required Permission: unfiltered_html');
+        return new \WP_Error('invalid_request', 'You do not have permission to perform this action. Required Permission: install_plugins & unfiltered_html');
     }
 }

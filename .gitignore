@@ -1,5 +1,9 @@
 node_modules
+.DS_Store
 svn
 build.php
 trans.php
 builds
+website
+.gstack/
+dist

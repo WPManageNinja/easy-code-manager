@@ -1,0 +1,89 @@
+/*
+ * The patterns more than one file needs.
+ *
+ * Nothing here emits a rule on its own - this file produces no CSS until something calls
+ * into it. That is what makes it safe to `@use` from every other partial: the layer order
+ * set in app.scss still decides what wins, because every declaration below is written at
+ * the call site rather than here.
+ *
+ * The bar for adding a mixin is the same as the bar for _ui.scss: a second caller. A
+ * pattern with one caller is a rule, and it belongs where it is used.
+ */
+
+/*
+ * The focus ring.
+ *
+ * wp-admin draws a blue halo on anything focused and leaves it there after the click, so
+ * the last thing you pressed stays lit in a colour from outside the palette. Keyboard users
+ * still need the ring, so it moves to :focus-visible and is recoloured rather than removed.
+ *
+ * `$offset` is negative for anything that would otherwise clip against its own edge - a
+ * button in a bar, an icon in a table row - and positive for something with room around it.
+ */
+@mixin focus-ring($offset: -1px) {
+    &:focus {
+        box-shadow: none;
+        outline: none;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--fsnip-accent);
+        outline-offset: $offset;
+    }
+}
+
+/*
+ * A square button that is only an icon: the app bar's menu toggle and theme switch, and the
+ * actions on a list row. Quiet at rest - these sit beside the thing they act on, and none of
+ * them is what the eye should land on first - and they take a fill on hover rather than a
+ * border, so the row does not change height when the pointer crosses it.
+ */
+@mixin icon-button($size, $radius, $fill: 'sunk') {
+    @apply flex items-center justify-center flex-none cursor-pointer bg-transparent text-ink-mid no-underline;
+
+    width: $size;
+    height: $size;
+    padding: 0;
+    border: 0;
+    border-radius: $radius;
+    transition: background-color .15s ease, color .15s ease;
+
+    &:hover {
+        @apply text-ink;
+
+        @if $fill == 'raised' {
+            @apply bg-surface-raised;
+        } @else {
+            @apply bg-surface-sunk;
+        }
+    }
+
+    @include focus-ring;
+}
+
+/*
+ * A band saying something is wrong, or worth knowing before you go on: the fatal on a
+ * snippet, the note under the editor, the warning that safe mode is on.
+ *
+ * `$tone` is a status token family - `danger` for something that has already gone wrong,
+ * `caution` for something that has not yet. Both have a wash, a line and a foreground
+ * declared for each theme, which is the whole reason this can be one mixin: a yellow block
+ * with black text was readable in light and blinding in dark.
+ */
+@mixin notice($tone) {
+    @apply rounded border border-solid;
+    @apply bg-#{$tone}-wash border-#{$tone}-line text-#{$tone}-fg;
+}
+
+/*
+ * A chip: a word set on a tint, small enough to sit inside a line of text without changing
+ * its height. What it is for - a language, a status, a tag - is only ever its colour, so
+ * that is all a caller sets.
+ */
+@mixin chip {
+    @apply inline-flex items-center flex-none rounded-xs text-xs font-medium;
+
+    padding: 1px 7px;
+    line-height: 18px;
+    white-space: nowrap;
+}

@@ -24,9 +24,9 @@
             trigger="click"
         >
             <div>
-                <el-input :placeholder="$t('Provide Name')" v-model="new_item">
+                <el-input :placeholder="$t('Enter a name')" v-model="new_item">
                     <template slot="append">
-                        <el-button @click="createNewItem()" type="success">{{ $t('Add') }}</el-button>
+                        <el-button @click="createNewItem()" type="primary">{{ $t('Add') }}</el-button>
                     </template>
                 </el-input>
             </div>
@@ -139,25 +139,3 @@ export default {
 }
 </script>
 
-<style lang="scss">
-.fc_option_creatable {
-    display: block;
-    width: 100%;
-    border-radius: 4px;
-
-    .el-select {
-        width: 100%;
-        float: left;
-
-        input {
-            margin: 0;
-        }
-    }
-
-    .fc_with_select {
-        float: left;
-        position: absolute;
-        right: 0;
-    }
-}
-</style>

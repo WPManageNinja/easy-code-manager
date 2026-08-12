@@ -14,7 +14,8 @@
                             v-model="snippet.code"
                             :conditions="snippet.meta.condition"
                         />
-                        <div v-if="errors.has('code')" class="code_error_block">
+                        <save-error-panel v-if="errorDetails" :details="errorDetails" />
+                        <div v-else-if="errors.has('code')" class="code_error_block" role="alert">
                             <p>{{ errors.get('code') }}</p>
                             <pre class="el-form-item__error_explained">{{ errors.get('code_explanation') }}</pre>
                         </div>
@@ -29,7 +30,14 @@
             <el-col :xs="24" :sm="9" :md="8" :lg="6">
                 <el-form-item :label="$t('Snippet Name')">
                     <el-input :placeholder="$t('Your Snippet Name')" size="large" type="text" v-model="snippet.meta.name" />
-                    <div class="el-form-item__error">{{ errors.get('name') }}</div>
+                    <!--
+                        role="alert" so a validation failure is spoken when it arrives -
+                        otherwise the message appears silently under a field the user has
+                        already tabbed away from. v-if because an empty alert region that is
+                        always in the DOM announces nothing when it is filled in some
+                        screen readers.
+                    -->
+                    <div v-if="errors.has('name')" class="el-form-item__error" role="alert">{{ errors.get('name') }}</div>
                 </el-form-item>
                 <el-form-item :label="$t('Description')">
                     <el-input :placeholder="$t('Internal Description for this snippet')" :rows="3" type="textarea" v-model="snippet.meta.description" />
@@ -40,10 +48,11 @@
                             {{$t('Snippet Group')}} <el-tooltip
                             class="box-item"
                             effect="dark"
-                            :content="$t('You may group your snippets for better organization and easy to find.')"
+                            :content="$t('Group your snippets to keep them organized and easy to find.')"
                             placement="top-start"
                         >
-                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"
+                                       :aria-label="$t('About snippet groups')"></el-button>
                           </el-tooltip>
                         </span>
                     </template>
@@ -55,10 +64,11 @@
                             {{$t('Priority')}} <el-tooltip
                             class="box-item"
                             effect="dark"
-                            :content="$t('The lower the number, the earlier to execute the snippet.')"
+                            :content="$t('The lower the number, the earlier the snippet runs.')"
                             placement="top-start"
                         >
-                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"
+                                       :aria-label="$t('About priority')"></el-button>
                           </el-tooltip>
                         </span>
                     </template>
@@ -70,10 +80,11 @@
                             {{$t('Tags')}} <el-tooltip
                             class="box-item"
                             effect="dark"
-                            :content="$t('For easily filter your snippets.')"
+                            :content="$t('Makes your snippets easier to filter.')"
                             placement="top-start"
                         >
-                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"
+                                       :aria-label="$t('About tags')"></el-button>
                           </el-tooltip>
                         </span>
                     </template>
@@ -87,10 +98,11 @@
                             {{$t('Load as Stylesheet File')}} <el-tooltip
                             class="box-item"
                             effect="dark"
-                            :content="$t('if you enable this then the snippet will be loaded as a stylesheet file.')"
+                            :content="$t('When enabled, this snippet is served as a separate stylesheet file.')"
                             placement="top-start"
                         >
-                            <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                            <el-button class="snip_field_help" text size="small" :icon="InfoField"
+                                       :aria-label="$t('About loading as a file')"></el-button>
                           </el-tooltip>
                         </span>
                         </template>
@@ -106,10 +118,11 @@
                                 {{$t('Block Editor Styles?')}} <el-tooltip
                                 class="box-item"
                                 effect="dark"
-                                :content="$t('if you enable this then the snippet will be loaded in the block editor (Gutenberg).')"
+                                :content="$t('When enabled, this snippet also loads in the block editor (Gutenberg).')"
                                 placement="top-start"
                             >
-                                <el-button text size="small" :icon="InfoField" style="font-style: italic"></el-button>
+                                <el-button class="snip_field_help" text size="small" :icon="InfoField"
+                                       :aria-label="$t('About block editor styles')"></el-button>
                               </el-tooltip>
                             </span>
                         </template>
@@ -136,6 +149,7 @@ import {markRaw} from "vue";
 import SelectPlus from './_SelectPlus';
 import AdvancedConditions from './AdvancedConditions';
 import WhereRun from './_WhereRun';
+import SaveErrorPanel from './_SaveErrorPanel.vue';
 
 export default {
     name: 'SnippetForm',
@@ -144,11 +158,21 @@ export default {
         CodeEditor,
         SelectPlus,
         AdvancedConditions,
-        WhereRun
+        WhereRun,
+        SaveErrorPanel
     },
     data() {
         return {
             InfoField: markRaw(InfoFilled)
+        }
+    },
+    computed: {
+        // Every failure carries `error_details` now, whatever it was about — bad code, a
+        // full disk, an expired token. The panel sits under the editor because that is
+        // where the user is looking when they press save.
+        errorDetails() {
+            const details = this.errors.get('error_details');
+            return (details && details.title) ? details : null;
         }
     },
     props: ['snippet', 'is_new', 'errors']

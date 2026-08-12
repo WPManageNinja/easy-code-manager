@@ -1,6 +1,6 @@
 <template>
     <div v-if="!isImported">
-        <h3>{{$t('Please upload Code Snippets JSON file to import')}}</h3>
+        <h3>{{$t('Upload a FluentSnippets JSON file to import')}}</h3>
         <el-upload
             drag
             :limit="1"
@@ -9,14 +9,14 @@
             :multiple="false"
             :on-error="handleUploadError"
             :on-success="handleUploadSuccess">
-            <el-icon style="font-size: 30px;">
+            <el-icon class="ecm_upload_icon">
                 <UploadFilled/>
             </el-icon>
             <div class="el-upload__text">
                 {{ $t('Drop JSON file here or') }} <em>{{ $t('click to upload') }}</em>
             </div>
         </el-upload>
-        <p>{{$t('Please upload Snippets only trusted sources.')}}</p>
+        <p>{{$t('Only import snippets from sources you trust.')}}</p>
     </div>
     <div v-else>
         <h3>{{$t('Imported Snippets')}} ({{ snippets.length }})</h3>
@@ -40,7 +40,7 @@
                                @click="updateSnippetStatus(scope.row)">
                         {{$t('Publish')}}
                     </el-button>
-                    <el-tag v-else-if="scope.row.status == 'published'" style="margin-left: 10px;" size="small"
+                    <el-tag v-else-if="scope.row.status == 'published'" class="ecm_row_tag" size="small"
                             :type="(scope.row.status == 'published') ? 'success' : 'warning'">
                         <span v-html="scope.row.status"></span>
                     </el-tag>
@@ -49,7 +49,7 @@
             </el-table-column>
         </el-table>
 
-        <el-button :disabled="publishing" :loading="publishing" style="margin-top: 20px;" @click="publishAll()"
+        <el-button class="ecm_submit" :disabled="publishing" :loading="publishing" @click="publishAll()"
                    type="success" v-if="hasDraft && !allDone">
             {{ $t('Publish All Imported Snippets') }}
         </el-button>

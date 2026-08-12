@@ -4,6 +4,7 @@ namespace FluentSnippets\App\Model;
 
 use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
+use FluentSnippets\App\Services\SnippetErrors;
 
 class Snippet
 {
@@ -144,7 +145,8 @@ class Snippet
 
         if ($search = Arr::get($this->args, 'search')) {
             $snippets = array_filter($snippets, function ($snippet) use ($search) {
-                return (strpos($snippet['name'], $search) !== false) || (strpos($snippet['description'], $search) !== false) || (strpos($snippet['tags'], $search) !== false) || (strpos($snippet['group'], $search) !== false);
+                // stripos, not strpos: searching "Header" should find "header script".
+                return (stripos($snippet['name'], $search) !== false) || (stripos($snippet['description'], $search) !== false) || (stripos($snippet['tags'], $search) !== false) || (stripos($snippet['group'], $search) !== false);
             });
         }
 
@@ -269,7 +271,7 @@ class Snippet
         $file = $snippetDir . '/' . $fileName;
 
         if (!is_file($file) || $fileName === 'index.php') {
-            return new \WP_Error('file_not_found', 'File not found');
+            return SnippetErrors::fileMissing($fileName);
         }
 
         $fileContent = file_get_contents($snippetDir . '/' . $fileName);
@@ -290,13 +292,18 @@ class Snippet
         $file = Helper::getStorageDir() . '/' . $fileName;
 
         if (!is_file($file)) {
-            return new \WP_Error('file_not_found', 'File not found');
+            return SnippetErrors::fileMissing($fileName);
         }
 
         $docBlockString = $this->parseInputMeta($metaData, true);
         $fullCode = $docBlockString . $code;
 
-        file_put_contents($file, $fullCode);
+        // atomicPut() returns false when the storage directory is not writable. Ignoring
+        // that was the one failure mode where the plugin actively lied: the editor said
+        // "Snippet has been updated successfully" and the old code came back on reload.
+        if (Helper::atomicPut($file, $fullCode) === false) {
+            return SnippetErrors::writeFailed($file);
+        }
 
         Helper::invalidateOpcache($file);
 
@@ -336,14 +343,24 @@ class Snippet
         $file = $storageDir . '/' . $fileName;
 
         if (is_file($file)) {
-            return new \WP_Error('file_exists', 'Please try a different name');
+            return SnippetErrors::make('file_exists', [
+                'title'  => __('A snippet file with this name already exists', 'easy-code-manager'),
+                'reason' => sprintf(
+                    /* translators: %s: snippet file name */
+                    __('Snippet files are named after the snippet, and %s is taken. This normally happens when a snippet was deleted and recreated, so the numbering no longer lines up.', 'easy-code-manager'),
+                    $fileName
+                ),
+                'fix'    => __('Change the snippet name slightly and save again.', 'easy-code-manager'),
+            ]);
         }
 
         $docBlockString = $this->parseInputMeta($metaData, true);
 
         $fullCode = $docBlockString . $code;
 
-        file_put_contents($file, $fullCode);
+        if (Helper::atomicPut($file, $fullCode) === false) {
+            return SnippetErrors::writeFailed($file);
+        }
 
         Helper::invalidateOpcache($file);
 
@@ -357,7 +374,12 @@ class Snippet
         $snippetDir = Helper::getStorageDir();
         $file = $snippetDir . '/' . $fileName;
 
-        if (!is_file($file) && ($fileName === 'index.php' || $fileName === 'cached')) {
+        // `&&` here meant the guard never fired for the files it names: index.php exists,
+        // so !is_file() was false and the whole condition collapsed to false, falling
+        // through to unlink(). Unreachable in practice — the only caller runs
+        // findByFileName() first, which rejects index.php — but the protection this reads
+        // as providing was not there at all.
+        if (!is_file($file) || $fileName === 'index.php' || $fileName === 'cached') {
             return new \WP_Error('file_not_found', 'File not found');
         }
 
@@ -421,6 +443,10 @@ class Snippet
             'type'         => '',
             'run_at'       => '',
             'group'        => '',
+            // Defaulted because a hand-edited or legacy snippet file may have no
+            // @priority line, and cacheSnippetIndex() sorts on it — a missing key warned
+            // on every rebuild under PHP 8. Matches getMetaData()'s own default.
+            'priority'     => 10,
             'condition'    => '',
             'load_as_file' => '',
             'load_in_block_editor' => ''
@@ -504,6 +530,12 @@ class Snippet
 
         $metaData['condition'] = json_encode($metaData['condition']);
 
+        // Helper::sanitizeMetaValue() has to neutralise `*` in every meta value, because
+        // parseBlock() splits the docblock on it. For this one value that would corrupt
+        // real data, so escape it as a JSON unicode escape instead — json_decode() turns
+        // * back into `*`, and the docblock never sees a literal one.
+        $metaData['condition'] = str_replace('*', '\\u002a', $metaData['condition']);
+
         $docBlockString = '<?php' . PHP_EOL . '// <Internal Doc Start>' . PHP_EOL . '/*' . PHP_EOL . '*';
 
         foreach ($metaData as $key => $value) {
@@ -524,7 +556,7 @@ class Snippet
             $cacheFileName = str_replace('.php', '.' . $type, $fileName);
             $fullFileName = Helper::getCachedDir() . '/' . $cacheFileName;
             if (Arr::get($metaData, 'load_as_file') == 'yes') {
-                file_put_contents($fullFileName, $code);
+                Helper::atomicPut($fullFileName, $code);
                 return $cacheFileName;
             }
 

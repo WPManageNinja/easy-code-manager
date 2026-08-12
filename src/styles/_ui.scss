@@ -1,0 +1,397 @@
+/*
+ * The small parts, shared.
+ *
+ * Everything here is used by more than one screen. That is the bar for being in this file
+ * - a part used once belongs with the screen that uses it, where it can be read next to
+ * the markup it describes.
+ */
+
+@use "mixins";
+
+/* ------------------------------------------------------------- accessibility */
+
+/*
+ * Text for a screen reader and nothing else.
+ *
+ * Not `display: none` and not `visibility: hidden` - both of those take the text out of the
+ * accessibility tree along with the layout, which is the opposite of the point. The clip
+ * rectangle is the one wp-admin's own `.screen-reader-text` uses, for the same reason: it
+ * leaves the text rendered and readable to assistive technology while occupying no space.
+ *
+ * This exists because several things in this app are only distinguishable by position - the
+ * status toggle on a row of forty, the priority beside a hook name - and a control whose
+ * name is "switch" forty times over is not navigable by anyone who cannot see which row it
+ * is on.
+ */
+.fsnip_sr_only {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+/*
+ * The skip link: the first thing in the tab order, invisible until it is focused.
+ *
+ * wp-admin puts its own admin menu ahead of this app in the tab order and supplies a skip
+ * link for it, but nothing skips *this* app's own bar - which is a logo, three nav items
+ * and a theme menu to tab past on every single page load. This is that link, and it stays
+ * hidden right up until somebody tabs to it.
+ */
+/*
+ * Hidden by the same clip as .fsnip_sr_only, then unclipped when it takes focus.
+ *
+ * Not "parked at top: -100px", which is the usual way to write this and is wrong here:
+ * the offset is measured from whichever ancestor happens to be positioned, and this app
+ * sits some way down inside wp-admin's own chrome - so -100px landed the link in plain
+ * sight, on the page, above the card. Clipping does not care where its ancestor is.
+ *
+ * On focus it turns into a fixed element so it lands in the same corner whatever the page
+ * is scrolled to, below whatever height wp-admin's bar is reporting this frame, and above
+ * the app bar's own z-index of 2000.
+ */
+.fsnip_skip_link {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+
+    &:focus {
+        @apply fixed bg-surface text-ink-link border border-solid border-hairline-strong rounded no-underline;
+
+        /*
+         * Offset by the two variables App.vue measures wp-admin's chrome into, so the link
+         * appears just inside this app's own area rather than on top of WordPress's menu.
+         */
+        left: calc(var(--fsnip-shell-left, 160px) + 8px);
+        top: calc(var(--fsnip-shell-top, 32px) + 8px);
+        z-index: 2100;
+        width: auto;
+        height: auto;
+        margin: 0;
+        padding: 10px 16px;
+        overflow: visible;
+        clip: auto;
+        clip-path: none;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: var(--fsnip-shadow-lift);
+        outline: 2px solid var(--fsnip-accent);
+        outline-offset: 1px;
+    }
+}
+
+/* --------------------------------------------------------------------- cards */
+
+/*
+ * Every screen in the app is a stack of these: a card, a header on it, a body under it.
+ * The class names are the ones the templates already use; only what they look like has
+ * changed - from a flat white box with a grey band on top to FluentCart's rounded card.
+ */
+.box_wrapper {
+    @apply block w-full;
+}
+
+.box {
+    @apply bg-surface rounded border border-solid;
+
+    border-color: var(--fsnip-card-line);
+    box-shadow: var(--fsnip-shadow-card);
+    margin-bottom: 24px;
+    overflow: hidden;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.box_header {
+    @apply flex flex-wrap items-center justify-between gap-3 border-0 border-b border-solid border-hairline;
+
+    min-height: 60px;
+    padding: 12px 20px;
+
+    .box_head {
+        @apply flex items-center gap-2.5 text-base font-medium text-ink-head;
+
+        float: none;
+        min-width: 0;
+
+        /*
+         * A card's title is whichever heading level is correct where it sits - h1 on the
+         * screen's first card, h2 on the ones under it - and all three look the same. The
+         * level is what a screen reader uses to build its outline of the page; it is not a
+         * size, which is why it is not left to be inferred from one.
+         */
+        h1,
+        h2,
+        h3 {
+            @apply m-0 p-0 text-base font-medium text-ink-head;
+
+            display: inline-block;
+        }
+    }
+
+    .box_actions {
+        @apply flex flex-wrap items-center gap-2.5 flex-none;
+
+        float: none;
+    }
+}
+
+.box_body {
+    @apply block;
+
+    padding: 20px;
+    overflow: visible;
+
+    > :first-child {
+        margin-top: 0;
+    }
+
+    > :last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* A card that is a column of settings rather than a full-width table. */
+.box_narrow {
+    max-width: var(--fsnip-content-width);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* -------------------------------------------------------------------- tabs */
+
+/*
+ * A row of views over the same data - the snippet list's language filter. It sits inside a
+ * card, flush with its top, so it is a band rather than a bar with its own frame.
+ */
+.fsnip_secondary_menu {
+    @apply flex flex-wrap items-center justify-between gap-3 border-0 border-b border-solid border-hairline bg-surface-sunk;
+
+    margin: -20px -20px 20px;
+    padding: 0 20px;
+
+    .fsnip_menu {
+        @apply flex flex-wrap items-center gap-1 list-none m-0 p-0;
+
+        li {
+            @apply m-0;
+
+            /*
+             * A button, not a link. These filter the list in place - they go nowhere, and
+             * the `href="#"` they used to carry put a junk entry in the browser's history
+             * on every filter change and sent the back button somewhere nobody asked for.
+             * The button is reset to look like what it did before.
+             */
+            button {
+                @apply flex items-center gap-1.5 text-sm font-medium no-underline text-ink-mid bg-transparent cursor-pointer;
+
+                padding: 14px 10px;
+                border: 0;
+                border-bottom: 2px solid transparent;
+                margin-bottom: -1px;
+                font-family: inherit;
+                transition: color .15s ease, border-color .15s ease;
+
+                &:hover {
+                    @apply text-ink;
+                }
+
+                /*
+                 * The ring is drawn inside the tab rather than removed. It used to be
+                 * `outline: none` with nothing put back, which left a keyboard user
+                 * tabbing across this bar with no way to tell which tab they were on.
+                 */
+                @include mixins.focus-ring(-2px);
+            }
+
+            &.active_item button {
+                @apply text-ink;
+
+                border-bottom-color: var(--fsnip-accent);
+            }
+        }
+    }
+
+    .snip_right_items {
+        @apply flex flex-wrap items-center gap-2.5;
+
+        padding: 10px 0;
+
+        .snip_ac_item {
+            margin-left: 0;
+
+            &.el-select {
+                max-width: 160px;
+            }
+        }
+    }
+}
+
+/* ----------------------------------------------------------- language badges */
+
+/*
+ * What a snippet is written in, as a chip. This is the app's one piece of real colour, so
+ * it keeps its hue in both themes - see the `--fsnip-lang-*` tokens - rather than being
+ * flattened to grey in dark like the neutral chips are.
+ */
+.fsn_label {
+    @include mixins.chip;
+
+    background: var(--fsnip-neutral-bg);
+    color: var(--fsnip-neutral-fg);
+    border: 0;
+    margin-left: 5px;
+
+    &.fsn_php,
+    &.fsn_PHP {
+        background: var(--fsnip-lang-php-bg);
+        color: var(--fsnip-lang-php-fg);
+    }
+
+    &.fsn_js {
+        background: var(--fsnip-lang-js-bg);
+        color: var(--fsnip-lang-js-fg);
+    }
+
+    &.fsn_css {
+        background: var(--fsnip-lang-css-bg);
+        color: var(--fsnip-lang-css-fg);
+    }
+
+    &.fsn_mixed,
+    &.fsn_php_content {
+        background: var(--fsnip-lang-content-bg);
+        color: var(--fsnip-lang-content-fg);
+    }
+
+    /* Something has gone wrong with the snippet, not with what it is written in. */
+    &.fsn_error {
+        background: var(--fsnip-danger-bg);
+        color: var(--fsnip-danger-fg);
+    }
+
+    .el-icon {
+        margin-right: 3px;
+    }
+}
+
+/* ---------------------------------------------------------------- statuses */
+
+/* A status, as a word, for the places an el-tag would be too heavy. */
+.fsnip_tag {
+    @include mixins.chip;
+
+    &.is_error {
+        @apply bg-danger-bg text-danger-fg;
+    }
+
+    &.is_warning {
+        @apply bg-caution-bg text-caution-fg;
+    }
+
+    &.is_success {
+        @apply bg-ok-bg text-ok-fg;
+    }
+
+    /* Nothing is wrong and nothing has happened - "Off", "Coming soon". */
+    &.is_neutral {
+        @apply bg-surface-raised text-ink-mid;
+    }
+}
+
+/* ---------------------------------------------------------------- code */
+
+/*
+ * A `<code>` written straight into a template, with no class on it. wp-admin gives these a
+ * light grey background that does not move with the theme.
+ */
+#fluent_snippets_app code:not([class]) {
+    @apply bg-surface-sunk text-ink rounded-xs;
+
+    padding: 2px 6px;
+    font-size: 13px;
+}
+
+/*
+ * An empty panel says what would be here, quietly, at the height of a full one - so a card
+ * with nothing in it yet is still a card rather than a collapsed line.
+ */
+.fsnip_empty {
+    @apply flex flex-col items-center justify-center text-center text-ink-mid;
+
+    min-height: 180px;
+    padding: 32px 20px;
+
+    h1, h3 {
+        @apply text-ink-head;
+
+        margin: 0 0 8px;
+    }
+
+    p {
+        @apply text-sm text-ink-mid;
+
+        margin: 0 0 8px;
+    }
+
+    .fsnip_empty_actions {
+        @apply flex flex-wrap items-center justify-center gap-2.5;
+
+        margin-top: 16px;
+    }
+}
+
+/* ------------------------------------------------------------------- brand */
+
+/*
+ * The mark's three parts, coloured here rather than in the component so a surface that is
+ * already wearing the accent can restate it - see Bits/BrandMark.vue.
+ *
+ * The indigo is the brand's, not the admin's: the rest of this screen is FluentCart's
+ * near-black, and the tile is deliberately the one thing on it that is not.
+ */
+.fsnip_brand_mark {
+    display: block;
+    flex: none;
+
+    .fsnip_brand_tile {
+        fill: #4F46E5;
+    }
+
+    .fsnip_brand_shield {
+        fill: #FFFFFF;
+    }
+
+    .fsnip_brand_glyph {
+        fill: #4F46E5;
+    }
+}
+
+/* ------------------------------------------------------------------ helpers */
+
+span.fc_middot {
+    margin: 0 6px;
+    color: var(--fsnip-border-strong);
+}
+
+.fsnip_highlight {
+    @apply block w-full bg-surface-sunk border border-solid border-hairline rounded;
+
+    margin: 20px 0;
+    padding: 12px;
+}

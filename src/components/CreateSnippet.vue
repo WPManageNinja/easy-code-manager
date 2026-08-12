@@ -1,8 +1,15 @@
 <template>
     <div class="box_wrapper">
-        <div class="box dashboard_box">
-            <div class="box_header" style="padding: 15px;font-size: 16px;">
-                <div style="padding-top: 5px;" class="box_head">
+        <div class="box">
+            <div class="box_header">
+                <div class="box_head">
+                    <!--
+                        The screen's heading. It is hidden because the breadcrumb beside it
+                        already says the same thing on screen - but a breadcrumb is a list of
+                        links, so without this the page had no heading at all and did not
+                        appear in the outline a screen reader navigates by.
+                    -->
+                    <h1 class="fsnip_sr_only">{{ $t('Create new snippet') }}</h1>
                     <el-breadcrumb separator="/">
                         <el-breadcrumb-item :to="{ name: 'dashboard' }">{{ $t('Code Snippets') }}</el-breadcrumb-item>
                         <el-breadcrumb-item>
@@ -10,8 +17,8 @@
                         </el-breadcrumb-item>
                     </el-breadcrumb>
                 </div>
-                <div v-if="snippet" style="display: flex;" class="box_actions">
-                    <el-button @click="saveCode()" :disabled="saving" v-loading="saving" type="success">
+                <div v-if="snippet && canEdit" class="box_actions">
+                    <el-button @click="saveCode()" :disabled="saving" v-loading="saving" type="primary">
                         {{ $t('Create Snippet') }}
                     </el-button>
                 </div>
@@ -72,6 +79,12 @@ export default {
     },
     methods: {
         saveCode() {
+            // Same reasoning as SnippetEditView.saveCode(): the button is gone, the
+            // keyboard shortcut and the confirm dialog are not.
+            if (!this.canEdit) {
+                return;
+            }
+
             // validate the code
             if (!this.snippet.code) {
                 this.$notify.error(this.$t('Please enter some code to save'));
@@ -98,6 +111,9 @@ export default {
                 return;
             }
 
+            this.$eventBus.emit("server_error", null);
+            this.errors.clear();
+
             this.saving = true;
             this.$ajax('post', 'fluent_snippet_create', {
                 meta: JSON.stringify({...this.snippet.meta, code: this.snippet.code})
@@ -115,6 +131,10 @@ export default {
 
                     if (errors && errors.data) {
                         this.errors.record(errors.data);
+                    }
+
+                    if (errors && errors.html) {
+                        this.$eventBus.emit("server_error", errors.html);
                     }
 
                     this.$handleError(errors);

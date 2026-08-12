@@ -11,17 +11,21 @@ class SettingsController
 {
     public static function getSettings(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanManageSettings()) {
             return $restricted;
         }
 
         $config = Helper::getIndexedConfig();
 
+        // enable_line_wrap defaulted to 'yes' here while saveSettings() and the editor
+        // bootstrap in AdminMenuHandler::render() both defaulted to 'no'. The editor is
+        // what actually decides the behaviour, so the settings screen was showing the
+        // toggle on while wrapping was off. Aligned to 'no'; the editor is unchanged.
         $defaults = [
             'auto_disable'        => 'yes',
             'auto_publish'        => 'no',
             'remove_on_uninstall' => 'no',
-            'enable_line_wrap'    => 'yes'
+            'enable_line_wrap'    => 'no'
         ];
 
         if (!$config || !is_array($config) || empty($config['meta'])) {
@@ -36,13 +40,37 @@ class SettingsController
         return [
             'settings'      => $settings,
             'is_standalone' => defined('FLUENT_SNIPPETS_RUNNING_MU'),
-            'secret_url'    => site_url('index.php?fluent_snippets=1&snippet_secret=' . Helper::getSecretKey())
+            'secret_url'    => Helper::getSafeModeUrl()
+        ];
+    }
+
+    /**
+     * Issue a new Safe Mode URL and invalidate the one before it.
+     *
+     * Behind denyUnlessCanChangeSettings() like every other write here: the key lives in
+     * the generated index.php, so replacing it is a file modification.
+     */
+    public static function regenerateSecretUrl(\WP_REST_Request $request)
+    {
+        if ($restricted = self::denyUnlessCanChangeSettings()) {
+            return $restricted;
+        }
+
+        $url = Helper::regenerateSecretKey();
+
+        if (is_wp_error($url)) {
+            return $url;
+        }
+
+        return [
+            'message'    => __('A new Safe Mode URL has been generated. The previous one no longer works.', 'easy-code-manager'),
+            'secret_url' => $url
         ];
     }
 
     public static function saveSettings(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanChangeSettings()) {
             return $restricted;
         }
 
@@ -94,7 +122,7 @@ class SettingsController
 
     public static function disableSafeMode(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanChangeSettings()) {
             return $restricted;
         }
 
@@ -115,13 +143,15 @@ class SettingsController
 
     public static function configStandAloneSystem(\WP_REST_Request $request)
     {
-        if ($restricted = self::isBlockedRequest()) {
+        if ($restricted = self::denyUnlessCanChangeSettings()) {
             return $restricted;
         }
 
         $isEnable = $request->get_param('enable') == 'yes';
 
-        if ($isEnable == 'yes') {
+        // $isEnable is already a bool; the old `$isEnable == 'yes'` compared a bool to a
+        // string and happened to work under loose comparison (L8).
+        if ($isEnable) {
             $result = Helper::enableStandAlone();
             $message = __('Standalone mode has been activated', 'easy-code-manager');
         } else {
@@ -139,7 +169,17 @@ class SettingsController
         ];
     }
 
-    private static function isBlockedRequest()
+    /**
+     * Guard for reading the settings surface: plugin-wide behaviour, safe mode,
+     * standalone mode, and the kill-switch URL. Stricter than
+     * SnippetsController::denyUnlessCanAuthorSnippets() on purpose — it also wants
+     * manage_options.
+     *
+     * Reading is all this covers. Everything that saves goes through
+     * denyUnlessCanChangeSettings() below, so the settings screen still opens on a site
+     * where file modifications are off — the toggles are just not yours to move.
+     */
+    private static function denyUnlessCanManageSettings()
     {
         if (current_user_can('unfiltered_html') && current_user_can('manage_options')) {
             return false;
@@ -148,8 +188,39 @@ class SettingsController
         return new \WP_Error('invalid_request', 'You do not have permission to perform this action. Required Permission: unfiltered_html & manage_options');
     }
 
+    /**
+     * Guard for changing any of it.
+     *
+     * Every setting here ends up written to a file in wp-content — the index config, the
+     * must-use plugin that standalone mode installs — so this is a write in the sense
+     * DISALLOW_FILE_MODS means, and install_plugins is the capability that says so.
+     */
+    private static function denyUnlessCanChangeSettings()
+    {
+        if ($restricted = self::denyUnlessCanManageSettings()) {
+            return $restricted;
+        }
+
+        if (current_user_can('install_plugins')) {
+            return false;
+        }
+
+        return new \WP_Error('invalid_request', 'You do not have permission to perform this action. Required Permission: install_plugins');
+    }
+
     public static function getRestOptions(\WP_REST_Request $request)
     {
+        /*
+         * This was the one method here without the guard. It returns titles of draft and
+         * private posts across every public post type, plus every taxonomy term — content
+         * an install_plugins user can already reach, so nothing was exposed that should
+         * not have been. It only serves the condition builder on the snippet edit screen,
+         * which is unusable without the capabilities below anyway.
+         */
+        if ($restricted = self::denyUnlessCanManageSettings()) {
+            return $restricted;
+        }
+
         $optionKey = $request->get_param('rest_key');
         $options = [];
 
@@ -308,171 +379,5 @@ class SettingsController
             'options' => $options
         ];
 
-    }
-
-    public static function installPlugin(\WP_REST_Request $request)
-    {
-        $pluginSlug = $request->get_param('plugin_slug');
-        $plugin = [
-            'name'      => $pluginSlug,
-            'repo-slug' => $pluginSlug,
-            'file'      => $pluginSlug . '.php'
-        ];
-
-        $UrlMaps = [
-            'fluent-smtp'  => [
-                'admin_url' => admin_url('options-general.php?page=fluent-mail#/'),
-                'title'     => __('Go to FluentSMTP Dashboard', 'fluent-smtp')
-            ],
-            'fluentform'   => [
-                'admin_url' => admin_url('admin.php?page=fluent_forms'),
-                'title'     => __('Go to Fluent Forms Dashboard', 'fluent-smtp')
-            ],
-            'fluent-crm'   => [
-                'admin_url' => admin_url('admin.php?page=fluentcrm-admin'),
-                'title'     => __('Go to FluentCRM Dashboard', 'fluent-smtp')
-            ],
-            'ninja-tables' => [
-                'admin_url' => admin_url('admin.php?page=ninja_tables#/'),
-                'title'     => __('Go to Ninja Tables Dashboard', 'fluent-smtp')
-            ]
-        ];
-
-        if (!isset($UrlMaps[$pluginSlug]) || (defined('DISALLOW_FILE_MODS') && DISALLOW_FILE_MODS)) {
-
-            return new \WP_Error('permission_error', 'Sorry, You can not install this plugin');
-        }
-
-        try {
-            self::backgroundInstaller($plugin);
-            return [
-                'message' => __('Plugin has been successfully installed.', 'fluent-smtp'),
-                'info'    => $UrlMaps[$pluginSlug]
-            ];
-        } catch (\Exception $exception) {
-            return new \WP_Error('install_error', $exception->getMessage());
-        }
-    }
-
-    private static function backgroundInstaller($plugin_to_install)
-    {
-        if (!empty($plugin_to_install['repo-slug'])) {
-            require_once ABSPATH . 'wp-admin/includes/file.php';
-            require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
-            require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-
-            WP_Filesystem();
-
-            $skin = new \Automatic_Upgrader_Skin();
-            $upgrader = new \WP_Upgrader($skin);
-            $installed_plugins = array_reduce(array_keys(\get_plugins()), array(__CLASS__, 'associate_plugin_file'), array());
-            $plugin_slug = $plugin_to_install['repo-slug'];
-            $plugin_file = isset($plugin_to_install['file']) ? $plugin_to_install['file'] : $plugin_slug . '.php';
-            $installed = false;
-            $activate = false;
-
-            // See if the plugin is installed already.
-            if (isset($installed_plugins[$plugin_file])) {
-                $installed = true;
-                $activate = !is_plugin_active($installed_plugins[$plugin_file]);
-            }
-
-            // Install this thing!
-            if (!$installed) {
-                // Suppress feedback.
-                ob_start();
-
-                try {
-                    $plugin_information = plugins_api(
-                        'plugin_information',
-                        array(
-                            'slug'   => $plugin_slug,
-                            'fields' => array(
-                                'short_description' => false,
-                                'sections'          => false,
-                                'requires'          => false,
-                                'rating'            => false,
-                                'ratings'           => false,
-                                'downloaded'        => false,
-                                'last_updated'      => false,
-                                'added'             => false,
-                                'tags'              => false,
-                                'homepage'          => false,
-                                'donate_link'       => false,
-                                'author_profile'    => false,
-                                'author'            => false,
-                            ),
-                        )
-                    );
-
-                    if (is_wp_error($plugin_information)) {
-                        throw new \Exception($plugin_information->get_error_message());
-                    }
-
-                    $package = $plugin_information->download_link;
-                    $download = $upgrader->download_package($package);
-
-                    if (is_wp_error($download)) {
-                        throw new \Exception($download->get_error_message());
-                    }
-
-                    $working_dir = $upgrader->unpack_package($download, true);
-
-                    if (is_wp_error($working_dir)) {
-                        throw new \Exception($working_dir->get_error_message());
-                    }
-
-                    $result = $upgrader->install_package(
-                        array(
-                            'source'                      => $working_dir,
-                            'destination'                 => WP_PLUGIN_DIR,
-                            'clear_destination'           => false,
-                            'abort_if_destination_exists' => false,
-                            'clear_working'               => true,
-                            'hook_extra'                  => array(
-                                'type'   => 'plugin',
-                                'action' => 'install',
-                            ),
-                        )
-                    );
-
-                    if (is_wp_error($result)) {
-                        throw new \Exception($result->get_error_message());
-                    }
-
-                    $activate = true;
-
-                } catch (\Exception $e) {
-                    throw new \Exception($e->getMessage());
-                }
-
-                // Discard feedback.
-                ob_end_clean();
-            }
-
-            wp_clean_plugins_cache();
-
-            // Activate this thing.
-            if ($activate) {
-                try {
-                    $result = activate_plugin($installed ? $installed_plugins[$plugin_file] : $plugin_slug . '/' . $plugin_file);
-
-                    if (is_wp_error($result)) {
-                        throw new \Exception($result->get_error_message());
-                    }
-                } catch (\Exception $e) {
-                    throw new \Exception($e->getMessage());
-                }
-            }
-        }
-    }
-
-    public static function associate_plugin_file($plugins, $key)
-    {
-        $path = explode('/', $key);
-        $filename = end($path);
-        $plugins[$filename] = $key;
-        return $plugins;
     }
 }

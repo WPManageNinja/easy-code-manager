@@ -1,20 +1,14 @@
 <template>
     <div class="ecm_import_export">
-        <div v-if="!currentView">
-            <el-row :gutter="30">
-                <el-col :span="12">
-                    <el-card style="width: 100%; cursor:pointer; text-align: center;" shadow="always" @click="currentView = 'export'">
-                        <el-icon style="font-size: 30px;"><Download /></el-icon>
-                        <h3>{{$t('Export Snippets')}}</h3>
-                    </el-card>
-                </el-col>
-                <el-col :span="12">
-                    <el-card style="width: 100%; cursor:pointer; text-align: center;" shadow="always" @click="currentView = 'import'">
-                        <el-icon style="font-size: 30px;"><UploadFilled /></el-icon>
-                        <h3>{{$t('Import Snippets')}}</h3>
-                    </el-card>
-                </el-col>
-            </el-row>
+        <div v-if="!currentView" class="ecm_choices">
+            <button type="button" class="ecm_choice" @click="currentView = 'export'">
+                <el-icon><Download /></el-icon>
+                <span>{{$t('Export Snippets')}}</span>
+            </button>
+            <button v-if="canEdit" type="button" class="ecm_choice" @click="currentView = 'import'">
+                <el-icon><UploadFilled /></el-icon>
+                <span>{{$t('Import Snippets')}}</span>
+            </button>
         </div>
         <div v-else-if="currentView == 'import'">
             <ImportSnippets />

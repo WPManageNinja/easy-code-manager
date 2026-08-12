@@ -1,114 +1,119 @@
 <template>
-    <div class="fss_support">
+    <div class="fss_about_page">
+        <!--
+            The masthead. What the plugin is, and the one fact about it that most visitors
+            to this screen are here to check: that it is free, that it stays free, and that
+            there is no paid tier waiting behind a feature they are about to need.
+        -->
+        <div class="box fss_masthead">
+            <div class="box_body">
+                <brand-mark :size="56"/>
+
+                <h1 class="fss_masthead_title"><span>fluent</span>Snippets</h1>
+
+                <p class="fss_masthead_lead">
+                    {{ $t('The code snippets plugin that writes to files instead of your database. Snippets load the way a small feature plugin loads - no query, no option lookup, no work on a page that does not use them.') }}
+                </p>
+
+                <p class="fss_masthead_free">
+                    {{ $t('Free, and open source under the GPL. There is no pro version, no paid add-on and no upgrade prompt - every feature is in the copy you already have.') }}
+                </p>
+
+                <div class="fss_masthead_actions">
+                    <el-button tag="a" type="primary" :href="links.github" target="_blank" rel="noopener">
+                        {{ $t('View source on GitHub') }}
+                    </el-button>
+                    <el-button tag="a" :href="links.docs" target="_blank" rel="noopener">
+                        {{ $t('Read the documentation') }}
+                    </el-button>
+                    <el-button tag="a" :href="links.review" target="_blank" rel="noopener">
+                        {{ $t('Leave a review') }}
+                    </el-button>
+                </div>
+            </div>
+        </div>
+
         <el-row :gutter="20">
             <el-col :sm="24" :md="12">
-                <div class="fss_about">
-                    <div class="fss_header">{{ $t('About') }}</div>
-                    <div class="fss_content">
-                        <p>
-                            <a href="https://fluentsnippets.com" target="_blank" rel="noopener">FluentSnippets</a>
-                            {{ $t('is the high-performance code snippets plugin for WordPress, built for speed and security. All snippets are stored in the file system and load just like a regular feature plugin — no database queries, just secure and native code.') }}
-                        </p>
-                        <div>
-                            <p>{{ $t('FluentSnippets is built using the following open-source libraries and software:') }}</p>
-                            <ul style="list-style: disc;margin-left: 30px;">
-                                <li>VueJS</li>
-                                <li>Vue Router</li>
-                                <li>codemirror</li>
-                                <li>dayjs</li>
-                                <li>fuse.js</li>
-                                <li>lodash</li>
-                                <li>element-plus</li>
-                            </ul>
-                            <p>
-                                {{ $t('If you find an issue or have a suggestion, please') }}
-                                <a target="_blank" rel="nofollow"
-                                   href="https://github.com/WPManageNinja/easy-code-manager/issues">{{ $t('open an issue on GitHub') }}</a>.
-                                <br/>{{ $t('If you are a developer and would like to contribute to the project, please') }}
-                                <a target="_blank" rel="nofollow"
-                                   href="https://github.com/WPManageNinja/easy-code-manager/">{{ $t('contribute on GitHub') }}</a>.
-                            </p>
-                            <p>
-                                <a target="_blank" rel="noopener" href="http://fluentsnippets.com/docs">{{ $t('Read the documentation here') }}</a>
-                            </p>
+                <!--
+                    One plugin per row, so this column is the tall one and the three cards
+                    opposite it come out to about the same height.
+                -->
+                <team-plugins/>
+
+                <div class="box">
+                    <div class="box_header">
+                        <div class="box_head">
+                            <h2>{{ $t('Contributors') }}</h2>
                         </div>
                     </div>
-                </div>
-                <div class="fss_about">
-                    <div class="fss_header">{{ $t('Contributors') }}</div>
-                    <div class="fss_content">
+                    <div class="box_body">
                         <p>
-                            {{ $t('FluentSnippets is powered by users like you.') }}
-                            <a target="_blank" rel="noopener" href="https://github.com/WPManageNinja/easy-code-manager">{{ $t('Feel free to contribute on GitHub') }}</a>.
-                            {{ $t('Thanks to all of our contributors.') }}
+                            {{ $t('FluentSnippets is built in the open by the people below.') }}
+                            <a :href="links.github" target="_blank" rel="noopener">{{ $t('Pull requests are welcome.') }}</a>
                         </p>
 
-                        <a target="_blank"
-                           href="https://github.com/WPManageNinja/easy-code-manager/graphs/contributors">
-
-                            <ul v-if="contributors.length > 0" v-loading="contributorsLoading"
-                                style="list-style: none; display: flex; flex-direction: row; flex-wrap: wrap; ">
-                                <li v-for="contributor in contributors" :key="contributor.id" class="">
-                                    <p :title="contributor.login">
-                                        <img :src="contributor.avatar_url" :alt="contributor.login"
-                                             style="width: 60px; height: 60px; border-radius: 50%;"/>
-                                    </p>
+                        <a class="fss_contributors_link" :href="links.contributors" target="_blank" rel="noopener">
+                            <ul v-if="contributors.length" v-loading="contributorsLoading" class="fss_contributors">
+                                <li v-for="contributor in contributors" :key="contributor.id">
+                                    <img :src="contributor.avatar_url" :alt="contributor.login"
+                                         :title="contributor.login" loading="lazy"/>
                                 </li>
                             </ul>
                         </a>
                     </div>
                 </div>
             </el-col>
+
             <el-col :sm="24" :md="12">
-                <div v-if="plugin || installed_info">
-                    <div v-loading="installing" :element-loading-text="$t('Installing... Please wait')" class="fss_about">
-                        <div class="fss_header">{{ $t('Recommended Plugin') }}</div>
-                        <div class="fss_content">
-                            <div v-if="installed_info" class="install_success">
-                                <h3>{{ installed_message }}</h3>
-                                <a class="el-button el-button--success installed_dashboard_url"
-                                   :href="installed_info.admin_url">{{ installed_info.title }}</a>
-                            </div>
-                            <div v-else class="fss_plugin_block">
-                                <div class="fss_plugin_title">
-                                    <h3>{{ plugin.title }}</h3>
-                                    <p>{{ plugin.subtitle }}</p>
-                                </div>
-                                <div class="fss_plugin_body">
-                                    <div v-html="plugin.description"></div>
-                                    <div class="fss_install_btn">
-                                        <el-button v-if="!appVars.disable_installation"
-                                                   @click="installPlugin(plugin.slug)"
-                                                   :class="plugin.btn_class" type="success">{{ plugin.btn_text }}
-                                        </el-button>
-                                        <a v-else :href="plugin.plugin_url" target="_blank" rel="noopener"
-                                           class="el-button el-button--success fss_ninjatables_btn">
-                                            <span>{{ $t('View') }} {{ plugin.title }}</span>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                <!--
+                    Three things that are true of this plugin and not of most of the others,
+                    written as what happens rather than as adjectives.
+                -->
+                <div class="box">
+                    <div class="box_header">
+                        <div class="box_head">
+                            <h2>{{ $t('How it works') }}</h2>
                         </div>
                     </div>
+                    <div class="box_body">
+                        <ul class="fss_facts">
+                            <li v-for="fact in facts" :key="fact.title">
+                                <strong>{{ fact.title }}</strong>
+                                <p>{{ fact.body }}</p>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
-                <div class="fss_about">
-                    <div class="fss_header">{{ $t('Community') }}</div>
-                    <div class="fss_content">
-                        <p>{{ $t('FluentSnippets is powered by our community. We listen to our users and build products that add value to businesses and save time.') }}</p>
-                        <p>{{ $t('Join our communities and participate in great conversations.') }}</p>
-                        <ul style="list-style: disc;margin-left: 30px;">
-                            <li>
-                                <a target="_blank" rel="nofollow" href="https://www.facebook.com/groups/fluentforms">{{ $t('Join FluentForms Facebook Community') }}</a>
+
+                <div class="box">
+                    <div class="box_header">
+                        <div class="box_head">
+                            <h2>{{ $t('Built with') }}</h2>
+                        </div>
+                    </div>
+                    <div class="box_body">
+                        <p>{{ $t('Other people\'s open source, without which this would be a much smaller plugin:') }}</p>
+                        <ul class="fss_libraries">
+                            <li v-for="library in libraries" :key="library.name">
+                                <a :href="library.url" target="_blank" rel="noopener">{{ library.name }}</a>
+                                <span>{{ library.role }}</span>
                             </li>
-                            <li>
-                                <a target="_blank" rel="nofollow" href="https://www.facebook.com/groups/fluentcrm">{{ $t('Join FluentCRM Facebook Community') }}</a>
-                            </li>
-                            <li>
-                                <a target="_blank" rel="nofollow"
-                                   href="https://wordpress.org/support/plugin/easy-code-manager/reviews/?filter=5">{{ $t('Write a review (we really appreciate it!)') }}</a>
-                            </li>
-                            <li>
-                                <a target="_blank" rel="noopener" href="http://fluentsnippets.com/docs">{{ $t('Read the documentation') }}</a>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="box">
+                    <div class="box_header">
+                        <div class="box_head">
+                            <h2>{{ $t('Getting help') }}</h2>
+                        </div>
+                    </div>
+                    <div class="box_body">
+                        <ul class="fss_links">
+                            <li v-for="link in help" :key="link.href">
+                                <a :href="link.href" target="_blank" rel="noopener">{{ link.label }}</a>
+                                <span>{{ link.note }}</span>
                             </li>
                         </ul>
                     </div>
@@ -119,113 +124,107 @@
 </template>
 
 <script type="text/babel">
-import sample from 'lodash/sample';
+import BrandMark from '../Bits/BrandMark.vue';
+import TeamPlugins from './_TeamPlugins.vue';
+
+const REPO = 'https://github.com/WPManageNinja/easy-code-manager';
 
 export default {
-    name: 'FluentMailSupport',
+    name: 'AboutFluentSnippets',
+    components: {
+        BrandMark,
+        TeamPlugins
+    },
     data() {
         return {
-            plugins: {
-                fluentsmtp: {
-                    slug: 'fluent-smtp',
-                    title: 'Fluent SMTP',
-                    subtitle: 'WP Mail SMTP, Amazon SES, SendGrid, MailGun and Any SMTP Connector Plugin',
-                    description: '<p><a href="https://wordpress.org/plugins/fluent-smtp" target="_blank" rel="nofollow">FluentSMTP</a> plugin fixes your email delivery issue by connecting WordPress Mail with your email service providers. These integrations are native, so it will send the emails super-fast. It\'s free and will be always free.</p>',
-                    btn_text: 'Install Fluent SMTP (Free)',
-                    btn_class: '',
-                    plugin_url: 'https://wordpress.org/plugins/fluent-smtp'
-                },
-                fluentform: {
-                    slug: 'fluentform',
-                    title: 'Fluent Forms',
-                    subtitle: 'Fastest Contact Form Builder Plugin for WordPress',
-                    description: '<p><a href="https://wordpress.org/plugins/fluentform" target="_blank" rel="nofollow">Fluent Forms</a> is the ultimate user-friendly, fast, customizable drag-and-drop WordPress Contact Form Plugin that offers you all the premium features, plus many more completely unique additional features.</p>',
-                    btn_text: 'Install Fluent Forms (Free)',
-                    btn_class: '',
-                    plugin_url: 'https://wordpress.org/plugins/fluentform'
-                },
-                fluent_crm: {
-                    slug: 'fluent-crm',
-                    title: 'FluentCRM',
-                    subtitle: 'Email Marketing Automation and CRM Plugin for WordPress',
-                    description: '<p><a href="https://wordpress.org/plugins/fluent-crm/" target="_blank" rel="nofollow">FluentCRM</a> is the best and complete feature-rich Email Marketing & CRM solution. It is also the simplest and fastest CRM and Marketing Plugin on WordPress. Manage your customer relationships, build your email lists, send email campaigns, build funnels, and make more profit and increase your conversion rates. (Yes, It’s Free!)</p>',
-                    btn_text: 'Install FluentCRM (Free)',
-                    btn_class: 'fss_fluentcrm_btn',
-                    plugin_url: 'https://wordpress.org/plugins/fluent-crm/'
-                },
-                ninja_tables: {
-                    slug: 'ninja-tables',
-                    title: 'Ninja Tables',
-                    subtitle: 'Best WP DataTables Plugin for WordPress',
-                    description: '<p>Looking for a WordPress table plugin for your website? Then you’re in the right place.</p>' +
-                        '<p>Meet <a href="https://wordpress.org/plugins/ninja-tables/" target="_blank" rel="nofollow">Ninja Tables</a>, the best WP table plugin that comes with all the solutions to the problems you face while creating tables on your posts/pages.</p>',
-                    btn_text: 'Install Ninja Tables (Free)',
-                    btn_class: 'fss_ninjatables_btn',
-                    plugin_url: 'https://wordpress.org/plugins/ninja-tables/'
-                }
+            links: {
+                github: REPO,
+                issues: REPO + '/issues',
+                contributors: REPO + '/graphs/contributors',
+                docs: 'https://fluentsnippets.com/docs',
+                review: 'https://wordpress.org/support/plugin/easy-code-manager/reviews/#new-post',
+                support: 'https://wordpress.org/support/plugin/easy-code-manager/'
             },
-            installing: false,
-            installed_info: false,
-            installed_message: '',
             contributors: [],
             contributorsLoading: false
         }
     },
     computed: {
-        plugin() {
-            if (this.appVars.disable_recommendation) {
-                return false;
-            }
-            const recommended = [];
-
-            if (!this.appVars.has_fluentsmtp) {
-                recommended.push(this.plugins.has_fluentsmtp)
-            }
-
-            if (!this.appVars.has_fluentform) {
-                recommended.push(this.plugins.fluentform)
-            }
-            if (!this.appVars.has_ninja_tables) {
-                recommended.push(this.plugins.ninja_tables)
-            }
-            if (!this.appVars.has_fluentcrm) {
-                recommended.push(this.plugins.fluent_crm)
-            }
-            if (!recommended.length) {
-                return false;
-            }
-            return sample(recommended);
+        /*
+         * Written as computed rather than as data so the strings go through $t on the
+         * locale that is actually loaded, the same as every other string on this screen.
+         */
+        facts() {
+            return [
+                {
+                    title: this.$t('Snippets are files'),
+                    body: this.$t('Each one is written to wp-content/fluent-snippets and loaded from there. Nothing is fetched from the options table on the way in, so a site with two hundred snippets costs the same on a page that runs none of them as a site with two.')
+                },
+                {
+                    title: this.$t('A fatal cannot lock you out'),
+                    body: this.$t('If a snippet throws one, it is switched off on the spot and the screen tells you which snippet, which line and what was thrown. If you are already locked out, the Safe Mode URL on the Settings screen turns every snippet off without needing the admin.')
+                },
+                {
+                    title: this.$t('It keeps running without the plugin'),
+                    body: this.$t('Standalone Mode writes a must-use plugin that loads your snippets directly. Deactivate FluentSnippets, or delete it, and the code you wrote carries on running. What you built is yours, not held hostage by ours.')
+                }
+            ];
+        },
+        libraries() {
+            return [
+                {name: 'Vue 3', url: 'https://vuejs.org', role: this.$t('the admin screens')},
+                {name: 'Vue Router', url: 'https://router.vuejs.org', role: this.$t('moving between them')},
+                {name: 'Element Plus', url: 'https://element-plus.org', role: this.$t('the controls')},
+                {name: 'CodeMirror', url: 'https://codemirror.net', role: this.$t('the code editor')},
+                {name: 'Fuse.js', url: 'https://fusejs.io', role: this.$t('searching your snippets')},
+                {name: 'Day.js', url: 'https://day.js.org', role: this.$t('dates and relative times')},
+                {name: 'Lodash', url: 'https://lodash.com', role: this.$t('the odd jobs')}
+            ];
+        },
+        help() {
+            return [
+                {
+                    href: this.links.docs,
+                    label: this.$t('Documentation'),
+                    note: this.$t('how each feature works, with examples')
+                },
+                {
+                    href: this.links.support,
+                    label: this.$t('Support forum'),
+                    note: this.$t('free support, answered in public')
+                },
+                {
+                    href: this.links.issues,
+                    label: this.$t('Report a bug'),
+                    note: this.$t('on GitHub, where the fix will land')
+                },
+                {
+                    href: this.links.review,
+                    label: this.$t('Leave a review'),
+                    note: this.$t('it is what keeps the plugin findable')
+                }
+            ];
         }
     },
     methods: {
-        installPlugin(slug) {
-            this.installing = true;
-            this.$post('install_plugin', {
-                plugin_slug: slug
-            })
-                .then(response => {
-                    this.installed_info = response.info;
-                    this.installed_message = response.message;
+        /*
+         * GitHub's public API, called from the browser rather than proxied: it needs no
+         * credentials, and a failure here should cost the page a row of avatars, nothing
+         * more - so the catch is deliberately silent.
+         */
+        fetchContributors() {
+            this.contributorsLoading = true;
+
+            fetch(this.links.contributors.replace('https://github.com/', 'https://api.github.com/repos/').replace('/graphs/contributors', '/contributors'))
+                .then(response => response.ok ? response.json() : [])
+                .then(data => {
+                    this.contributors = Array.isArray(data) ? data.slice(0, 20) : [];
                 })
-                .catch((error) => {
-                    this.$handleError(error);
+                .catch(() => {
                 })
                 .finally(() => {
-                    this.installing = false;
+                    this.contributorsLoading = false;
                 });
-        },
-        async fetchContributors() {
-            this.contributorsLoading = true;
-            try {
-                await fetch('https://api.github.com/repos/WPManageNinja/easy-code-manager/contributors')
-                    .then(response => response.json())
-                    .then(data => {
-                        this.contributors = data.slice(0, 20);
-                        this.contributorsLoading = false;
-                    })
-            } catch (e) {
-                this.contributorsLoading = false;
-            }
         }
     },
     mounted() {
