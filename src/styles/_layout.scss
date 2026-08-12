@@ -107,6 +107,22 @@
                 @apply bg-accent-wash text-ink;
             }
         }
+
+        /*
+         * The outward arrow is a mark on the label, not a second thing to read, so it sits
+         * a hair lighter than the text and brightens with it on hover.
+         */
+        .fsnip_nav_external {
+            gap: 5px;
+
+            svg {
+                @apply flex-none opacity-60;
+            }
+
+            &:hover svg {
+                @apply opacity-100;
+            }
+        }
     }
 
     .fsnip_app_bar_actions {

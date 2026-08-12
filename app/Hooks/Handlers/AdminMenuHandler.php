@@ -841,8 +841,8 @@ class AdminMenuHandler
         if (!wp_is_file_mod_allowed('capability_update_core')) {
             $this->sendError(SnippetErrors::make('file_mods_disabled', [
                 'title'  => __('Snippets cannot be changed on this site', 'easy-code-manager'),
-                'reason' => __('wp-config.php has DISALLOW_FILE_MODS set. Every snippet is a file in wp-content, and that constant tells WordPress nothing may write there — so this is a deliberate setting on this site rather than anything wrong with your account. Snippets that are already active keep running.', 'easy-code-manager'),
-                'fix'    => __('Copy your code somewhere safe before leaving this page. To make the change, either remove that line from wp-config.php, or put the snippet file on the server the same way the rest of wp-content gets there — a deployment, or version control.', 'easy-code-manager'),
+                'reason' => __('wp-config.php has DISALLOW_FILE_MODS set. Every snippet is a file in wp-content, and that constant tells WordPress nothing may write there, so this is a deliberate setting on this site rather than anything wrong with your account. Snippets that are already active keep running.', 'easy-code-manager'),
+                'fix'    => __('Copy your code somewhere safe before leaving this page. To make the change, either remove that line from wp-config.php, or put the snippet file on the server the same way the rest of wp-content gets there, via a deployment or version control.', 'easy-code-manager'),
             ]));
         }
 
@@ -860,7 +860,7 @@ class AdminMenuHandler
             $this->sendError(SnippetErrors::make('invalid_nonce', [
                 'title'  => __('Your security token has expired', 'easy-code-manager'),
                 'reason' => __('WordPress security tokens are only valid for a limited time. This page has been open for too long, or you have signed in again somewhere else since it loaded.', 'easy-code-manager'),
-                'fix'    => __('Copy your code somewhere safe first, then reload this page and paste it back — reloading is what issues a fresh token. If this keeps happening, a caching layer is caching wp-admin pages and needs to be told not to.', 'easy-code-manager'),
+                'fix'    => __('Copy your code somewhere safe first, then reload this page and paste it back. Reloading is what issues a fresh token. If this keeps happening, a caching layer is caching wp-admin pages and needs to be told not to.', 'easy-code-manager'),
             ]));
         }
     }

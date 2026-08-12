@@ -8,6 +8,7 @@ class Trans
     public static function getStrings()
     {
         return [
+            '(opens in a new tab)' => __('(opens in a new tab)', 'easy-code-manager'),
             '* As you have conditional logics enabled the code will run on init hook.' => __('* As you have conditional logics enabled the code will run on init hook.', 'easy-code-manager'),
             'A fatal cannot lock you out' => __('A fatal cannot lock you out', 'easy-code-manager'),
             'A line too long for the editor folds onto the next one instead of scrolling sideways.' => __('A line too long for the editor folds onto the next one instead of scrolling sideways.', 'easy-code-manager'),
@@ -37,7 +38,7 @@ class Trans
             'Apply' => __('Apply', 'easy-code-manager'),
             'Are you sure to delete this?' => __('Are you sure to delete this?', 'easy-code-manager'),
             'Ascending' => __('Ascending', 'easy-code-manager'),
-            'Ask your host to allow requests to wp-admin/admin-ajax.php from your admin account, or to disable the ModSecurity rule that is firing. To confirm this is the cause, try saving a snippet containing a single harmless line — if that works, it is the content of your code that is being blocked, not the plugin.' => __('Ask your host to allow requests to wp-admin/admin-ajax.php from your admin account, or to disable the ModSecurity rule that is firing. To confirm this is the cause, try saving a snippet containing a single harmless line — if that works, it is the content of your code that is being blocked, not the plugin.', 'easy-code-manager'),
+            'Ask your host to allow requests to wp-admin/admin-ajax.php from your admin account, or to disable the ModSecurity rule that is firing. To confirm this is the cause, try saving a snippet containing a single harmless line. If that works, it is the content of your code that is being blocked, not the plugin.' => __('Ask your host to allow requests to wp-admin/admin-ajax.php from your admin account, or to disable the ModSecurity rule that is firing. To confirm this is the cause, try saving a snippet containing a single harmless line. If that works, it is the content of your code that is being blocked, not the plugin.', 'easy-code-manager'),
             'Ask your host to raise post_max_size, or split the snippet into two smaller ones.' => __('Ask your host to raise post_max_size, or split the snippet into two smaller ones.', 'easy-code-manager'),
             'Backend Head' => __('Backend Head', 'easy-code-manager'),
             'Backend footer' => __('Backend footer', 'easy-code-manager'),
@@ -52,6 +53,7 @@ class Trans
             'Code' => __('Code', 'easy-code-manager'),
             'Code Snippets' => __('Code Snippets', 'easy-code-manager'),
             'Coming soon' => __('Coming soon', 'easy-code-manager'),
+            'Community' => __('Community', 'easy-code-manager'),
             'Condition Value' => __('Condition Value', 'easy-code-manager'),
             'Contributors' => __('Contributors', 'easy-code-manager'),
             'Copy' => __('Copy', 'easy-code-manager'),
@@ -270,7 +272,7 @@ class Trans
             'Your Snippet Name' => __('Your Snippet Name', 'easy-code-manager'),
             'Your server blocked this request' => __('Your server blocked this request', 'easy-code-manager'),
             'Your server returned an error' => __('Your server returned an error', 'easy-code-manager'),
-            'Your snippet is sent to the server as raw code, and a firewall rule decided that looked like an attack. ModSecurity, Wordfence, Cloudflare and several managed hosts do this by default — the request is stopped before FluentSnippets ever sees it.' => __('Your snippet is sent to the server as raw code, and a firewall rule decided that looked like an attack. ModSecurity, Wordfence, Cloudflare and several managed hosts do this by default — the request is stopped before FluentSnippets ever sees it.', 'easy-code-manager'),
+            'Your snippet is sent to the server as raw code, and a firewall rule decided that looked like an attack. ModSecurity, Wordfence, Cloudflare and several managed hosts do this by default. The request is stopped before FluentSnippets ever sees it.' => __('Your snippet is sent to the server as raw code, and a firewall rule decided that looked like an attack. ModSecurity, Wordfence, Cloudflare and several managed hosts do this by default. The request is stopped before FluentSnippets ever sees it.', 'easy-code-manager'),
             'Your snippets no longer depend on this plugin' => __('Your snippets no longer depend on this plugin', 'easy-code-manager'),
             '__SNIPPET_AUTO_DISABLE_INS__' => __('We highly recommend enabling this option. If it is disabled, your site may go down when one of your scripts has an error.', 'easy-code-manager'),
             '__SNIPPET_FATAL_ERROR__' => __('The snippet encountered a fatal error and has been deactivated automatically. Please review your code, fix the issue, and reactivate it.', 'easy-code-manager'),

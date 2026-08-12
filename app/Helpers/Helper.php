@@ -1020,7 +1020,7 @@ PHP;
             // offending input; `error_details` is what the panel renders.
             return SnippetErrors::make($key, [
                 'title'  => $title,
-                'reason' => __('A snippet cannot be stored without this — it is written into the file header and is what tells FluentSnippets when and how to run your code.', 'easy-code-manager'),
+                'reason' => __('A snippet cannot be stored without this. It is written into the file header and is what tells FluentSnippets when and how to run your code.', 'easy-code-manager'),
                 'fix'    => sprintf(
                     /* translators: %s: name of the field that was left empty */
                     __('Fill in the %s field on the right and save again.', 'easy-code-manager'),

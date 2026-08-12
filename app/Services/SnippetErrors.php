@@ -105,7 +105,7 @@ class SnippetErrors
                      * PHP's own wording is not repeated here: the panel prints it above
                      * this paragraph, where it is the first thing read.
                      */
-                    'reason' => __('PHP could not parse the snippet, so nothing was saved — it would have taken the site down on the very next page load, because snippets run on every request.', 'easy-code-manager'),
+                    'reason' => __('PHP could not parse the snippet, so nothing was saved. It would have taken the site down on the very next page load, because snippets run on every request.', 'easy-code-manager'),
                     'fix'    => __('Look at the reported line and the one above it for a missing closing brace, semicolon, bracket or quote.', 'easy-code-manager'),
                     'line'   => $line,
                     'raw'    => $raw,
@@ -170,7 +170,7 @@ class SnippetErrors
 
         return self::make('code', [
             'title'   => $title,
-            'reason'  => __('Something on this site already declares that name — another active snippet, your theme\'s functions.php, or a plugin. PHP cannot declare the same function or class twice, so activating this snippet would end in a fatal error.', 'easy-code-manager'),
+            'reason'  => __('Something on this site already declares that name: another active snippet, your theme\'s functions.php, or a plugin. PHP cannot declare the same function or class twice, so activating this snippet would end in a fatal error.', 'easy-code-manager'),
             'fix'     => __('Give it a name nobody else is likely to use (prefix it, for example my_site_), or guard the declaration so it only happens once:', 'easy-code-manager'),
             'example' => $example,
             'line'    => $line,
@@ -232,7 +232,7 @@ class SnippetErrors
         return self::make('code', [
             'title'   => __('The snippet failed when it was test-run', 'easy-code-manager'),
             'reason'  => $reason,
-            'fix'     => __('Fix the reported error. If the code is only meant to run later — on a page load, an order, a form submission — put it on a hook rather than at the top level of the snippet:', 'easy-code-manager'),
+            'fix'     => __('Fix the reported error. If the code is only meant to run later (on a page load, an order, a form submission), put it on a hook rather than at the top level of the snippet:', 'easy-code-manager'),
             'example' => "add_action('init', function () {\n    // your code here\n});",
             'line'    => $line,
             'raw'     => $raw,
@@ -248,8 +248,8 @@ class SnippetErrors
 
         return self::make('code', [
             'title'   => __('This snippet prints output while it loads', 'easy-code-manager'),
-            'reason'  => __('PHP snippets are loaded on every request, before the page has decided what to send. Anything echoed at that point lands at the very top of the site and breaks headers, redirects and REST responses — so FluentSnippets refuses to save it.', 'easy-code-manager'),
-            'fix'     => __('Print inside a hook or a shortcode instead of at the top level — or change the snippet type to PHP Content, which is built for producing HTML. Also check for stray text or a blank line outside the PHP code.', 'easy-code-manager'),
+            'reason'  => __('PHP snippets are loaded on every request, before the page has decided what to send. Anything echoed at that point lands at the very top of the site and breaks headers, redirects and REST responses, so FluentSnippets refuses to save it.', 'easy-code-manager'),
+            'fix'     => __('Print inside a hook or a shortcode instead of at the top level, or change the snippet type to PHP Content, which is built for producing HTML. Also check for stray text or a blank line outside the PHP code.', 'easy-code-manager'),
             'example' => "add_action('wp_footer', function () {\n    echo '<p>Hello</p>';\n});",
             /*
              * The output itself is the technical detail worth showing, and it has its own
@@ -294,7 +294,7 @@ class SnippetErrors
             'title'  => __('The snippet could not be written to disk', 'easy-code-manager'),
             'reason' => sprintf(
                 /* translators: %s: absolute path of the storage directory */
-                __('FluentSnippets keeps each snippet as a PHP file inside %s. The web server was not allowed to write there, so nothing was saved — the previous version of this snippet is still live.', 'easy-code-manager'),
+                __('FluentSnippets keeps each snippet as a PHP file inside %s. The web server was not allowed to write there, so nothing was saved. The previous version of this snippet is still live.', 'easy-code-manager'),
                 dirname($file)
             ),
             'fix'    => __('Check that the folder exists and is writable by the user PHP runs as (folders 755, files 644 is the usual setup). A read-only filesystem, a container without a writable wp-content, or a security plugin that locks file changes will also cause this.', 'easy-code-manager'),

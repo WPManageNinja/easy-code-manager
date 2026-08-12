@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FluentSnippets annotated editor</title>
+<!--
+  Source for screenshot-7.png, the annotated tour of the snippet editor.
+
+  Regenerate:
+
+    browse viewport 1280x860 --scale 2
+    browse goto file://<this file>
+    browse screenshot --viewport screenshot-7.png     -> 2560x1720
+
+  2560x1720 is the size of the other screenshots in org_assets, so the gallery does not
+  mix resolutions.
+
+  This replaces the annotated screenshot that has been on wordpress.org since 2023. That
+  one showed the pre-10.56 interface - the green Create Snippet button, the grey chrome -
+  which no longer exists, so it contradicted the other screenshots on the same page.
+
+  editor-create-new.png is the Create New screen captured from a real install with
+  conditional logic switched on, clipped to the card:
+
+    browse viewport 1680x1200 --scale 2
+    browse goto <site>/wp-admin/admin.php?page=fluent-snippets#/create-new
+    browse eval org_assets/src/shot-prep.js
+    <enable conditional logic, add a Page / Post Type rule>
+    browse screenshot --clip 155,74,1370,1093 editor-create-new.png
+
+  The callout positions below are in the page's own coordinates, and the arrows are aimed
+  at the shot as it is placed here. Recapturing the screenshot at a different clip or size
+  moves every target, so the .shot rules and the arrow paths have to be re-aimed together.
+-->
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        width: 1280px;
+        height: 860px;
+        background: #FFFFFF;
+        overflow: hidden;
+        position: relative;
+    }
+
+    /*
+     * The shot is 1370x1093 CSS px of the admin screen, drawn at 0.6038 so it is 827x660
+     * here. That scale is chosen from the left margin, not the right: "Type of the snippet"
+     * is the longest single-line callout, and it has to fit beside the shot without running
+     * off the page.
+     */
+    .shot {
+        position: absolute;
+        left: 226px;
+        top: 100px;
+        width: 827px;
+        height: 660px;
+        border-radius: 6px;
+        box-shadow: 0 2px 18px rgba(17, 23, 29, .13);
+    }
+
+    .marks {
+        position: absolute;
+        inset: 0;
+    }
+
+    /*
+     * Bradley Hand is the hand on the original annotations. It ships with macOS, which is
+     * where this is rendered; if it is ever regenerated elsewhere the fallbacks are the
+     * other two hands that ship with a Mac, and then whatever cursive exists.
+     */
+    .note {
+        position: absolute;
+        font-family: "Bradley Hand", "Noteworthy", "Chalkboard SE", cursive;
+        font-weight: 700;
+        font-size: 27px;
+        line-height: 1.24;
+        color: #11171D;
+        white-space: pre-line;
+    }
+
+    .n_type    { left: 18px;   top: 44px;  transform: rotate(-7deg); }
+    .n_editor  { left: 12px;   top: 268px; transform: rotate(-6deg); }
+    .n_where   { left: 8px;    top: 452px; transform: rotate(-8deg); }
+    .n_logic   { left: 330px;  top: 790px; transform: rotate(-2deg); }
+    .n_group   { left: 1068px; top: 190px; transform: rotate(6deg); }
+    .n_tags    { left: 1064px; top: 500px; transform: rotate(-5deg); }
+</style>
+</head>
+<body>
+    <img class="shot" src="editor-create-new.png" alt="">
+
+    <div class="note n_type">Type of the snippet</div>
+    <div class="note n_editor">Code Editor</div>
+    <div class="note n_where">Insert Location</div>
+    <div class="note n_logic">Smart Conditional Logic</div>
+    <div class="note n_group">Organize by
+Virtual Folder</div>
+    <div class="note n_tags">Categorize
+your snippet</div>
+
+    <svg class="marks" width="1280" height="860" viewBox="0 0 1280 860" fill="none"
+         stroke="#11171D" stroke-width="3.4" stroke-linecap="round">
+        <defs>
+            <!--
+             * One marker, reused. markerUnits=userSpaceOnUse keeps it the same size on
+             * every arrow regardless of stroke width, and orient=auto turns it to sit on
+             * the end of whichever curve it is on.
+            -->
+            <marker id="tip" viewBox="0 0 12 12" refX="9" refY="6"
+                    markerWidth="12" markerHeight="12"
+                    markerUnits="userSpaceOnUse" orient="auto">
+                <path d="M0.5 0.5 11 6 0.5 11.5 3.4 6z" fill="#11171D" stroke="none"/>
+            </marker>
+        </defs>
+
+        <!-- Type of the snippet -> the Snippet Type radios -->
+        <path d="M196 84C230 102 240 126 242 152" marker-end="url(#tip)"/>
+
+        <!-- Code Editor -> the left edge of the dark editor -->
+        <path d="M166 292C192 282 214 284 236 292" marker-end="url(#tip)"/>
+
+        <!-- Insert Location -> the Where to Run? select -->
+        <path d="M132 494C176 496 210 502 234 510" marker-end="url(#tip)"/>
+
+        <!-- Smart Conditional Logic -> the Page / Post Type rule -->
+        <path d="M342 782C322 736 312 692 316 654" marker-end="url(#tip)"/>
+
+        <!-- Organize by Virtual Folder -> the Snippet Group select -->
+        <path d="M1078 236C1000 250 900 262 840 286" marker-end="url(#tip)"/>
+
+        <!-- Categorize your snippet -> the Tags select -->
+        <path d="M1074 494C1000 474 900 428 840 400" marker-end="url(#tip)"/>
+    </svg>
+</body>
+</html>

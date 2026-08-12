@@ -29,8 +29,8 @@ const describeTransportError = function (xhr) {
     } else if (status === 403 || status === 406 || status === 418 || status === 429) {
         details = {
             title: $t('Your server blocked this request') + ' (HTTP ' + status + ')',
-            reason: $t('Your snippet is sent to the server as raw code, and a firewall rule decided that looked like an attack. ModSecurity, Wordfence, Cloudflare and several managed hosts do this by default — the request is stopped before FluentSnippets ever sees it.'),
-            fix: $t('Ask your host to allow requests to wp-admin/admin-ajax.php from your admin account, or to disable the ModSecurity rule that is firing. To confirm this is the cause, try saving a snippet containing a single harmless line — if that works, it is the content of your code that is being blocked, not the plugin.')
+            reason: $t('Your snippet is sent to the server as raw code, and a firewall rule decided that looked like an attack. ModSecurity, Wordfence, Cloudflare and several managed hosts do this by default. The request is stopped before FluentSnippets ever sees it.'),
+            fix: $t('Ask your host to allow requests to wp-admin/admin-ajax.php from your admin account, or to disable the ModSecurity rule that is firing. To confirm this is the cause, try saving a snippet containing a single harmless line. If that works, it is the content of your code that is being blocked, not the plugin.')
         };
     } else if (status === 413) {
         details = {

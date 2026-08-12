@@ -45,12 +45,30 @@
             <nav id="fsnip_app_nav" class="fsnip_app_nav_wrap" :class="{'is-open': navOpen}"
                  :aria-label="$t('FluentSnippets')">
                 <ul class="fsnip_app_nav">
-                    <li v-for="item in menuItems" :key="item.route">
+                    <li v-for="item in menuItems" :key="item.route || item.url">
+                        <!--
+                            The one item that leaves the app. The arrow says so at a glance
+                            and the hidden text says it to a screen reader, because a link
+                            that replaces the window without warning is the thing people
+                            using assistive tech get no way back from.
+                        -->
+                        <a v-if="item.url" :href="item.url" target="_blank" rel="noopener"
+                           class="fsnip_nav_external">
+                            {{ item.title }}
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
+                                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round" aria-hidden="true">
+                                <path d="M14 4h6v6"/>
+                                <path d="M20 4l-8.5 8.5"/>
+                                <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>
+                            </svg>
+                            <span class="fsnip_sr_only">{{ $t('(opens in a new tab)') }}</span>
+                        </a>
                         <!--
                             aria-current is what tells a screen reader which section it is
                             already in. The highlight alone says it to everyone else.
                         -->
-                        <router-link :to="{name: item.route}"
+                        <router-link v-else :to="{name: item.route}"
                                      :aria-current="isActive(item) ? 'page' : null"
                                      :class="{'router-link-active': isActive(item)}">
                             {{ item.title }}
@@ -134,6 +152,10 @@ export default {
                 {
                     route: 'about',
                     title: this.$t('About')
+                },
+                {
+                    url: 'https://community.wpmanageninja.com/portal/',
+                    title: this.$t('Community')
                 }
             ],
             hasServerError: false,
