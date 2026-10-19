@@ -6,6 +6,7 @@ namespace FluentSnippets\App\Http\Controllers;
 use FluentSnippets\App\Helpers\Arr;
 use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Model\Snippet;
+use FluentSnippets\App\Services\RestAuthoring;
 
 class SettingsController
 {
@@ -25,7 +26,8 @@ class SettingsController
             'auto_disable'        => 'yes',
             'auto_publish'        => 'no',
             'remove_on_uninstall' => 'no',
-            'enable_line_wrap'    => 'no'
+            'enable_line_wrap'    => 'no',
+            'rest_authoring'      => 'no'
         ];
 
         if (!$config || !is_array($config) || empty($config['meta'])) {
@@ -40,7 +42,10 @@ class SettingsController
         return [
             'settings'      => $settings,
             'is_standalone' => defined('FLUENT_SNIPPETS_RUNNING_MU'),
-            'secret_url'    => Helper::getSafeModeUrl()
+            'secret_url'    => Helper::getSafeModeUrl(),
+            // null when the setting decides; true/false when wp-config.php does, in which
+            // case the toggle is shown in that position and cannot be moved.
+            'rest_authoring_locked' => RestAuthoring::lockedValue()
         ];
     }
 
@@ -84,8 +89,8 @@ class SettingsController
             'auto_disable'        => 'yes',
             'auto_publish'        => 'no',
             'remove_on_uninstall' => 'no',
-            'enable_line_wrap'    => 'no'
-
+            'enable_line_wrap'    => 'no',
+            'rest_authoring'      => 'no'
         ];
 
         $settings = Arr::only($settings, array_keys($defaults));
@@ -107,6 +112,12 @@ class SettingsController
         $config['meta']['auto_publish'] = sanitize_text_field($settings['auto_publish']);
         $config['meta']['remove_on_uninstall'] = sanitize_text_field($settings['remove_on_uninstall']);
         $config['meta']['enable_line_wrap'] = sanitize_text_field($settings['enable_line_wrap']);
+        // An admin screen loaded before this setting existed will not send it, and saving
+        // line wrap from a stale tab must not switch off someone's integration. When it
+        // is sent, anything but an explicit 'yes' means off.
+        if (isset($settings['rest_authoring'])) {
+            $config['meta']['rest_authoring'] = $settings['rest_authoring'] === 'yes' ? 'yes' : 'no';
+        }
 
         $config = Helper::saveIndexedConfig($config);
 
