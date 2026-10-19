@@ -2,9 +2,11 @@
 
 namespace FluentSnippets\App\Services;
 
-// This is an auto-generated file. Do not edit it by hand — run `node i18n.node.js`.
+// This is an auto-generated file (node i18n.node.js). Please do not edit manually.
+// Source: literal $t() / $_n() / $_x() calls in the directories listed in i18n.config.json, plus reserved18n.json.
 class Trans
 {
+    // admin: src
     public static function getStrings()
     {
         return [
@@ -315,7 +317,7 @@ class Trans
             'the controls' => __('the controls', 'easy-code-manager'),
             'the odd jobs' => __('the odd jobs', 'easy-code-manager'),
             'within' => __('within', 'easy-code-manager'),
-            'within days' => __('within days', 'easy-code-manager')
+            'within days' => __('within days', 'easy-code-manager'),
         ];
     }
 }
