@@ -6,6 +6,7 @@ import {ElNotification, ElLoading, ElMessageBox} from 'element-plus'
 import Storage from '@/Bits/Storage';
 import App from './App.vue';
 import eventBus from './Bits/event-bus';
+import {$t, $_n, $_x} from './i18n.js';
 
 require('./app.scss');
 
@@ -113,36 +114,9 @@ app.mixin({
             });
         },
         convertToText,
-        /**
-         * The translation of `string`, with any %s / %1s / %d placeholders filled in from
-         * the remaining arguments.
-         *
-         * Placeholders are what let a sentence keep its word order in a language that puts
-         * the value somewhere else, which concatenating the pieces at the call site does
-         * not. Called with one argument it is exactly the lookup it always was.
-         */
-        $t(string) {
-            string = window.fluentSnippetAdmin.i18n[string] || string;
-
-            const args = Array.prototype.slice.call(arguments, 1);
-
-            if (args.length === 0) {
-                return string;
-            }
-
-            let argIndex = 0;
-
-            return string.replace(/%(\d*)s|%d/g, (match, number) => {
-                // A numbered placeholder names its argument; a bare one takes the next.
-                if (number) {
-                    const index = parseInt(number, 10) - 1;
-
-                    return index < args.length ? args[index] : match;
-                }
-
-                return argIndex < args.length ? args[argIndex++] : match;
-            });
-        },
+        $t,
+        $_n,
+        $_x,
         relativeTimeFromUtc(utcDateTime) {
             if(!utcDateTime) {
                 return '';

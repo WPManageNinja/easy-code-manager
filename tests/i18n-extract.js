@@ -63,6 +63,7 @@ function extract(files, reserved = {}) {
 
     fs.writeFileSync(path.join(work, 'reserved18n.json'), JSON.stringify(reserved));
     fs.copyFileSync(path.join(repo, 'i18n.node.js'), path.join(work, 'i18n.node.js'));
+    fs.copyFileSync(path.join(repo, 'i18n.config.json'), path.join(work, 'i18n.config.json'));
 
     // Warnings go to stderr, which is where a build log wants them, so both streams are
     // collected here.
@@ -136,10 +137,10 @@ check('calls after every comment style are still found',
 
 console.log('\nStrings that cannot be collected are reported, not dropped in silence');
 
+// A $t(variable) is not reported by the generator: its possible values belong in
+// reserved18n.json, and tests/lint/translation-map.js checks the reserved keys.
 const dynamic = extract({
     'probe.js': [
-        'const label = whatever;',
-        'const a = $t(label);',
         'const b = $t(`Hi ${name}`);',
         '$t(string) {',
         '    return string;',
@@ -147,8 +148,7 @@ const dynamic = extract({
     ].join('\n')
 });
 
-check('a variable argument is reported', /\$t\(label\)/.test(dynamic.stdout), JSON.stringify(dynamic.stdout));
-check('an interpolated template literal is reported', /interpolation/.test(dynamic.stdout), JSON.stringify(dynamic.stdout));
+check('an interpolated template literal is reported', /template-literal/.test(dynamic.stdout), JSON.stringify(dynamic.stdout));
 check('the $t method definition is not reported', !/\$t\(string\)/.test(dynamic.stdout), JSON.stringify(dynamic.stdout));
 
 console.log('\nreserved18n.json carries strings the scan cannot see');

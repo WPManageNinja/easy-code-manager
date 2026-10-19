@@ -1,6 +1,4 @@
-// Named $t, not t: i18n.node.js collects translatable strings by scanning for `$t(`,
-// so anything called through a differently-named helper is never handed to translators.
-const $t = (string) => (window.fluentSnippetAdmin.i18n || {})[string] || string;
+import {$t} from '../i18n.js';
 
 const looksLikeHtml = (text) => typeof text === 'string' && /<\s*(html|body|br|p|div|h1|table)\b/i.test(text);
 
