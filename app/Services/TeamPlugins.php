@@ -349,11 +349,24 @@ class TeamPlugins
      * Descriptions say what the plugin does, in the same register as the rest of the
      * About screen: what happens, not how good it is.
      *
+     * Order is the order of the card, and it is deliberate: FluentCart and FluentCRM lead
+     * because they are the ones we most want people to find.
+     *
      * @return array
      */
     private static function catalogue()
     {
         return [
+            'fluent-cart'     => [
+                'name'        => 'FluentCart',
+                'icon'        => 'icon.svg',
+                'description' => __('Sell physical and digital products, subscriptions and software licenses, with checkout and payments built in.', 'easy-code-manager'),
+            ],
+            'fluent-crm'      => [
+                'name'        => 'FluentCRM',
+                'icon'        => 'icon.svg',
+                'description' => __('Email lists, campaigns and automations, kept on your own site rather than rented.', 'easy-code-manager'),
+            ],
             'fluentform'      => [
                 'name'        => 'Fluent Forms',
                 'icon'        => 'icon-128x128.png',
@@ -364,20 +377,15 @@ class TeamPlugins
                 'icon'        => 'icon.svg',
                 'description' => __('Sends your site\'s mail through a real mail service, so it stops arriving in spam folders.', 'easy-code-manager'),
             ],
-            'fluent-crm'      => [
-                'name'        => 'FluentCRM',
-                'icon'        => 'icon.svg',
-                'description' => __('Email lists, campaigns and automations, kept on your own site rather than rented.', 'easy-code-manager'),
-            ],
-            'ninja-tables'    => [
-                'name'        => 'Ninja Tables',
-                'icon'        => 'icon-128x128.png',
-                'description' => __('Data tables you edit like a spreadsheet and place with a shortcode.', 'easy-code-manager'),
-            ],
             'fluent-booking'  => [
                 'name'        => 'FluentBooking',
                 'icon'        => 'icon.svg',
                 'description' => __('Appointment scheduling that syncs both ways with Google, Outlook and Apple calendars.', 'easy-code-manager'),
+            ],
+            'fluent-community' => [
+                'name'        => 'FluentCommunity',
+                'icon'        => 'icon.svg',
+                'description' => __('Spaces, courses and member feeds - a social network on your own domain.', 'easy-code-manager'),
             ],
             'fluent-support'  => [
                 'name'        => 'Fluent Support',
@@ -389,20 +397,15 @@ class TeamPlugins
                 'icon'        => 'icon.svg',
                 'description' => __('Two-factor sign-in, magic links, and a record of every login attempt on the site.', 'easy-code-manager'),
             ],
-            'fluent-community' => [
-                'name'        => 'FluentCommunity',
-                'icon'        => 'icon.svg',
-                'description' => __('Spaces, courses and member feeds - a social network on your own domain.', 'easy-code-manager'),
-            ],
-            'fluent-cart'     => [
-                'name'        => 'FluentCart',
-                'icon'        => 'icon.svg',
-                'description' => __('A shop: products, carts, subscriptions and checkout.', 'easy-code-manager'),
-            ],
             'fluent-boards'   => [
                 'name'        => 'FluentBoards',
                 'icon'        => 'icon.svg',
                 'description' => __('Kanban boards and task lists for the people who run the site.', 'easy-code-manager'),
+            ],
+            'ninja-tables'    => [
+                'name'        => 'Ninja Tables',
+                'icon'        => 'icon-128x128.png',
+                'description' => __('Data tables you edit like a spreadsheet and place with a shortcode.', 'easy-code-manager'),
             ],
             'wp-payment-form' => [
                 'name'        => 'Paymattic',

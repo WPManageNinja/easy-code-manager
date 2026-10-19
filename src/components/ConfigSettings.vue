@@ -65,6 +65,32 @@
                     </div>
                 </div>
 
+                <!--
+                    The only setting here that changes what someone outside wp-admin can do,
+                    so turning it on asks first (toggleRestAuthoring). The details - endpoints,
+                    request format, the wp-config constant - live in the doc, not on this screen.
+                -->
+                <div class="fsnip_setting">
+                    <div class="fsnip_setting_text">
+                        <strong>{{ $t('Enable REST API to manage snippets') }}</strong>
+                        <p>
+                            {{ $t('Lets other apps add and edit snippets on this site. Only turn this on if an outside tool needs it.') }}
+                            <a href="https://fluentsnippets.com/docs/rest-api" target="_blank" rel="noopener">{{ $t('Learn more') }}<span class="fsnip_sr_only">{{ $t('(opens in a new tab)') }}</span></a>
+                        </p>
+
+                        <div v-if="rest_authoring_locked !== null" class="fsnip_setting_warning" role="note">
+                            {{ $t('This is set in wp-config.php, so you can only change it there.') }}
+                        </div>
+                    </div>
+                    <div class="fsnip_setting_control">
+                        <el-switch :disabled="!canEdit || rest_authoring_locked !== null"
+                                   :model-value="settings.rest_authoring"
+                                   @update:model-value="toggleRestAuthoring"
+                                   active-value="yes" inactive-value="no"
+                                   :aria-label="$t('Enable REST API to manage snippets')"/>
+                    </div>
+                </div>
+
                 <div class="fsnip_setting is_pending">
                     <div class="fsnip_setting_text">
                         <strong>
@@ -184,53 +210,6 @@
                 <el-skeleton :rows="2" animated/>
             </div>
         </div>
-
-        <!--
-            Off by default, and the only setting here that changes what someone OUTSIDE the
-            admin can do, so the risk is in the sentence next to the switch rather than in
-            a help page. It saves the moment it is flipped: a switch that looks on while
-            remote authoring is still refused would send an integrator chasing the wrong
-            problem.
-        -->
-        <div class="box box_narrow">
-            <div class="box_header">
-                <div class="box_head">
-                    <h2>{{ $t('Remote Authoring') }}</h2>
-                    <span class="fsnip_tag" :class="settings.rest_authoring == 'yes' ? 'is_success' : 'is_neutral'">
-                        {{ settings.rest_authoring == 'yes' ? $t('On') : $t('Off') }}
-                    </span>
-                </div>
-            </div>
-
-            <div v-if="!fetching" class="box_body">
-                <div class="fsnip_setting">
-                    <div class="fsnip_setting_text">
-                        <strong>{{ $t('Allow snippets to be created and edited over the REST API') }}</strong>
-                        <p>{{ $t('For integrations, deploy scripts and site-management tools that sign in with an Application Password. The editor on this screen does not need it. Turning it on means anyone holding an administrator\'s Application Password can put PHP on this site, so only enable it if something you use depends on it.') }}</p>
-
-                        <div v-if="rest_authoring_locked !== null" class="fsnip_setting_warning" role="note">
-                            {{ $t('This is set in wp-config.php with FLUENT_SNIPPETS_REST_AUTHORING and can only be changed there.') }}
-                        </div>
-                    </div>
-                    <div class="fsnip_setting_control">
-                        <el-switch :disabled="!canEdit || rest_authoring_locked !== null || saving"
-                                   :model-value="settings.rest_authoring"
-                                   @update:model-value="toggleRestAuthoring"
-                                   active-value="yes" inactive-value="no"
-                                   :aria-label="$t('Allow snippets to be created and edited over the REST API')"/>
-                    </div>
-                </div>
-
-                <div class="fsnip_setting_aside">
-                    <strong>{{ $t('Endpoints') }}</strong>
-                    <p>{{ $t('POST snippets/create and snippets/update under the fluent-snippets REST namespace. Reading, enabling, disabling and deleting snippets over REST work either way.') }}</p>
-                    <code>{{ restBase }}/snippets/update</code>
-                </div>
-            </div>
-            <div v-else class="box_body">
-                <el-skeleton :rows="2" animated/>
-            </div>
-        </div>
     </div>
 </template>
 
@@ -276,23 +255,17 @@ export default {
                     this.fetching = false;
                 });
         },
-        /**
-         * Resolves to whether the save went through, so a caller that changed a value
-         * optimistically can put it back.
-         */
         saveSettings() {
             this.saving = true;
-            return this.$post('settings', {
+            this.$post('settings', {
                 settings: this.settings
             })
                 .then(response => {
                     this.$notify.success(response.message);
                     this.appVars.enable_line_wrap = this.settings.enable_line_wrap;
-                    return true;
                 })
                 .catch((errors) => {
                     this.$handleError(errors);
-                    return false;
                 })
                 .finally(() => {
                     this.saving = false;
@@ -336,34 +309,26 @@ export default {
         },
         /**
          * Turning it on asks first, because it widens what a stolen credential can do.
-         * Turning it off does not - that only ever narrows it.
+         * Turning it off does not - that only ever narrows it. Either way it is saved with
+         * the Save Settings button, like every other toggle in this card.
          */
         toggleRestAuthoring(value) {
-            const previous = this.settings.rest_authoring;
-
-            const apply = () => {
-                this.settings.rest_authoring = value;
-                this.saveSettings().then(saved => {
-                    if (!saved) {
-                        this.settings.rest_authoring = previous;
-                    }
-                });
-            };
-
             if (value !== 'yes') {
-                apply();
+                this.settings.rest_authoring = value;
                 return;
             }
 
             this.$confirm(
-                this.$t('Anyone with an administrator\'s Application Password will be able to add and change PHP snippets on this site from outside wp-admin.'),
-                this.$t('Allow remote snippet authoring?'),
+                this.$t('Anyone with an admin\'s Application Password will be able to add and edit snippets, including PHP code, from outside this site.'),
+                this.$t('Turn on the REST API?'),
                 {
                     confirmButtonText: this.$t('Turn on'),
                     cancelButtonText: this.$t('Cancel'),
                     type: 'warning'
                 }
-            ).then(apply).catch(() => {
+            ).then(() => {
+                this.settings.rest_authoring = 'yes';
+            }).catch(() => {
                 // Dismissed. The switch never moved, because it only follows the setting.
             });
         },
@@ -395,11 +360,6 @@ export default {
                 .finally(() => {
                     this.saving = false;
                 });
-        }
-    },
-    computed: {
-        restBase() {
-            return window.fluentSnippetAdmin.rest.url;
         }
     },
     mounted() {

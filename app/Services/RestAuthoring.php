@@ -69,29 +69,29 @@ class RestAuthoring
     public static function permissionCheck()
     {
         if (!is_user_logged_in()) {
-            return new \WP_Error('rest_not_logged_in', __('Authentication is required to create or edit snippets. Use an Application Password, or a logged-in session with a REST nonce.', 'easy-code-manager'), [
+            return new \WP_Error('rest_not_logged_in', __('You need to be signed in to add or edit snippets. Use an Application Password.', 'easy-code-manager'), [
                 'status' => 401
             ]);
         }
 
         if (!self::isEnabled()) {
             $how = self::lockedValue() === false
-                ? __('It has been turned off in wp-config.php (FLUENT_SNIPPETS_REST_AUTHORING), so it can only be changed there.', 'easy-code-manager')
-                : __('An administrator can turn it on under FluentSnippets → Settings → Remote Authoring, or by defining FLUENT_SNIPPETS_REST_AUTHORING as true in wp-config.php.', 'easy-code-manager');
+                ? __('It is turned off in wp-config.php (FLUENT_SNIPPETS_REST_AUTHORING), so it can only be changed there.', 'easy-code-manager')
+                : __('An admin can turn it on in FluentSnippets → Settings. See https://fluentsnippets.com/docs/rest-api', 'easy-code-manager');
 
-            return new \WP_Error('fluent_snippets_rest_authoring_disabled', __('Creating and editing snippets over the REST API is turned off on this site.', 'easy-code-manager') . ' ' . $how, [
+            return new \WP_Error('fluent_snippets_rest_authoring_disabled', __('Adding and editing snippets through the REST API is turned off on this site.', 'easy-code-manager') . ' ' . $how, [
                 'status' => 403
             ]);
         }
 
         if (!wp_is_file_mod_allowed('capability_update_core')) {
-            return new \WP_Error('fluent_snippets_file_mods_disabled', __('Snippets cannot be changed on this site: wp-config.php has DISALLOW_FILE_MODS set, and every snippet is a file in wp-content.', 'easy-code-manager'), [
+            return new \WP_Error('fluent_snippets_file_mods_disabled', __('Snippets can\'t be changed on this site because DISALLOW_FILE_MODS is set in wp-config.php.', 'easy-code-manager'), [
                 'status' => 403
             ]);
         }
 
         if (!current_user_can('install_plugins') || !current_user_can('unfiltered_html')) {
-            return new \WP_Error('rest_forbidden', __('Creating or editing a snippet needs both the install_plugins and unfiltered_html capabilities.', 'easy-code-manager'), [
+            return new \WP_Error('rest_forbidden', __('You need the install_plugins and unfiltered_html permissions to add or edit snippets.', 'easy-code-manager'), [
                 'status' => rest_authorization_required_code()
             ]);
         }

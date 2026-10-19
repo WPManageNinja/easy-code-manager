@@ -176,7 +176,7 @@ Quite the opposite. Unlike other code snippets plugins, FluentSnippets does not 
 
 = 10.57 - Unreleased =
 - Restored the REST routes for creating and editing snippets (POST snippets, snippets/create, snippets/update), removed in 10.56 without notice. That removal was a breaking API change and should have been listed as one here
-- Remote authoring is now off by default. Turn it on under Settings → Remote Authoring, or set FLUENT_SNIPPETS_REST_AUTHORING in wp-config.php
+- Adding and editing snippets through the REST API is now off by default. Turn it on in Settings, or set FLUENT_SNIPPETS_REST_AUTHORING in wp-config.php
 - snippets/update changes only the fields it is sent, so editing code no longer touches a snippet's status
 - Added an optional expected_hash check to snippets/update: if the snippet changed since it was read, nothing is saved and the reply is a 409
 - snippets/find and every REST write now return a code_hash, and writes return the saved snippet
