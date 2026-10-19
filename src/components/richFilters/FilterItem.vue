@@ -18,7 +18,7 @@
                 reads as a bare value belonging to nothing. The name pins it to its rule.
             -->
             <el-select :disabled="view_only" size="small" :placeholder="$t('Select Operator')"
-                       :aria-label="$t('Operator for the %s condition', itemConfig.label)"
+                       :aria-label="/* translators: %s: condition name, for example User role */ $t('Operator for the %s condition', itemConfig.label)"
                        @visible-change="maybeOperatorSelected"
                        v-model="item.operator">
                 <el-option v-for="(optionLabel,option) in operatorOptions" :key="option" :value="option"
@@ -95,7 +95,7 @@
                 @click="removeItem()"
                 size="small"
                 type="danger"
-                :aria-label="$t('Remove the %s condition', itemConfig.label)">
+                :aria-label="/* translators: %s: condition name, for example User role */ $t('Remove the %s condition', itemConfig.label)">
                 <el-icon aria-hidden="true">
                     <DeleteIcon/>
                 </el-icon>

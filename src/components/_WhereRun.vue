@@ -50,7 +50,7 @@
                 <p>{{$t('You can view the shortcode after you save this snippet')}}</p>
             </div>
             <div class="fsnip_highlight" v-else>
-                <p>{{$t('Use Shortcode to display the return or print content of this snippet:')}}</p>
+                <p>{{$t('Use this shortcode to show whatever the snippet returns or prints:')}}</p>
                 <div class="snip_shortcode">
                 <span class="snip_code">
                     [fluent_snippet id="{{ getFileName(snippet.file_name) }}"]

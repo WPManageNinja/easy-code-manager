@@ -27,7 +27,7 @@
         </el-checkbox-group>
         <el-button class="ecm_submit" @click="exportSelectedSnippet()" v-loading="exporting"
                    :disabled="!selectedSnippets.length" type="primary">
-           {{$t('Export Select Snippets')}}
+           {{$t('Export Selected Snippets')}}
         </el-button>
     </div>
 </template>

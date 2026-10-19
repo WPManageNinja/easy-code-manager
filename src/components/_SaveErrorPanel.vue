@@ -4,7 +4,8 @@
             <span class="dashicons dashicons-warning"></span>
             <div class="fsnip_error_head_text">
                 <h4>{{ details.title || $t('The snippet could not be saved') }}</h4>
-                <span v-if="details.line" class="fsnip_error_line">{{ $t('Line') }} {{ details.line }}</span>
+                <!-- translators: %s: line number in the snippet code -->
+                <span v-if="details.line" class="fsnip_error_line">{{ $t('Line %s', details.line) }}</span>
             </div>
         </div>
 

@@ -12,11 +12,11 @@
                 <h1 class="fss_masthead_title"><span>fluent</span>Snippets</h1>
 
                 <p class="fss_masthead_lead">
-                    {{ $t('The code snippets plugin that writes to files instead of your database. Snippets load the way a small feature plugin loads - no query, no option lookup, no work on a page that does not use them.') }}
+                    {{ $t('About_Tagline') }}
                 </p>
 
                 <p class="fss_masthead_free">
-                    {{ $t('Free, and open source under the GPL. There is no pro version, no paid add-on and no upgrade prompt - every feature is in the copy you already have.') }}
+                    {{ $t('About_Free_Notice') }}
                 </p>
 
                 <div class="fss_masthead_actions">
@@ -158,15 +158,15 @@ export default {
             return [
                 {
                     title: this.$t('Snippets are files'),
-                    body: this.$t('Each one is written to wp-content/fluent-snippets and loaded from there. Nothing is fetched from the options table on the way in, so a site with two hundred snippets costs the same on a page that runs none of them as a site with two.')
+                    body: this.$t('About_Fact_Files_Body')
                 },
                 {
                     title: this.$t('A fatal cannot lock you out'),
-                    body: this.$t('If a snippet throws one, it is switched off on the spot and the screen tells you which snippet, which line and what was thrown. If you are already locked out, the Safe Mode URL on the Settings screen turns every snippet off without needing the admin.')
+                    body: this.$t('About_Fact_Fatal_Body')
                 },
                 {
                     title: this.$t('It keeps running without the plugin'),
-                    body: this.$t('Standalone Mode writes a must-use plugin that loads your snippets directly. Deactivate FluentSnippets, or delete it, and the code you wrote carries on running. What you built is yours, not held hostage by ours.')
+                    body: this.$t('About_Fact_Standalone_Body')
                 }
             ];
         },

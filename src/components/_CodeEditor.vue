@@ -32,11 +32,11 @@
     </p>
 
     <div v-if="errorHooks && errorHooks.length" class="fsnip_error_hooks">
-        <p>{{$t('It seems like you are using some hooks that may not work correctly, because this code will run after the mentioned hooks:')}}</p>
+        <p>{{$t('Code_Editor_Late_Hooks_Warning')}}</p>
         <ul>
             <li v-for="hook in errorHooks" :key="hook">{{ hook }}</li>
         </ul>
-        <p v-if="errorHooks.indexOf('init') > -1">{{$t('* As you have conditional logics enabled the code will run on init hook.')}}</p>
+        <p v-if="errorHooks.indexOf('init') > -1">{{$t('* Because conditional logic is on, this snippet runs on the init hook.')}}</p>
     </div>
 
 </template>
