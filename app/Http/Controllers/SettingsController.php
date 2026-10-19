@@ -116,7 +116,20 @@ class SettingsController
         // line wrap from a stale tab must not switch off someone's integration. When it
         // is sent, anything but an explicit 'yes' means off.
         if (isset($settings['rest_authoring'])) {
-            $config['meta']['rest_authoring'] = $settings['rest_authoring'] === 'yes' ? 'yes' : 'no';
+            $restAuthoring = $settings['rest_authoring'] === 'yes' ? 'yes' : 'no';
+
+            // The switch exists to limit what a leaked Application Password can do, so
+            // that password must not be able to flip it: otherwise opting in is one
+            // extra request. Only the admin screen (cookie and nonce) may change it.
+            if ($restAuthoring !== Arr::get($config, 'meta.rest_authoring', 'no') && rest_get_authenticated_app_password()) {
+                return new \WP_Error(
+                    'fluent_snippets_rest_authoring_app_password',
+                    __('The REST API switch can only be changed on the FluentSnippets Settings screen, not with an Application Password.', 'easy-code-manager'),
+                    ['status' => 403]
+                );
+            }
+
+            $config['meta']['rest_authoring'] = $restAuthoring;
         }
 
         $config = Helper::saveIndexedConfig($config);

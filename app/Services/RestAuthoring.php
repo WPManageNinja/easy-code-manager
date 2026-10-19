@@ -53,7 +53,22 @@ class RestAuthoring
             return null;
         }
 
-        return (bool)constant(self::CONSTANT);
+        return self::constantMeansOn(constant(self::CONSTANT));
+    }
+
+    /**
+     * true, 1, '1', 'yes', 'on' and 'true' mean on; anything else means off.
+     *
+     * A plain (bool) cast read define('FLUENT_SNIPPETS_REST_AUTHORING', 'false') as on,
+     * so a host locking authoring off with a string forced it on instead. Anything
+     * unrecognised now fails closed.
+     *
+     * @param mixed $value
+     * @return bool
+     */
+    public static function constantMeansOn($value)
+    {
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**

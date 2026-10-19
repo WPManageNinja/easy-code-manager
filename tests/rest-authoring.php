@@ -73,7 +73,8 @@ function is_user_logged_in() { return $GLOBALS['fs_test']['logged_in']; }
 function current_user_can($cap) { return !empty($GLOBALS['fs_test']['caps'][$cap]); }
 function wp_is_file_mod_allowed($context) { return $GLOBALS['fs_test']['file_mods']; }
 function rest_authorization_required_code() { return 403; }
-function rest_get_authenticated_app_password() { return 'app-pass-uuid'; }
+function rest_get_authenticated_app_password() { return array_key_exists('app_password', $GLOBALS['fs_test']) ? $GLOBALS['fs_test']['app_password'] : 'app-pass-uuid'; }
+function sanitize_text_field($text) { return trim((string)$text); }
 function rest_ensure_response($data) { return new WP_REST_Response($data, 200); }
 
 $GLOBALS['fs_routes'] = [];
@@ -130,8 +131,10 @@ require $base . 'app/Services/Permissions.php';
 require $base . 'app/Services/RestAuthoring.php';
 require $base . 'app/Services/Router.php';
 require $base . 'app/Http/Controllers/SnippetsController.php';
+require $base . 'app/Http/Controllers/SettingsController.php';
 
 use FluentSnippets\App\Helpers\Helper;
+use FluentSnippets\App\Http\Controllers\SettingsController;
 use FluentSnippets\App\Http\Controllers\SnippetsController;
 use FluentSnippets\App\Services\RestAuthoring;
 
@@ -313,6 +316,33 @@ check('an error carrying a status keeps it', $conflict->status === 409, (string)
 
 $field = call_user_func($GLOBALS['fs_routes']['probe/field']['callback'], new WP_REST_Request());
 check('a field message under the same key falls back to 422', $field->status === 422, (string)$field->status);
+
+echo "\nAn Application Password cannot flip the switch\n";
+
+$GLOBALS['fs_test']['caps']['manage_options'] = true;
+$allSettings = ['auto_disable' => 'yes', 'auto_publish' => 'no', 'remove_on_uninstall' => 'no', 'enable_line_wrap' => 'no'];
+
+setRestAuthoring('no');
+$flip = SettingsController::saveSettings(new WP_REST_Request(['settings' => $allSettings + ['rest_authoring' => 'yes']]));
+Helper::flushIndexedConfigCache();
+check('turning it on with an Application Password is a 403', errorStatus($flip) === 403, describe($flip));
+check('and the setting stays off', RestAuthoring::isEnabled() === false);
+
+$same = SettingsController::saveSettings(new WP_REST_Request(['settings' => $allSettings + ['rest_authoring' => 'no']]));
+check('other settings still save over an Application Password', !is_wp_error($same), describe($same));
+
+$GLOBALS['fs_test']['app_password'] = null;
+$admin = SettingsController::saveSettings(new WP_REST_Request(['settings' => $allSettings + ['rest_authoring' => 'yes']]));
+Helper::flushIndexedConfigCache();
+check('the admin screen can turn it on', !is_wp_error($admin) && RestAuthoring::isEnabled() === true, describe($admin));
+unset($GLOBALS['fs_test']['app_password']);
+
+echo "\nThe constant is read as a boolean\n";
+
+foreach ([[true, true], [1, true], ['1', true], ['yes', true], ['true', true], ['on', true],
+          [false, false], [0, false], ['0', false], ['false', false], ['no', false], ['off', false], ['', false], ['nonsense', false]] as $case) {
+    check('constant ' . var_export($case[0], true) . ' means ' . ($case[1] ? 'on' : 'off'), RestAuthoring::constantMeansOn($case[0]) === $case[1]);
+}
 
 echo "\nwp-config.php wins\n";
 
