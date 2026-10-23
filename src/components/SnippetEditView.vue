@@ -67,16 +67,40 @@ export default {
             errors: new Errors()
         }
     },
+    watch: {
+        /*
+         * Vue Router reuses this screen when only the snippet in the address changes - the
+         * address bar, back/forward. It used to keep the snippet it had loaded first while
+         * saves went to the new name, writing one snippet's code over another. So a new
+         * name is a new screen: drop what was loaded and fetch again.
+         */
+        snippet_name() {
+            this.snippet = null;
+            this.errors.clear();
+            this.$eventBus.emit("server_error", null);
+            this.fetchSnippet();
+        }
+    },
     methods: {
         fetchSnippet() {
+            // The address can change again while this is in flight; an answer for a name
+            // that is no longer in the address is dropped rather than shown.
+            const requested = this.snippet_name;
+
             this.loading = true;
             this.$get('snippets/find', {
-                snippet_name: this.snippet_name
+                snippet_name: requested
             })
                 .then(response => {
-                    this.snippet = response.snippet
+                    if (requested === this.snippet_name) {
+                        this.snippet = response.snippet;
+                    }
                 })
                 .catch((errors) => {
+                    if (requested !== this.snippet_name) {
+                        return;
+                    }
+
                     if (typeof errors == 'string') {
                         this.$notify.error(this.$t('Something went wrong. Please check the errors.'));
                         this.$eventBus.emit("server_error", errors);
@@ -86,7 +110,9 @@ export default {
                     this.$handleError(errors);
                 })
                 .finally(() => {
-                    this.loading = false;
+                    if (requested === this.snippet_name) {
+                        this.loading = false;
+                    }
                 });
         },
         saveCode(reactivate = false) {
@@ -117,7 +143,9 @@ export default {
 
             this.saving = true;
             this.$ajax('post', 'fluent_snippet_update', {
-                fluent_saving_snippet_name: this.snippet_name,
+                // The file this code was loaded from, not the name in the address. Whatever
+                // the address says, a save can only ever write a snippet back to itself.
+                fluent_saving_snippet_name: this.snippet.file_name,
                 meta: JSON.stringify({...this.snippet.meta, code: this.snippet.code}),
                 reactivate: reactivate
             })

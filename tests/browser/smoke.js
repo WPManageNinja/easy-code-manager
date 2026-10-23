@@ -216,6 +216,44 @@ async function main() {
                 return [...document.querySelectorAll('#fluent_snippets_app input')].some(input => input.value === name);
             }, auth.snippet.name, {timeout: 5000}).then(() => true, () => false);
             check(`its name, "${auth.snippet.name}", is filled in`, nameShown);
+
+            // Vue Router reuses the edit screen when only the snippet in the address
+            // changes. The screen has to follow the address: in 10.56 and 10.57 it kept the
+            // first snippet, and saving wrote it over the second one. The second address is
+            // a file that does not exist, so nothing can be overwritten even on a bad build,
+            // and the failed lookup for it is the one error expected here.
+            const missing = 'fsnip-smoke-no-such-snippet.php';
+            const asked = page.waitForResponse(response => response.url().includes('snippets/find') && response.url().includes(missing), {timeout: 5000})
+                .then(() => true, () => false);
+            await goToRoute(page, `#/snippets/${missing}`);
+            check('changing the address to another snippet loads that snippet', await asked);
+            // Judge the screen once the lookup has answered, not during the loading state.
+            await page.waitForTimeout(300);
+
+            const heading = () => page.evaluate(() => {
+                const h1 = document.querySelector('#fluent_snippets_app h1.fsnip_sr_only');
+                return h1 ? h1.textContent.trim() : null;
+            });
+            const leftBehind = await page.waitForFunction(name => {
+                const h1 = document.querySelector('#fluent_snippets_app h1.fsnip_sr_only');
+                return h1 && h1.textContent.trim() !== name && !document.querySelector('#fluent_snippets_app .cm-content');
+            }, auth.snippet.name, {timeout: 5000}).then(() => true, () => false);
+            check(`the screen stops showing "${auth.snippet.name}"`, leftBehind, `heading is still "${await heading()}"`);
+
+            // The failed lookup shows up twice, as the response and as the browser's console
+            // line for it. Only errors naming the made-up file are dropped.
+            for (let i = problems.length - 1; i >= 0; i--) {
+                if (problems[i].includes(`snippet_name=${missing}`)) {
+                    problems.splice(i, 1);
+                }
+            }
+
+            await goToRoute(page, `#/snippets/${auth.snippet.file}`);
+            const back = await page.waitForFunction(name => {
+                const h1 = document.querySelector('#fluent_snippets_app h1.fsnip_sr_only');
+                return h1 && h1.textContent.trim() === name && document.querySelector('#fluent_snippets_app .cm-content');
+            }, auth.snippet.name, {timeout: 5000}).then(() => true, () => false);
+            check(`going back to ${auth.snippet.file} shows it again`, back, `heading is "${await heading()}"`);
         } else {
             skip('edit screen', 'this site has no snippets to open');
         }

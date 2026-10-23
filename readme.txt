@@ -7,7 +7,7 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 6.0
 Requires PHP: 7.3
 Tested up to: 7.1
-Stable tag: 10.57
+Stable tag: 10.58
 
 Fast, file-based code snippets plugin. Insert header & footer scripts and add PHP, CSS, JS & HTML snippets with conditional logic. Zero DB queries.
 
@@ -173,6 +173,9 @@ Quite the opposite. Unlike other code snippets plugins, FluentSnippets does not 
 7. A tour of the editor: pick the snippet type, write the code, choose where it runs, and organize it with groups and tags.
 
 == Changelog ==
+
+= 10.58 - Oct 23, 2026 =
+- Fixed a bug where, after moving from one snippet's edit page to another without reloading (by changing the address, or with back/forward), saving wrote the first snippet over the second. The edit page now loads the snippet in the address, and saving always writes back to the snippet that was loaded
 
 = 10.57 - Oct 23, 2026 =
 - Restored the REST routes for creating and editing snippets (POST snippets, snippets/create, snippets/update), removed in 10.56 without notice. That removal was a breaking API change and should have been listed as one here
