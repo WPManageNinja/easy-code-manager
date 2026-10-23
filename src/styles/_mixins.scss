@@ -10,6 +10,8 @@
  * pattern with one caller is a rule, and it belongs where it is used.
  */
 
+@use "sass:map";
+
 /*
  * The focus ring.
  *
@@ -39,7 +41,14 @@
  * border, so the row does not change height when the pointer crosses it.
  */
 @mixin icon-button($size, $radius, $fill: 'sunk') {
-    @apply flex items-center justify-center flex-none cursor-pointer bg-transparent text-ink-mid no-underline;
+    display: flex;
+    flex: none;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    color: var(--fsnip-text-mid);
+    text-decoration-line: none;
 
     width: $size;
     height: $size;
@@ -49,12 +58,12 @@
     transition: background-color .15s ease, color .15s ease;
 
     &:hover {
-        @apply text-ink;
+        color: var(--fsnip-text);
 
         @if $fill == 'raised' {
-            @apply bg-surface-raised;
+            background-color: var(--fsnip-surface-raised);
         } @else {
-            @apply bg-surface-sunk;
+            background-color: var(--fsnip-surface-sunk);
         }
     }
 
@@ -70,9 +79,25 @@
  * declared for each theme, which is the whole reason this can be one mixin: a yellow block
  * with black text was readable in light and blinding in dark.
  */
+$notice-tokens: (
+    'danger': 'danger',
+    'caution': 'warning',
+    'ok': 'success'
+);
+
 @mixin notice($tone) {
-    @apply rounded border border-solid;
-    @apply bg-#{$tone}-wash border-#{$tone}-line text-#{$tone}-fg;
+    $token: map.get($notice-tokens, $tone);
+
+    @if not $token {
+        @error "notice() takes danger, caution or ok, not #{$tone}.";
+    }
+
+    border-radius: 8px;
+    border-width: 1px;
+    border-style: solid;
+    background-color: var(--fsnip-#{$token}-wash);
+    border-color: var(--fsnip-#{$token}-line);
+    color: var(--fsnip-#{$token}-fg);
 }
 
 /*
@@ -81,7 +106,12 @@
  * that is all a caller sets.
  */
 @mixin chip {
-    @apply inline-flex items-center flex-none rounded-xs text-xs font-medium;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
 
     padding: 1px 7px;
     line-height: 18px;

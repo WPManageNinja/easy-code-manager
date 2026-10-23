@@ -258,7 +258,7 @@
 
                         <el-table-column :label="$t('Description')" min-width="175">
                             <template #default="scope">
-                                <span v-if="scope.row.error" class="fsnip_row_desc text-danger-fg">
+                                <span v-if="scope.row.error" class="fsnip_row_desc fsnip_error_text">
                                     {{ scope.row.error }}
                                 </span>
                                 <span v-else-if="scope.row.description" class="fsnip_row_desc">
@@ -379,7 +379,7 @@
                                         {{ snippet.name }}
                                         <template v-if="snippet.error">
                                             <span class="fsn_label fsn_error">{{$t('Error:')}}</span>
-                                            <span class="text-danger-fg">
+                                            <span class="fsnip_error_text">
                                             {{ limitChars(snippet.error, 100) }}
                                         </span>
                                         </template>
@@ -454,7 +454,7 @@
                                     {{ snippet.name }}
                                     <template v-if="snippet.error">
                                     <span class="fsn_label fsn_error">{{ $t('Error:') }}</span>
-                                        <span class="text-danger-fg">{{
+                                        <span class="fsnip_error_text">{{
                                                 limitChars(snippet.error, 100)
                                             }}</span>
                                     </template>

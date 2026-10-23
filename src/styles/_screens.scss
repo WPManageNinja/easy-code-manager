@@ -26,7 +26,9 @@
      * plain bold line they always did.
      */
     .group_name {
-        @apply text-sm font-semibold text-ink-head;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--fsnip-heading);
 
         margin: 0;
         padding: 0;
@@ -38,7 +40,14 @@
          * if it outlines the thing that is actually focused.
          */
         button {
-            @apply inline-flex items-center gap-1.5 text-sm font-semibold text-ink-head bg-transparent cursor-pointer;
+            display: inline-flex;
+            cursor: pointer;
+            align-items: center;
+            gap: 6px;
+            background-color: transparent;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--fsnip-heading);
 
             padding: 6px 0;
             border: 0;
@@ -47,7 +56,7 @@
             user-select: none;
 
             &:hover {
-                @apply text-ink-link;
+                color: var(--fsnip-link);
             }
 
             @include mixins.focus-ring(2px);
@@ -68,25 +77,39 @@
     }
 
     .group_files {
-        @apply list-none border border-solid border-hairline rounded overflow-hidden;
+        list-style-type: none;
+        overflow: hidden;
+        border-radius: 8px;
+        border-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border);
 
         margin: 4px 0 0;
         padding: 0;
 
         li {
-            @apply flex items-center justify-between gap-3 list-none text-sm border-0 border-b border-solid border-hairline;
+            display: flex;
+            list-style-type: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-width: 0px;
+            border-bottom-width: 1px;
+            border-style: solid;
+            border-color: var(--fsnip-border);
+            font-size: 14px;
 
             margin: 0;
             padding: 10px 14px;
             transition: background-color .12s ease;
 
             &:last-child {
-                @apply border-b-0;
+                border-bottom-width: 0px;
             }
 
             &:hover,
             &:focus-within {
-                @apply bg-surface-sunk;
+                background-color: var(--fsnip-surface-sunk);
 
                 .group_file_meta {
                     display: block;
@@ -101,20 +124,27 @@
      * replaces a <div>.
      */
     .group_file_name {
-        @apply flex items-center gap-2 text-sm text-ink no-underline;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: var(--fsnip-text);
+        text-decoration-line: none;
 
         line-height: 24px;
         min-width: 0;
         cursor: pointer;
 
         &:hover {
-            @apply text-ink;
+            color: var(--fsnip-text);
         }
 
         @include mixins.focus-ring(2px);
 
         > span:first-of-type {
-            @apply truncate;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     }
 
@@ -130,7 +160,11 @@
  * looking at, not a toolbar.
  */
 .snippet_actions {
-    @apply flex flex-wrap items-center text-xs text-ink-light;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 12px;
+    color: var(--fsnip-text-light);
 
     gap: 2px;
 
@@ -149,7 +183,11 @@
      */
     .fsnip_delete,
     .fsnip_download {
-        @apply inline-flex items-center text-ink-mid bg-transparent cursor-pointer;
+        display: inline-flex;
+        cursor: pointer;
+        align-items: center;
+        background-color: transparent;
+        color: var(--fsnip-text-mid);
 
         padding: 0;
         border: 0;
@@ -158,7 +196,7 @@
         line-height: inherit;
 
         &:hover {
-            @apply text-ink-link;
+            color: var(--fsnip-link);
         }
 
         @include mixins.focus-ring(2px);
@@ -236,14 +274,18 @@
 
     /* The name and what state it is in, on one line that never wraps. */
     .fsnip_row_head {
-        @apply flex items-center;
+        display: flex;
+        align-items: center;
 
         gap: 8px;
         min-width: 0;
     }
 
     .fsnip_row_title {
-        @apply block font-medium text-ink no-underline;
+        display: block;
+        font-weight: 500;
+        color: var(--fsnip-text);
+        text-decoration-line: none;
 
         line-height: 20px;
         /* Long names truncate rather than pushing the row taller or the chip off. */
@@ -253,13 +295,13 @@
         white-space: nowrap;
 
         &:hover {
-            @apply text-ink-link;
+            color: var(--fsnip-link);
         }
     }
 
     /* The status word beside the title, a size down from a tag in a cell of its own. */
     .fsnip_tag {
-        @apply flex-none;
+        flex: none;
 
         font-size: 11px;
     }
@@ -270,7 +312,11 @@
      * target is a real one, and that is what sets the line.
      */
     .fsnip_row_meta {
-        @apply flex flex-nowrap items-center text-xs text-ink-light;
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        font-size: 12px;
+        color: var(--fsnip-text-light);
 
         gap: 10px;
         margin-top: 3px;
@@ -279,18 +325,23 @@
 
         /* Gives way to the actions, which keep their width. */
         .fsnip_row_group {
-            @apply inline-flex items-center gap-1 min-w-0;
+            display: inline-flex;
+            min-width: 0px;
+            align-items: center;
+            gap: 4px;
 
             flex: 0 1 auto;
 
             /* The name, so it is the text that ellipses rather than the icon that clips. */
             > span {
-                @apply truncate;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
         }
 
         > .fsnip_row_group .el-icon {
-            @apply flex-none;
+            flex: none;
 
             font-size: 13px;
         }
@@ -301,7 +352,9 @@
      * height it can measure, which is why this is a -webkit-box rather than a plain span.
      */
     .fsnip_row_desc {
-        @apply block text-sm text-ink-mid;
+        display: block;
+        font-size: 14px;
+        color: var(--fsnip-text-mid);
 
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -317,7 +370,8 @@
      */
     /* Where it runs and in what order, on one line - the hook and its position in it. */
     .fsnip_row_hook {
-        @apply flex items-center;
+        display: flex;
+        align-items: center;
 
         gap: 6px;
         min-width: 0;
@@ -325,7 +379,11 @@
 
     /* One line, always - a wrapped run location is what a third row of height is made of. */
     .fsnip_row_runs {
-        @apply flex items-center gap-1 text-xs text-ink-mid;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--fsnip-text-mid);
 
         line-height: 20px;
         min-width: 0;
@@ -335,7 +393,8 @@
         text-overflow: ellipsis;
 
         .el-icon {
-            @apply flex-none text-ink-light;
+            flex: none;
+            color: var(--fsnip-text-light);
 
             font-size: 11px;
         }
@@ -343,14 +402,24 @@
 
     /* The badge keeps its width; the location beside it is what gives way. */
     .fsnip_row_priority {
-        @apply inline-flex flex-none items-center gap-1 rounded-xs text-xs bg-surface-sunk text-ink-light border border-solid border-hairline;
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        gap: 4px;
+        border-radius: 4px;
+        border-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border);
+        background-color: var(--fsnip-surface-sunk);
+        font-size: 12px;
+        color: var(--fsnip-text-light);
 
         padding: 0 5px;
         line-height: 16px;
         white-space: nowrap;
 
         .el-icon {
-            @apply flex-none;
+            flex: none;
 
             font-size: 9px;
         }
@@ -358,7 +427,9 @@
 
     /* "4 minutes ago" is the longest of these; it gets one line, not two. */
     .fsnip_row_when {
-        @apply block text-xs text-ink-light;
+        display: block;
+        font-size: 12px;
+        color: var(--fsnip-text-light);
 
         line-height: 20px;
         white-space: nowrap;
@@ -366,7 +437,7 @@
 
     /* A value the snippet does not have, so the column still reads as a column. */
     .fsnip_row_blank {
-        @apply text-ink-light;
+        color: var(--fsnip-text-light);
     }
 
     /* --------------------------------------------------------------- tags */
@@ -377,7 +448,8 @@
      * most, which is the height the row already is.
      */
     .fsnip_row_tags {
-        @apply flex flex-wrap;
+        display: flex;
+        flex-wrap: wrap;
 
         gap: 4px;
         /* Two rows of chips, which is the height the row already is. */
@@ -387,7 +459,9 @@
 
     .fsnip_chip {
         @include mixins.chip;
-        @apply bg-surface-raised text-ink-mid font-normal;
+        background-color: var(--fsnip-surface-raised);
+        font-weight: 400;
+        color: var(--fsnip-text-mid);
 
         /* Unlike the other two, a tag is user-written, so it can be too long for its column. */
         max-width: 100%;
@@ -403,7 +477,9 @@
      * 10px it is.
      */
     .fsnip_row_actions {
-        @apply flex flex-none items-center;
+        display: flex;
+        flex: none;
+        align-items: center;
 
         gap: 2px;
         margin-left: -5px;
@@ -418,19 +494,20 @@
         @include mixins.icon-button(24px, 6px, 'raised');
 
         /* A step quieter than the shared one, because there is a pair of these on every row. */
-        @apply text-ink-light;
+        color: var(--fsnip-text-light);
 
         .el-icon {
             font-size: 14px;
         }
 
         &.is_danger:hover {
-            @apply bg-danger-bg text-danger-fg;
+            background-color: var(--fsnip-danger-bg);
+            color: var(--fsnip-danger-fg);
         }
     }
 
     .el-table__row:hover .fsnip_row_action {
-        @apply text-ink-mid;
+        color: var(--fsnip-text-mid);
     }
 }
 
@@ -446,18 +523,24 @@
 /* Off, not broken - so it recedes rather than colouring itself. */
 .el-table__row.fsnip_status_draft .fsnip_row_title,
 .el-table__row.fsnip_status_draft .fsnip_row_desc {
-    @apply text-ink-light;
+    color: var(--fsnip-text-light);
 }
 
 .fct_filter_items {
     h3 {
-        @apply m-0 text-sm font-medium text-ink-head;
+        margin: 0px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--fsnip-heading);
 
         margin-bottom: 10px;
     }
 
     hr {
-        @apply border-0 border-t border-solid border-hairline;
+        border-width: 0px;
+        border-top-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border);
 
         margin: 12px 0;
     }
@@ -483,7 +566,8 @@
 }
 
 .fql_pagi {
-    @apply flex justify-end;
+    display: flex;
+    justify-content: flex-end;
 
     padding-top: 16px;
 }
@@ -519,7 +603,13 @@
  * padding that keeps the code off both.
  */
 .fsnip_code {
-    @apply block bg-surface-sunk text-ink border border-solid border-hairline rounded;
+    display: block;
+    border-radius: 8px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--fsnip-border);
+    background-color: var(--fsnip-surface-sunk);
+    color: var(--fsnip-text);
 
     padding: 12px;
 }
@@ -670,7 +760,8 @@
  * read it. Quiet enough to ignore once you know it.
  */
 .fsnip_editor_help {
-    @apply text-xs text-ink-light;
+    font-size: 12px;
+    color: var(--fsnip-text-light);
 
     margin: 6px 0 0;
 }
@@ -707,7 +798,9 @@
 
 /* An h2: it is a section of the editor screen, under that screen's h1. */
 .fsnin_run_wrap > h2 {
-    @apply text-sm font-medium text-ink-head;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fsnip-heading);
 
     margin: 0 0 8px;
 }
@@ -727,7 +820,16 @@
  * inherits neither the page's font nor its text alignment - and it takes a focus ring.
  */
 .run_selected {
-    @apply relative block w-full bg-surface text-ink border border-solid border-hairline-strong rounded cursor-pointer;
+    position: relative;
+    display: block;
+    width: 100%;
+    cursor: pointer;
+    border-radius: 8px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--fsnip-border-strong);
+    background-color: var(--fsnip-surface);
+    color: var(--fsnip-text);
 
     max-width: 500px;
     min-height: 40px;
@@ -746,7 +848,7 @@
 
     &::after {
         content: '';
-        @apply absolute;
+        position: absolute;
 
         right: 12px;
         top: 50%;
@@ -770,16 +872,25 @@
     }
 
     .option_label {
-        @apply text-sm font-medium text-ink;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--fsnip-text);
     }
 
     .option_desc {
-        @apply text-xs text-ink-light;
+        font-size: 12px;
+        color: var(--fsnip-text-light);
     }
 }
 
 .run_selector_options {
-    @apply flex flex-wrap bg-surface-sunk border border-solid border-hairline rounded;
+    display: flex;
+    flex-wrap: wrap;
+    border-radius: 8px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--fsnip-border);
+    background-color: var(--fsnip-surface-sunk);
 
     padding: 12px;
     margin-top: 10px;
@@ -790,7 +901,11 @@
      * tap lands on, which is why it needs no handler of its own.
      */
     .selector_option {
-        @apply block rounded border border-solid border-transparent;
+        display: block;
+        border-radius: 8px;
+        border-width: 1px;
+        border-style: solid;
+        border-color: transparent;
 
         min-width: 50%;
         padding: 14px;
@@ -799,20 +914,25 @@
 
         .option_label,
         .option_desc {
-            @apply block text-sm text-ink-mid;
+            display: block;
+            font-size: 14px;
+            color: var(--fsnip-text-mid);
 
             margin: 0;
         }
 
         .option_label {
-            @apply text-base font-medium text-ink-head;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--fsnip-heading);
 
             margin-bottom: 4px;
         }
 
         &:hover,
         &.selector_option_selected {
-            @apply bg-surface border-hairline-strong;
+            border-color: var(--fsnip-border-strong);
+            background-color: var(--fsnip-surface);
 
             box-shadow: var(--fsnip-shadow-card);
         }
@@ -877,10 +997,19 @@
 
 /* The shortcode a content snippet is inserted with, next to a copy button. */
 .snip_shortcode {
-    @apply flex items-center;
+    display: flex;
+    align-items: center;
 
     span.snip_code {
-        @apply flex items-center gap-2.5 bg-surface-sunk text-ink border border-solid border-hairline rounded;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 8px;
+        border-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border);
+        background-color: var(--fsnip-surface-sunk);
+        color: var(--fsnip-text);
 
         padding: 0 0 0 10px;
         font-family: var(--fsnip-mono);
@@ -888,14 +1017,18 @@
 
         /* A button now, not a bare icon - see the template for why. */
         .snip_copy {
-            @apply flex items-center bg-transparent text-ink cursor-pointer;
+            display: flex;
+            cursor: pointer;
+            align-items: center;
+            background-color: transparent;
+            color: var(--fsnip-text);
 
             margin: 8px 8px 8px 0;
             padding: 0;
             border: 0;
 
             &:hover {
-                @apply text-ink-link;
+                color: var(--fsnip-link);
             }
 
             @include mixins.focus-ring(2px);
@@ -910,13 +1043,16 @@
 
     /* The collapse's own title row: the heading and the tooltip that explains it. */
     .snip_cond_title {
-        @apply flex items-center;
+        display: flex;
+        align-items: center;
 
         gap: 8px;
 
         /* An h2 for the same reason as the run selector's heading. */
         h2 {
-            @apply text-sm font-medium text-ink-head;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--fsnip-heading);
 
             margin: 0;
         }
@@ -931,17 +1067,25 @@
     }
 
     .el-collapse {
-        @apply border-0 rounded overflow-hidden;
+        overflow: hidden;
+        border-radius: 8px;
+        border-width: 0px;
     }
 
     .el-collapse-item__header {
-        @apply bg-surface-sunk text-ink border-0 border-b border-solid border-hairline;
+        border-width: 0px;
+        border-bottom-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border);
+        background-color: var(--fsnip-surface-sunk);
+        color: var(--fsnip-text);
 
         padding: 10px 15px;
     }
 
     .el-collapse-item .el-collapse-item__wrap {
-        @apply bg-surface-sunk border-b-0;
+        border-bottom-width: 0px;
+        background-color: var(--fsnip-surface-sunk);
     }
 }
 
@@ -950,7 +1094,11 @@
     padding: 15px;
 
     .fc_rich_filter {
-        @apply bg-surface border border-solid border-hairline rounded;
+        border-radius: 8px;
+        border-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border);
+        background-color: var(--fsnip-surface);
 
         margin-bottom: 20px;
         padding: 8px 12px;
@@ -1003,7 +1151,9 @@
 
     /* The "or" between two condition groups, sitting on the rule that separates them. */
     .fc_cond_or {
-        @apply border-0 border-b border-dashed;
+        border-width: 0px;
+        border-bottom-width: 1px;
+        border-style: dashed;
 
         border-color: var(--fsnip-border-strong);
         margin: 0 0 15px;
@@ -1019,7 +1169,9 @@
          */
         em,
         .fc_cond_add {
-            @apply bg-surface-sunk text-ink-light rounded-xs;
+            border-radius: 4px;
+            background-color: var(--fsnip-surface-sunk);
+            color: var(--fsnip-text-light);
 
             display: inline-block;
             font-size: 1.1em;
@@ -1032,7 +1184,8 @@
 
         /* The last one is a button: it adds another group rather than labelling one. */
         .fc_cond_add {
-            @apply font-medium text-ink-link;
+            font-weight: 500;
+            color: var(--fsnip-link);
 
             border: 0;
             font-family: inherit;
@@ -1040,7 +1193,8 @@
             cursor: pointer;
 
             &:hover {
-                @apply bg-surface-raised text-ink;
+                background-color: var(--fsnip-surface-raised);
+                color: var(--fsnip-text);
             }
 
             @include mixins.focus-ring(2px);
@@ -1052,7 +1206,8 @@
     }
 
     .fsnip_value_help {
-        @apply text-xs text-ink-light;
+        font-size: 12px;
+        color: var(--fsnip-text-light);
 
         margin-top: 0;
         margin-bottom: -2px;
@@ -1074,7 +1229,9 @@
  * right-hand end rather than sitting after it, so the two read as one control.
  */
 .fc_option_creatable {
-    @apply block w-full rounded;
+    display: block;
+    width: 100%;
+    border-radius: 8px;
 
     .el-select {
         width: 100%;
@@ -1102,7 +1259,14 @@
      * happens when a snippet fatals.
      */
     .fsnip_setting {
-        @apply flex items-start justify-between gap-6 border-0 border-b border-solid border-hairline;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        border-width: 0px;
+        border-bottom-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border);
 
         padding: 18px 0;
 
@@ -1111,7 +1275,7 @@
         }
 
         &:last-child {
-            @apply border-b-0;
+            border-bottom-width: 0px;
 
             padding-bottom: 0;
         }
@@ -1121,14 +1285,21 @@
         min-width: 0;
 
         strong {
-            @apply flex flex-wrap items-center gap-2 text-ink-head font-medium;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            color: var(--fsnip-heading);
 
             font-size: 15px;
             line-height: 1.4;
         }
 
         p {
-            @apply m-0 text-sm text-ink-mid;
+            margin: 0px;
+            font-size: 14px;
+            color: var(--fsnip-text-mid);
 
             margin-top: 4px;
             line-height: 1.6;
@@ -1142,7 +1313,7 @@
      * to the line that names it.
      */
     .fsnip_setting_control {
-        @apply flex-none;
+        flex: none;
 
         padding-top: 2px;
     }
@@ -1163,7 +1334,11 @@
      * outlined so it reads as an aside rather than as a second card.
      */
     .fsnip_setting_aside {
-        @apply bg-surface-sunk border border-solid border-hairline rounded;
+        border-radius: 8px;
+        border-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border);
+        background-color: var(--fsnip-surface-sunk);
 
         margin-top: 20px;
         padding: 14px 16px;
@@ -1173,13 +1348,17 @@
         }
 
         strong {
-            @apply block text-ink-head font-medium;
+            display: block;
+            font-weight: 500;
+            color: var(--fsnip-heading);
 
             font-size: 14px;
         }
 
         p {
-            @apply m-0 text-sm text-ink-mid;
+            margin: 0px;
+            font-size: 14px;
+            color: var(--fsnip-text-mid);
 
             margin-top: 4px;
             line-height: 1.6;
@@ -1198,7 +1377,8 @@
 
     /* The sentence a card opens with, before anything it asks you to do. */
     .fsnip_lede {
-        @apply m-0 text-ink-mid;
+        margin: 0px;
+        color: var(--fsnip-text-mid);
 
         margin-bottom: 20px;
         font-size: 14px;
@@ -1207,14 +1387,18 @@
     }
 
     .fsnip_field_label {
-        @apply block text-ink-head font-medium;
+        display: block;
+        font-weight: 500;
+        color: var(--fsnip-heading);
 
         margin-bottom: 6px;
         font-size: 14px;
     }
 
     .fsnip_field_note {
-        @apply m-0 text-xs text-ink-light;
+        margin: 0px;
+        font-size: 12px;
+        color: var(--fsnip-text-light);
 
         margin-top: 6px;
         line-height: 1.6;
@@ -1227,13 +1411,16 @@
      * than beside it once the column gets narrow.
      */
     .fsnip_field_action {
-        @apply flex flex-wrap items-center;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
 
         margin-top: 12px;
         gap: 6px 12px;
 
         span {
-            @apply text-xs text-ink-light;
+            font-size: 12px;
+            color: var(--fsnip-text-light);
 
             flex: 1 1 320px;
             line-height: 1.6;
@@ -1251,7 +1438,7 @@
     padding: 15px;
 
     p {
-        @apply text-danger-fg;
+        color: var(--fsnip-danger-fg);
 
         margin: 0 0 8px;
     }
@@ -1264,26 +1451,32 @@
  */
 .fsnip_read_only {
     @include mixins.notice('caution');
-    @apply flex items-start gap-2;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
 
     margin-bottom: 16px;
     padding: 12px 16px;
     line-height: 1.6;
 
     .dashicons-lock {
-        @apply text-caution-fg flex-none;
+        flex: none;
+        color: var(--fsnip-warning-fg);
 
         margin-top: 2px;
     }
 
     strong {
-        @apply block text-caution-fg;
+        display: block;
+        color: var(--fsnip-warning-fg);
 
         font-size: 14px;
     }
 
     p {
-        @apply m-0 text-sm text-ink;
+        margin: 0px;
+        font-size: 14px;
+        color: var(--fsnip-text);
 
         margin-top: 2px;
         max-width: 78ch;
@@ -1304,27 +1497,36 @@
     line-height: 1.6;
 
     .fsnip_error_head {
-        @apply flex items-start gap-2;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
 
         .dashicons-warning {
-            @apply text-danger-fg flex-none;
+            flex: none;
+            color: var(--fsnip-danger-fg);
 
             margin-top: 2px;
         }
     }
 
     .fsnip_error_head_text {
-        @apply flex flex-wrap items-baseline gap-2;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 8px;
 
         h4 {
-            @apply m-0 text-danger-fg;
+            margin: 0px;
+            color: var(--fsnip-danger-fg);
 
             font-size: 15px;
         }
     }
 
     .fsnip_error_line {
-        @apply rounded-xs text-xs font-semibold;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
 
         background: var(--fsnip-danger-fg);
         color: var(--fsnip-surface);
@@ -1348,25 +1550,30 @@
     }
 
     .fsnip_error_reason {
-        @apply text-ink;
+        color: var(--fsnip-text);
 
         margin: 8px 0 0;
     }
 
     .fsnip_error_fix {
-        @apply border-0 border-t border-solid border-danger-line;
+        border-width: 0px;
+        border-top-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-danger-line);
 
         margin-top: 12px;
         padding-top: 12px;
 
         strong {
-            @apply block text-danger-fg;
+            display: block;
+            color: var(--fsnip-danger-fg);
 
             margin-bottom: 2px;
         }
 
         p {
-            @apply m-0 text-ink;
+            margin: 0px;
+            color: var(--fsnip-text);
         }
     }
 
@@ -1387,7 +1594,8 @@
         margin-top: 12px;
 
         strong {
-            @apply block text-danger-fg;
+            display: block;
+            color: var(--fsnip-danger-fg);
         }
 
         /*
@@ -1427,7 +1635,8 @@
     margin-bottom: 20px;
 
     h3 {
-        @apply m-0 text-caution-fg;
+        margin: 0px;
+        color: var(--fsnip-warning-fg);
 
         padding: 0 0 4px;
     }
@@ -1450,21 +1659,35 @@
  */
 .ecm_import_export {
     h3 {
-        @apply text-base font-medium text-ink-head;
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--fsnip-heading);
 
         margin: 0 0 12px;
     }
 
     /* Which of the two you are here to do. Two equal doors, no default. */
     .ecm_choices {
-        @apply grid;
+        display: grid;
 
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 20px;
     }
 
     .ecm_choice {
-        @apply flex flex-col items-center justify-center gap-2.5 w-full bg-surface-sunk text-ink border border-solid border-hairline-strong rounded cursor-pointer;
+        display: flex;
+        width: 100%;
+        cursor: pointer;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border-radius: 8px;
+        border-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border-strong);
+        background-color: var(--fsnip-surface-sunk);
+        color: var(--fsnip-text);
 
         padding: 32px 20px;
         font-size: 15px;
@@ -1472,18 +1695,19 @@
         transition: border-color .15s ease, background-color .15s ease;
 
         .el-icon {
-            @apply text-ink-mid;
+            color: var(--fsnip-text-mid);
 
             font-size: 28px;
         }
 
         &:hover {
-            @apply bg-surface border-hairline-strong;
+            border-color: var(--fsnip-border-strong);
+            background-color: var(--fsnip-surface);
 
             box-shadow: var(--fsnip-shadow-card);
 
             .el-icon {
-                @apply text-ink;
+                color: var(--fsnip-text);
             }
         }
 
@@ -1495,7 +1719,9 @@
 
     /* One snippet per row in the export picker, so a long list is scannable. */
     .ecm_listed_checkboxes .el-checkbox {
-        @apply flex items-center w-full;
+        display: flex;
+        width: 100%;
+        align-items: center;
 
         height: auto;
         margin: 0;
@@ -1540,7 +1766,8 @@
     }
 
     .fss_masthead_title {
-        @apply m-0 text-ink-head;
+        margin: 0px;
+        color: var(--fsnip-heading);
 
         font-size: 28px;
         font-weight: 800;
@@ -1554,7 +1781,9 @@
     }
 
     .fss_masthead_lead {
-        @apply mx-auto text-ink-mid;
+        margin-left: auto;
+        margin-right: auto;
+        color: var(--fsnip-text-mid);
 
         max-width: 620px;
         margin-top: 12px;
@@ -1570,7 +1799,8 @@
      */
     .fss_masthead_free {
         @include mixins.notice('ok');
-        @apply mx-auto;
+        margin-left: auto;
+        margin-right: auto;
 
         max-width: 620px;
         margin-top: 20px;
@@ -1582,17 +1812,26 @@
     }
 
     .fss_masthead_actions {
-        @apply flex flex-wrap items-center justify-center gap-2.5;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
 
         margin-top: 24px;
     }
 
     /* What the plugin does differently, as a heading and a paragraph each. */
     .fss_facts {
-        @apply list-none m-0 p-0;
+        margin: 0px;
+        list-style-type: none;
+        padding: 0px;
 
         li {
-            @apply border-0 border-b border-solid border-hairline;
+            border-width: 0px;
+            border-bottom-width: 1px;
+            border-style: solid;
+            border-color: var(--fsnip-border);
 
             margin: 0;
             padding: 0 0 16px;
@@ -1602,21 +1841,25 @@
             }
 
             &:last-child {
-                @apply border-b-0;
+                border-bottom-width: 0px;
 
                 padding-bottom: 0;
             }
         }
 
         strong {
-            @apply block text-ink-head font-medium;
+            display: block;
+            font-weight: 500;
+            color: var(--fsnip-heading);
 
             font-size: 15px;
             margin-bottom: 4px;
         }
 
         p {
-            @apply m-0 text-sm text-ink-mid;
+            margin: 0px;
+            font-size: 14px;
+            color: var(--fsnip-text-mid);
 
             line-height: 1.6;
         }
@@ -1628,27 +1871,38 @@
      */
     .fss_libraries,
     .fss_links {
-        @apply list-none m-0 p-0;
+        margin: 0px;
+        list-style-type: none;
+        padding: 0px;
 
         li {
-            @apply flex flex-wrap items-baseline gap-2 border-0 border-b border-solid border-hairline;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 8px;
+            border-width: 0px;
+            border-bottom-width: 1px;
+            border-style: solid;
+            border-color: var(--fsnip-border);
 
             margin: 0;
             padding: 10px 0;
 
             &:last-child {
-                @apply border-b-0;
+                border-bottom-width: 0px;
             }
         }
 
         a {
-            @apply font-medium no-underline;
+            font-weight: 500;
+            text-decoration-line: none;
 
             font-size: 14px;
         }
 
         span {
-            @apply text-xs text-ink-light;
+            font-size: 12px;
+            color: var(--fsnip-text-light);
         }
     }
 
@@ -1661,7 +1915,9 @@
      * promises there are none.
      */
     .fss_team_lead {
-        @apply m-0 text-sm text-ink-mid;
+        margin: 0px;
+        font-size: 14px;
+        color: var(--fsnip-text-mid);
 
         max-width: 640px;
         line-height: 1.6;
@@ -1674,27 +1930,38 @@
      * a partial final row ends up underlined in some columns and not others.
      */
     .fss_team_grid {
-        @apply list-none m-0 p-0;
+        margin: 0px;
+        list-style-type: none;
+        padding: 0px;
 
         margin-top: 4px;
     }
 
     .fss_team_item {
-        @apply flex items-start border-0 border-b border-solid border-hairline;
+        display: flex;
+        align-items: flex-start;
+        border-width: 0px;
+        border-bottom-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border);
 
         margin: 0;
         padding: 14px 0;
         gap: 12px;
 
         &:last-child {
-            @apply border-b-0;
+            border-bottom-width: 0px;
 
             padding-bottom: 0;
         }
     }
 
     .fss_team_icon {
-        @apply block shrink-0 border border-solid border-hairline;
+        display: block;
+        flex-shrink: 0;
+        border-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border);
 
         width: 36px;
         height: 36px;
@@ -1704,19 +1971,26 @@
 
     /* Shown when the directory's icon does not load: the initial, on a plain tile. */
     .fss_team_icon_fallback {
-        @apply flex items-center justify-center bg-surface-sunk text-ink-light font-medium;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--fsnip-surface-sunk);
+        font-weight: 500;
+        color: var(--fsnip-text-light);
 
         font-size: 16px;
         line-height: 1;
     }
 
     .fss_team_text {
-        @apply grow;
+        flex-grow: 1;
 
         min-width: 0;
 
         p {
-            @apply m-0 text-xs text-ink-light;
+            margin: 0px;
+            font-size: 12px;
+            color: var(--fsnip-text-light);
 
             margin-top: 2px;
             line-height: 1.5;
@@ -1724,7 +1998,9 @@
     }
 
     .fss_team_name {
-        @apply block font-medium no-underline;
+        display: block;
+        font-weight: 500;
+        text-decoration-line: none;
 
         font-size: 14px;
     }
@@ -1735,17 +2011,25 @@
      * button label and fixed there.
      */
     .fss_team_action {
-        @apply flex shrink-0 items-center justify-end;
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: flex-end;
 
         min-width: 130px;
         margin-top: 2px;
     }
 
     .fss_team_active {
-        @apply inline-flex items-center text-xs font-medium text-ok-fg;
+        display: inline-flex;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--fsnip-success-fg);
 
         &::before {
-            @apply inline-block bg-ok-fg;
+            display: inline-block;
+            background-color: var(--fsnip-success-fg);
 
             content: '';
             width: 6px;
@@ -1756,16 +2040,24 @@
     }
 
     .fss_team_fallback {
-        @apply text-xs no-underline text-right;
+        text-align: right;
+        font-size: 12px;
+        text-decoration-line: none;
     }
 
     .fss_contributors_link {
-        @apply block no-underline;
+        display: block;
+        text-decoration-line: none;
     }
 
     /* Who wrote it: avatars in a row that wraps, not a list of names. */
     .fss_contributors {
-        @apply flex flex-row flex-wrap list-none m-0 p-0;
+        margin: 0px;
+        display: flex;
+        list-style-type: none;
+        flex-direction: row;
+        flex-wrap: wrap;
+        padding: 0px;
 
         gap: 8px;
         margin-top: 4px;
@@ -1775,7 +2067,10 @@
         }
 
         img {
-            @apply block border border-solid border-hairline;
+            display: block;
+            border-width: 1px;
+            border-style: solid;
+            border-color: var(--fsnip-border);
 
             width: 48px;
             height: 48px;

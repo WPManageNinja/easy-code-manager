@@ -146,9 +146,9 @@ import TagCreator from './_TagCreator.vue'
 import CodeEditor from './_CodeEditor.vue'
 import {InfoFilled} from '@element-plus/icons-vue';
 import {markRaw} from "vue";
-import SelectPlus from './_SelectPlus';
-import AdvancedConditions from './AdvancedConditions';
-import WhereRun from './_WhereRun';
+import SelectPlus from './_SelectPlus.vue';
+import AdvancedConditions from './AdvancedConditions.vue';
+import WhereRun from './_WhereRun.vue';
 import SaveErrorPanel from './_SaveErrorPanel.vue';
 
 export default {

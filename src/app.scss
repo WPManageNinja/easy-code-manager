@@ -14,10 +14,6 @@
  *   layout      the bar across the top and the page under it.
  *   screens     the parts that belong to one screen.
  *
- * Tailwind comes last so a utility written in a template beats the stylesheet, which is the
- * only reason to reach for one. Its config is scoped to `#fluent_snippets_app` (see
- * tailwind.config.js) so no utility escapes into the rest of wp-admin.
- *
  * Where a rule goes: with the screen that renders it. It moves up to `ui` when a second
  * screen needs it, and not before - a shared class that only has one caller is just a rule
  * filed in the wrong place.
@@ -29,6 +25,3 @@
 @use "styles/ui";
 @use "styles/layout";
 @use "styles/screens";
-
-@tailwind components;
-@tailwind utilities;

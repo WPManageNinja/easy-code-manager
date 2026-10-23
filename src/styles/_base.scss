@@ -63,10 +63,9 @@ body.toplevel_page_fluent-snippets {
     color: var(--fsnip-text);
 
     /*
-     * Tailwind's preflight normally sets the box model, but preflight is off here because
-     * it would restyle the whole of wp-admin. Without it these elements inherit wp-admin's
-     * content-box, which makes every `min-h-*` and `h-*` utility add its padding on top of
-     * the height instead of inside it.
+     * wp-admin leaves elements on content-box, and a global reset would restyle the whole
+     * of wp-admin. So the app sets it for itself: without it every fixed height or
+     * min-height here would add its padding on top of the height instead of inside it.
      */
     &,
     *,
@@ -95,7 +94,7 @@ body.toplevel_page_fluent-snippets {
 
     /* What is on screen between the stylesheet loading and Vue mounting over it. */
     .fsnip_booting {
-        @apply text-ink-mid;
+        color: var(--fsnip-text-mid);
 
         text-align: center;
         margin-top: 100px;

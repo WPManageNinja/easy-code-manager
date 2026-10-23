@@ -39,9 +39,11 @@ Every plugin we build, we aim to solve problems for businesses and add immerse v
 You are more than welcome to contribute to the code or the documentation. Or helping us by recommending this to your friends and community. Together, let’s make the WordPress more powerful and secure.
 
 ### How to build
+Needs Node 20.19+ or 22.12+ (Vite 8).
+
 - `npm install`
-- `npx mix watch` - For development
-- `npx mix --production` - For Production
+- `npm run dev` - For development: rebuilds `dist/` on every save; reload wp-admin to see it
+- `npm run build` - For Production
 
 ### Building the plugin for WP Repo
 - `sh build.sh --pot` // Build the plugin and regenerate the POT file with WP-CLI

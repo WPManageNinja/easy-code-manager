@@ -19,7 +19,16 @@
 }
 
 .fsnip_app_bar {
-    @apply flex items-center gap-6 bg-surface px-6 border-0 border-b border-solid border-hairline;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    border-width: 0px;
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: var(--fsnip-border);
+    background-color: var(--fsnip-surface);
+    padding-left: 24px;
+    padding-right: 24px;
 
     height: 56px;
 
@@ -55,16 +64,20 @@
      * other's real width instead would put the nav somewhere between the two.
      */
     .fsnip_app_logo {
-        @apply flex items-center;
+        display: flex;
+        align-items: center;
 
         flex: 1 1 0;
 
         a {
-            @apply flex items-center gap-2 no-underline;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration-line: none;
         }
 
         .fsnip_wordmark {
-            @apply text-ink-head;
+            color: var(--fsnip-heading);
 
             font-size: 18.4px;
             font-weight: 800;
@@ -84,27 +97,47 @@
 
     /* The <nav> landmark. It is the flex child; the list inside it is the row. */
     .fsnip_app_nav_wrap {
-        @apply flex flex-none;
+        display: flex;
+        flex: none;
     }
 
     .fsnip_app_nav {
-        @apply flex items-center justify-center gap-1 m-0 p-0 list-none flex-none;
+        margin: 0px;
+        display: flex;
+        flex: none;
+        list-style-type: none;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 0px;
 
         li {
-            @apply m-0;
+            margin: 0px;
         }
 
         a {
-            @apply flex items-center rounded px-3 py-2 text-sm font-medium no-underline text-ink-mid;
+            display: flex;
+            align-items: center;
+            border-radius: 8px;
+            padding-left: 12px;
+            padding-right: 12px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--fsnip-text-mid);
+            text-decoration-line: none;
 
             transition: background-color .15s ease, color .15s ease;
 
             &:hover {
-                @apply bg-surface-sunk text-ink;
+                background-color: var(--fsnip-surface-sunk);
+                color: var(--fsnip-text);
             }
 
             &.router-link-active {
-                @apply bg-accent-wash text-ink;
+                background-color: var(--fsnip-accent-wash);
+                color: var(--fsnip-text);
             }
         }
 
@@ -116,17 +149,21 @@
             gap: 5px;
 
             svg {
-                @apply flex-none opacity-60;
+                flex: none;
+                opacity: 0.6;
             }
 
             &:hover svg {
-                @apply opacity-100;
+                opacity: 1;
             }
         }
     }
 
     .fsnip_app_bar_actions {
-        @apply flex items-center justify-end gap-2;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
 
         flex: 1 1 0;
     }
@@ -134,7 +171,7 @@
     /* Hidden until the narrow layout at the foot of this file puts it back. */
     .fsnip_app_bar_toggle {
         @include mixins.icon-button(36px, 8px);
-        @apply hidden;
+        display: none;
     }
 }
 
@@ -157,13 +194,16 @@
 /* Teleported to <body>, so it is styled here rather than beside the trigger. */
 .fsnip_theme_menu {
     .fsnip_theme_item {
-        @apply flex items-center;
+        display: flex;
+        align-items: center;
 
         gap: 8px;
     }
 
     .fsnip_theme_item_icon {
-        @apply flex flex-none items-center;
+        display: flex;
+        flex: none;
+        align-items: center;
 
         svg {
             width: 16px;
@@ -173,7 +213,8 @@
 
     /* The one in force, marked by weight rather than by a tick that shifts the row. */
     .is_current {
-        @apply font-medium text-ink;
+        font-weight: 500;
+        color: var(--fsnip-text);
     }
 }
 
@@ -198,7 +239,8 @@
 }
 
 .fsnip_page_inner {
-    @apply mx-auto;
+    margin-left: auto;
+    margin-right: auto;
 
     max-width: 1350px;
 }
@@ -215,7 +257,7 @@
     }
 
     .fsnip_app_bar {
-        @apply flex-wrap;
+        flex-wrap: wrap;
 
         position: sticky;
         top: var(--fsnip-shell-top, 32px);
@@ -236,7 +278,7 @@
         }
 
         .fsnip_app_bar_toggle {
-            @apply flex;
+            display: flex;
 
             order: 2;
             margin-left: auto;
@@ -251,19 +293,26 @@
          * it takes the full width and only appears once the toggle has been pressed.
          */
         .fsnip_app_nav_wrap {
-            @apply hidden w-full border-0 border-t border-solid border-hairline;
+            display: none;
+            width: 100%;
+            border-width: 0px;
+            border-top-width: 1px;
+            border-style: solid;
+            border-color: var(--fsnip-border);
 
             order: 4;
             flex-basis: 100%;
             padding: 8px 0;
 
             &.is-open {
-                @apply flex;
+                display: flex;
             }
         }
 
         .fsnip_app_nav {
-            @apply flex-col items-stretch w-full;
+            width: 100%;
+            flex-direction: column;
+            align-items: stretch;
 
             gap: 2px;
         }

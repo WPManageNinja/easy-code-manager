@@ -52,7 +52,7 @@
     </div>
 </template>
 <script type="text/babel">
-import FilterItem from './FilterItem';
+import FilterItem from './FilterItem.vue';
 import each from 'lodash/each';
 import {Plus, Delete} from '@element-plus/icons-vue'
 import {markRaw} from "vue";

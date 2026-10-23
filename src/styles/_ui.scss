@@ -69,7 +69,14 @@
     border: 0;
 
     &:focus {
-        @apply fixed bg-surface text-ink-link border border-solid border-hairline-strong rounded no-underline;
+        position: fixed;
+        border-radius: 8px;
+        border-width: 1px;
+        border-style: solid;
+        border-color: var(--fsnip-border-strong);
+        background-color: var(--fsnip-surface);
+        color: var(--fsnip-link);
+        text-decoration-line: none;
 
         /*
          * Offset by the two variables App.vue measures wp-admin's chrome into, so the link
@@ -101,11 +108,15 @@
  * changed - from a flat white box with a grey band on top to FluentCart's rounded card.
  */
 .box_wrapper {
-    @apply block w-full;
+    display: block;
+    width: 100%;
 }
 
 .box {
-    @apply bg-surface rounded border border-solid;
+    border-radius: 8px;
+    border-width: 1px;
+    border-style: solid;
+    background-color: var(--fsnip-surface);
 
     border-color: var(--fsnip-card-line);
     box-shadow: var(--fsnip-shadow-card);
@@ -118,13 +129,26 @@
 }
 
 .box_header {
-    @apply flex flex-wrap items-center justify-between gap-3 border-0 border-b border-solid border-hairline;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-width: 0px;
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: var(--fsnip-border);
 
     min-height: 60px;
     padding: 12px 20px;
 
     .box_head {
-        @apply flex items-center gap-2.5 text-base font-medium text-ink-head;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--fsnip-heading);
 
         float: none;
         min-width: 0;
@@ -138,21 +162,29 @@
         h1,
         h2,
         h3 {
-            @apply m-0 p-0 text-base font-medium text-ink-head;
+            margin: 0px;
+            padding: 0px;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--fsnip-heading);
 
             display: inline-block;
         }
     }
 
     .box_actions {
-        @apply flex flex-wrap items-center gap-2.5 flex-none;
+        display: flex;
+        flex: none;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
 
         float: none;
     }
 }
 
 .box_body {
-    @apply block;
+    display: block;
 
     padding: 20px;
     overflow: visible;
@@ -180,16 +212,31 @@
  * card, flush with its top, so it is a band rather than a bar with its own frame.
  */
 .fsnip_secondary_menu {
-    @apply flex flex-wrap items-center justify-between gap-3 border-0 border-b border-solid border-hairline bg-surface-sunk;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-width: 0px;
+    border-bottom-width: 1px;
+    border-style: solid;
+    border-color: var(--fsnip-border);
+    background-color: var(--fsnip-surface-sunk);
 
     margin: -20px -20px 20px;
     padding: 0 20px;
 
     .fsnip_menu {
-        @apply flex flex-wrap items-center gap-1 list-none m-0 p-0;
+        margin: 0px;
+        display: flex;
+        list-style-type: none;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+        padding: 0px;
 
         li {
-            @apply m-0;
+            margin: 0px;
 
             /*
              * A button, not a link. These filter the list in place - they go nowhere, and
@@ -198,7 +245,15 @@
              * The button is reset to look like what it did before.
              */
             button {
-                @apply flex items-center gap-1.5 text-sm font-medium no-underline text-ink-mid bg-transparent cursor-pointer;
+                display: flex;
+                cursor: pointer;
+                align-items: center;
+                gap: 6px;
+                background-color: transparent;
+                font-size: 14px;
+                font-weight: 500;
+                color: var(--fsnip-text-mid);
+                text-decoration-line: none;
 
                 padding: 14px 10px;
                 border: 0;
@@ -208,7 +263,7 @@
                 transition: color .15s ease, border-color .15s ease;
 
                 &:hover {
-                    @apply text-ink;
+                    color: var(--fsnip-text);
                 }
 
                 /*
@@ -220,7 +275,7 @@
             }
 
             &.active_item button {
-                @apply text-ink;
+                color: var(--fsnip-text);
 
                 border-bottom-color: var(--fsnip-accent);
             }
@@ -228,7 +283,10 @@
     }
 
     .snip_right_items {
-        @apply flex flex-wrap items-center gap-2.5;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
 
         padding: 10px 0;
 
@@ -292,25 +350,37 @@
 
 /* ---------------------------------------------------------------- statuses */
 
+/*
+ * A snippet's recorded error, in the lists. Scoped to the app root so it outranks
+ * `.fsnip_row_desc` and the draft row's quieter colour, which sit on the same element.
+ */
+#fluent_snippets_app .fsnip_error_text {
+    color: var(--fsnip-danger-fg);
+}
+
 /* A status, as a word, for the places an el-tag would be too heavy. */
 .fsnip_tag {
     @include mixins.chip;
 
     &.is_error {
-        @apply bg-danger-bg text-danger-fg;
+        background-color: var(--fsnip-danger-bg);
+        color: var(--fsnip-danger-fg);
     }
 
     &.is_warning {
-        @apply bg-caution-bg text-caution-fg;
+        background-color: var(--fsnip-warning-bg);
+        color: var(--fsnip-warning-fg);
     }
 
     &.is_success {
-        @apply bg-ok-bg text-ok-fg;
+        background-color: var(--fsnip-success-bg);
+        color: var(--fsnip-success-fg);
     }
 
     /* Nothing is wrong and nothing has happened - "Off", "Coming soon". */
     &.is_neutral {
-        @apply bg-surface-raised text-ink-mid;
+        background-color: var(--fsnip-surface-raised);
+        color: var(--fsnip-text-mid);
     }
 }
 
@@ -321,7 +391,9 @@
  * light grey background that does not move with the theme.
  */
 #fluent_snippets_app code:not([class]) {
-    @apply bg-surface-sunk text-ink rounded-xs;
+    border-radius: 4px;
+    background-color: var(--fsnip-surface-sunk);
+    color: var(--fsnip-text);
 
     padding: 2px 6px;
     font-size: 13px;
@@ -332,25 +404,35 @@
  * with nothing in it yet is still a card rather than a collapsed line.
  */
 .fsnip_empty {
-    @apply flex flex-col items-center justify-center text-center text-ink-mid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--fsnip-text-mid);
 
     min-height: 180px;
     padding: 32px 20px;
 
     h1, h3 {
-        @apply text-ink-head;
+        color: var(--fsnip-heading);
 
         margin: 0 0 8px;
     }
 
     p {
-        @apply text-sm text-ink-mid;
+        font-size: 14px;
+        color: var(--fsnip-text-mid);
 
         margin: 0 0 8px;
     }
 
     .fsnip_empty_actions {
-        @apply flex flex-wrap items-center justify-center gap-2.5;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
 
         margin-top: 16px;
     }
@@ -390,7 +472,13 @@ span.fc_middot {
 }
 
 .fsnip_highlight {
-    @apply block w-full bg-surface-sunk border border-solid border-hairline rounded;
+    display: block;
+    width: 100%;
+    border-radius: 8px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--fsnip-border);
+    background-color: var(--fsnip-surface-sunk);
 
     margin: 20px 0;
     padding: 12px;
