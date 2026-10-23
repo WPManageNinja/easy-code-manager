@@ -130,10 +130,7 @@ class CodeRunner
                         }
 
                         $runAt = $this->get($snippet, 'run_at', 'all');
-                        if ($runAt == 'backend') {
-                            if (is_admin()) {
-                                $this->runSnippetFile($file, $fileName);
-                            }
+                        if (!$this->shouldRunPhpSnippet($runAt)) {
                             return;
                         }
 
@@ -315,6 +312,19 @@ class CodeRunner
         } finally {
             self::popRunningSnippet();
         }
+    }
+
+    private function shouldRunPhpSnippet($runAt)
+    {
+        if ($runAt == 'backend') {
+            return is_admin();
+        }
+
+        if ($runAt == 'frontend') {
+            return !is_admin();
+        }
+
+        return true;
     }
 
     private function get($array, $key, $default = null)
