@@ -179,9 +179,14 @@ else
     [ ! -f dist/app.js.map ] || fail "dist/ holds a development build (npm run dev). Run without --skip-assets."
 fi
 
-for asset in dist/app.js dist/app.css; do
-    [ -f "$asset" ] || fail "$asset does not exist. Run without --skip-assets."
-done
+# The build itself, whether it was just made or reused: a classic script and a stylesheet,
+# the two files AdminMenuHandler enqueues. See tests/build/dist-output.js.
+if output=$(node tests/build/dist-output.js 2>&1); then
+    info "${C_GREEN}ok${C_OFF}    dist-output.js"
+else
+    printf '%s\n' "$output" | grep FAIL | sed 's/^/    /'
+    fail "dist/ is not what the plugin loads. Run without --skip-assets."
+fi
 
 # ---------------------------------------------------------------------------
 step "Checking version numbers"
