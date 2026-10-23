@@ -267,9 +267,6 @@ Quite the opposite. Unlike other code snippets plugins, FluentSnippets does not 
 
 == Upgrade Notice ==
 
-= 10.58 =
-Fixes a bug where saving after moving between two snippets' edit pages without reloading could overwrite the second snippet. Recommended for everyone.
-
 = 10.57 =
 Restores the REST API routes for creating and editing snippets, now off by default: turn them on in Settings if an outside tool needs them. Also improves translations and fixes the line-wrap setting being reset.
 
