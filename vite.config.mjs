@@ -3,7 +3,6 @@ import vue from '@vitejs/plugin-vue';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
 import {ElementPlusResolver} from 'unplugin-vue-components/resolvers';
-import tailwindcss from 'tailwindcss';
 import autoprefixer from 'autoprefixer';
 import path from 'path';
 
@@ -49,7 +48,7 @@ export default defineConfig(({mode}) => {
 
         css: {
             postcss: {
-                plugins: [tailwindcss, autoprefixer]
+                plugins: [autoprefixer]
             }
         },
 

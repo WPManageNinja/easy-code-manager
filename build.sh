@@ -168,7 +168,7 @@ else
     # each build, so its timestamp is the time of the last build.
     [ -f dist/app.js ] || fail "dist/ has never been built. Run without --skip-assets."
 
-    stale_sources=$(find src vite.config.mjs tailwind.config.js -type f -newer dist/app.js 2>/dev/null || true)
+    stale_sources=$(find src vite.config.mjs -type f -newer dist/app.js 2>/dev/null || true)
 
     if [ -n "$stale_sources" ]; then
         fail "$(first_line "$stale_sources") changed after the last asset build. Run without --skip-assets."
