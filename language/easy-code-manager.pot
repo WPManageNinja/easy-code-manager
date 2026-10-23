@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-19T09:57:29+00:00\n"
+"POT-Creation-Date: 2026-10-23T11:30:37+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: easy-code-manager\n"
@@ -148,322 +148,322 @@ msgstr ""
 msgid "Snippet already exists"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:491
+#: app/Hooks/Handlers/AdminMenuHandler.php:494
 msgid "Loading Snippets.."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:509
+#: app/Hooks/Handlers/AdminMenuHandler.php:512
 msgid "Functions"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:514
+#: app/Hooks/Handlers/AdminMenuHandler.php:517
 msgid "Run Everywhere"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:515
+#: app/Hooks/Handlers/AdminMenuHandler.php:518
 msgid "Snippet gets executed everywhere (both frontend and admin area)"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:518
+#: app/Hooks/Handlers/AdminMenuHandler.php:521
 msgid "Admin Only"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:519
+#: app/Hooks/Handlers/AdminMenuHandler.php:522
 msgid "Snippet gets executed only in admin area (/wp-admin/)"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:522
+#: app/Hooks/Handlers/AdminMenuHandler.php:525
 msgid "Frontend Only"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:523
+#: app/Hooks/Handlers/AdminMenuHandler.php:526
 msgid "Snippet gets executed only in frontend area"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:528
+#: app/Hooks/Handlers/AdminMenuHandler.php:531
 msgid "Content"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:533
+#: app/Hooks/Handlers/AdminMenuHandler.php:536
 msgid "Shortcode"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:534
+#: app/Hooks/Handlers/AdminMenuHandler.php:537
 msgid "Only display when inserted into a post or page using shortcode"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:537
-#: app/Hooks/Handlers/AdminMenuHandler.php:583
+#: app/Hooks/Handlers/AdminMenuHandler.php:540
+#: app/Hooks/Handlers/AdminMenuHandler.php:586
 msgid "Site Wide Header"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:538
+#: app/Hooks/Handlers/AdminMenuHandler.php:541
 msgid "Insert snippet between the head tags of your website (frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:541
+#: app/Hooks/Handlers/AdminMenuHandler.php:544
 msgid "Site Wide Body Open"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:542
+#: app/Hooks/Handlers/AdminMenuHandler.php:545
 msgid "Insert snippet after the opening body tag of your website (frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:545
-#: app/Hooks/Handlers/AdminMenuHandler.php:587
+#: app/Hooks/Handlers/AdminMenuHandler.php:548
+#: app/Hooks/Handlers/AdminMenuHandler.php:590
 msgid "Site Wide Footer"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:546
+#: app/Hooks/Handlers/AdminMenuHandler.php:549
 msgid "Insert snippet before the closing body tag of your website on all pages (frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:549
+#: app/Hooks/Handlers/AdminMenuHandler.php:552
 msgid "Before Content"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:550
+#: app/Hooks/Handlers/AdminMenuHandler.php:553
 msgid "Insert snippet at the beginning of single post/page content."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:553
+#: app/Hooks/Handlers/AdminMenuHandler.php:556
 msgid "After Content"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:554
+#: app/Hooks/Handlers/AdminMenuHandler.php:557
 msgid "Insert snippet at the end of single post/page content."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:559
+#: app/Hooks/Handlers/AdminMenuHandler.php:562
 msgid "Styles"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:564
+#: app/Hooks/Handlers/AdminMenuHandler.php:567
 msgid "Frontend"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:565
+#: app/Hooks/Handlers/AdminMenuHandler.php:568
 msgid "Add CSS on all pages (frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:568
+#: app/Hooks/Handlers/AdminMenuHandler.php:571
 msgid "Backend"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:569
+#: app/Hooks/Handlers/AdminMenuHandler.php:572
 msgid "Apply this snippet CSS to backend (/wp-admin/)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:572
+#: app/Hooks/Handlers/AdminMenuHandler.php:575
 msgid "Both Backend and Frontend"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:573
+#: app/Hooks/Handlers/AdminMenuHandler.php:576
 msgid "Apply this snippet CSS to both backend and frontend."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:578
+#: app/Hooks/Handlers/AdminMenuHandler.php:581
 msgid "Scripts"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:584
+#: app/Hooks/Handlers/AdminMenuHandler.php:587
 msgid "Run Javascript between the head tags of your website on all pages (frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:588
+#: app/Hooks/Handlers/AdminMenuHandler.php:591
 msgid "Run Javascript before the closing body tag of your website on all pages (frontend)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:591
+#: app/Hooks/Handlers/AdminMenuHandler.php:594
 msgid "Admin Area Header"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:592
+#: app/Hooks/Handlers/AdminMenuHandler.php:595
 msgid "Run Javascript in admin area (/wp-admin/)."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:595
+#: app/Hooks/Handlers/AdminMenuHandler.php:598
 msgid "Admin Area Footer"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:596
+#: app/Hooks/Handlers/AdminMenuHandler.php:599
 msgid "Run Javascript in admin area (/wp-admin/) before the closing body tag."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:623
+#: app/Hooks/Handlers/AdminMenuHandler.php:626
 msgid "User"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:627
+#: app/Hooks/Handlers/AdminMenuHandler.php:630
 msgid "Logged-in"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:637
+#: app/Hooks/Handlers/AdminMenuHandler.php:640
 msgid "User Role"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:647
+#: app/Hooks/Handlers/AdminMenuHandler.php:650
 msgid "Page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:651
+#: app/Hooks/Handlers/AdminMenuHandler.php:654
 msgid "Type of page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:657
+#: app/Hooks/Handlers/AdminMenuHandler.php:660
 msgid "Homepage"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:658
+#: app/Hooks/Handlers/AdminMenuHandler.php:661
 msgid "Archive"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:659
-#: app/Hooks/Handlers/AdminMenuHandler.php:693
+#: app/Hooks/Handlers/AdminMenuHandler.php:662
+#: app/Hooks/Handlers/AdminMenuHandler.php:696
 msgid "Single Post/Page/CPT"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:660
+#: app/Hooks/Handlers/AdminMenuHandler.php:663
 msgid "Search page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:661
+#: app/Hooks/Handlers/AdminMenuHandler.php:664
 msgid "404 page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:662
+#: app/Hooks/Handlers/AdminMenuHandler.php:665
 msgid "Author page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:666
+#: app/Hooks/Handlers/AdminMenuHandler.php:669
 msgid "Post Type"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:673
+#: app/Hooks/Handlers/AdminMenuHandler.php:676
 msgid "Taxonomy Page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:680
+#: app/Hooks/Handlers/AdminMenuHandler.php:683
 msgid "Taxonomy Term Page"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:688
+#: app/Hooks/Handlers/AdminMenuHandler.php:691
 msgid "URL"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:704
+#: app/Hooks/Handlers/AdminMenuHandler.php:707
 msgid "Date"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:709
+#: app/Hooks/Handlers/AdminMenuHandler.php:712
 msgid "Date Range"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:717
+#: app/Hooks/Handlers/AdminMenuHandler.php:720
 msgid "Time Range"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:724
+#: app/Hooks/Handlers/AdminMenuHandler.php:727
 msgid "Day of the week"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:728
+#: app/Hooks/Handlers/AdminMenuHandler.php:731
 msgid "Monday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:729
+#: app/Hooks/Handlers/AdminMenuHandler.php:732
 msgid "Tuesday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:730
+#: app/Hooks/Handlers/AdminMenuHandler.php:733
 msgid "Wednesday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:731
+#: app/Hooks/Handlers/AdminMenuHandler.php:734
 msgid "Thursday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:732
+#: app/Hooks/Handlers/AdminMenuHandler.php:735
 msgid "Friday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:733
+#: app/Hooks/Handlers/AdminMenuHandler.php:736
 msgid "Saturday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:734
+#: app/Hooks/Handlers/AdminMenuHandler.php:737
 msgid "Sunday"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:745
+#: app/Hooks/Handlers/AdminMenuHandler.php:748
 msgid "FluentCRM"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:749
+#: app/Hooks/Handlers/AdminMenuHandler.php:752
 msgid "Is a CRM Contact?"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:759
+#: app/Hooks/Handlers/AdminMenuHandler.php:762
 msgid "Contact Tags"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:768
+#: app/Hooks/Handlers/AdminMenuHandler.php:771
 msgid "Contact Lists"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:843
+#: app/Hooks/Handlers/AdminMenuHandler.php:846
 msgid "Snippets cannot be changed on this site"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:844
+#: app/Hooks/Handlers/AdminMenuHandler.php:847
 msgid "wp-config.php has DISALLOW_FILE_MODS set. Every snippet is a file in wp-content, and that constant tells WordPress nothing may write there, so this is a deliberate setting on this site rather than anything wrong with your account. Snippets that are already active keep running."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:845
+#: app/Hooks/Handlers/AdminMenuHandler.php:848
 msgid "Copy your code somewhere safe before leaving this page. To make the change, either remove that line from wp-config.php, or put the snippet file on the server the same way the rest of wp-content gets there, via a deployment or version control."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:851
+#: app/Hooks/Handlers/AdminMenuHandler.php:854
 msgid "You are not allowed to save snippets on this site"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:852
+#: app/Hooks/Handlers/AdminMenuHandler.php:855
 msgid "Saving a snippet means putting executable code on the site, so it needs both the install_plugins and unfiltered_html capabilities. Your account is missing at least one of them."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:853
+#: app/Hooks/Handlers/AdminMenuHandler.php:856
 msgid "On a multisite, only Super Admins have unfiltered_html by default. Otherwise the usual causes are DISALLOW_UNFILTERED_HTML set in wp-config.php, or a security or role-editor plugin that has removed the capability from your role."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:861
+#: app/Hooks/Handlers/AdminMenuHandler.php:864
 msgid "Your security token has expired"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:862
+#: app/Hooks/Handlers/AdminMenuHandler.php:865
 msgid "WordPress security tokens are only valid for a limited time. This page has been open for too long, or you have signed in again somewhere else since it loaded."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:863
+#: app/Hooks/Handlers/AdminMenuHandler.php:866
 msgid "Copy your code somewhere safe first, then reload this page and paste it back. Reloading is what issues a fresh token. If this keeps happening, a caching layer is caching wp-admin pages and needs to be told not to."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:899
+#: app/Hooks/Handlers/AdminMenuHandler.php:902
 msgid "The snippet did not arrive in one piece"
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:900
+#: app/Hooks/Handlers/AdminMenuHandler.php:903
 msgid "The editor sent your snippet, but the server received something incomplete, so nothing was saved and the previous version is still in place."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:901
+#: app/Hooks/Handlers/AdminMenuHandler.php:904
 msgid "This is almost always a size limit on the request. Ask your host to raise post_max_size and max_input_vars, or to relax the firewall rule (often ModSecurity) that is truncating requests to wp-admin. Saving a much shorter snippet is a quick way to confirm that is what is happening."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:931
+#: app/Hooks/Handlers/AdminMenuHandler.php:934
 msgid "Snippet saved successfully."
 msgstr ""
 
-#: app/Hooks/Handlers/AdminMenuHandler.php:959
+#: app/Hooks/Handlers/AdminMenuHandler.php:962
 msgid "Snippet created successfully."
 msgstr ""
 

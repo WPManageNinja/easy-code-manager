@@ -7,7 +7,7 @@ import autoprefixer from 'autoprefixer';
 import path from 'path';
 
 /*
- * One classic script and one stylesheet, nothing else.
+ * One classic script and one stylesheet (plus the index.php guard below), nothing else.
  *
  * AdminMenuHandler enqueues dist/app.js as an ordinary <script> that depends on jQuery and
  * reads window.fluentSnippetAdmin from wp_localize_script, and dist/app.css next to it.
@@ -17,6 +17,18 @@ import path from 'path';
  *     npm run build   production, minified
  *     npm run dev     rebuilds on every save; reload wp-admin to see it
  */
+
+/*
+ * The "silence is golden" index.php every other folder in the plugin has, so the server
+ * never lists dist/. Written by the build because emptyOutDir clears dist/ each time.
+ */
+const silenceIndex = {
+    name: 'fluent-snippets-silence-index',
+    generateBundle() {
+        this.emitFile({type: 'asset', fileName: 'index.php', source: '<?php\n// Silence is golden.\n'});
+    }
+};
+
 export default defineConfig(({mode}) => {
     const production = mode === 'production';
 
@@ -30,7 +42,8 @@ export default defineConfig(({mode}) => {
                 resolvers: [ElementPlusResolver()],
                 directives: false,
                 dts: false
-            })
+            }),
+            silenceIndex
         ],
 
         resolve: {
