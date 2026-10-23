@@ -7,16 +7,16 @@ import Storage from '@/Bits/Storage';
 import App from './App.vue';
 import eventBus from './Bits/event-bus';
 import {$t, $_n, $_x} from './i18n.js';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
+import relativeTime from 'dayjs/plugin/relativeTime';
 
-require('./app.scss');
+import './app.scss';
 
-const dayjs = require('dayjs');
-const relativeTime = require('dayjs/plugin/relativeTime');
-require('dayjs/plugin/utc');
-require('dayjs/plugin/localizedFormat');
-dayjs.extend(require('dayjs/plugin/utc'));
-dayjs.extend(require('dayjs/plugin/localizedFormat'));
-dayjs.extend(relativeTime)
+dayjs.extend(utc);
+dayjs.extend(localizedFormat);
+dayjs.extend(relativeTime);
 
 // The notification renders HTML, and error text now includes things PHP said verbatim —
 // class names in angle brackets, snippets of the user's own markup. Those get escaped

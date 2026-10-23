@@ -157,28 +157,31 @@ fi
 # ---------------------------------------------------------------------------
 if [ "$build_assets" = true ]; then
     step "Building admin assets"
-    npx mix --production || fail "asset build failed."
+    npm run build || fail "asset build failed."
 else
     step "Skipping asset build (--skip-assets)"
 
     # Shipping last release's JavaScript is the mistake this script used to make by
     # default, so taking the shortcut has to prove the bundle is not behind the source.
     #
-    # Compared against mix-manifest.json, not app.js: webpack leaves an output file
-    # untouched when the new bytes are identical, so app.js can be older than a source
-    # file that was only re-saved, and the check would then fail forever. The manifest is
-    # rewritten on every run, which is exactly the question being asked — has a build
-    # happened since the sources last changed.
-    [ -f dist/mix-manifest.json ] || fail "dist/ has never been built. Run without --skip-assets."
+    # Compared against app.js itself: Vite empties dist/ and writes every file again on
+    # each build, so its timestamp is the time of the last build.
+    [ -f dist/app.js ] || fail "dist/ has never been built. Run without --skip-assets."
 
-    stale_sources=$(find src -type f -newer dist/mix-manifest.json 2>/dev/null || true)
+    stale_sources=$(find src vite.config.mjs tailwind.config.js -type f -newer dist/app.js 2>/dev/null || true)
 
     if [ -n "$stale_sources" ]; then
         fail "$(first_line "$stale_sources") changed after the last asset build. Run without --skip-assets."
     fi
+
+    # `npm run dev` writes into the same dist/: unminified, with source maps. That is not
+    # something to hand to users.
+    [ ! -f dist/app.js.map ] || fail "dist/ holds a development build (npm run dev). Run without --skip-assets."
 fi
 
-[ -f dist/app.js ] || fail "dist/app.js does not exist. Run without --skip-assets."
+for asset in dist/app.js dist/app.css; do
+    [ -f "$asset" ] || fail "$asset does not exist. Run without --skip-assets."
+done
 
 # ---------------------------------------------------------------------------
 step "Checking version numbers"
@@ -222,7 +225,7 @@ done
 require_tool unzip
 archive_list=$(unzip -l "$ZIP_FILE")
 
-for required in "$PLUGIN_SLUG/dist/app.js" "$PLUGIN_SLUG/$PLUGIN_SLUG.php"; do
+for required in "$PLUGIN_SLUG/dist/app.js" "$PLUGIN_SLUG/dist/app.css" "$PLUGIN_SLUG/$PLUGIN_SLUG.php"; do
     contains "$archive_list" "$required" || fail "$required is missing from the archive."
 done
 

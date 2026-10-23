@@ -428,6 +428,9 @@ class AdminMenuHandler
             }
         });
 
+        // Enqueued from the page callback, after <head> has printed, so WordPress prints the
+        // stylesheet as a late style in the footer, just before the app script mounts.
+        wp_enqueue_style('fluent_snippets_app', FLUENT_SNIPPETS_PLUGIN_URL . 'dist/app.css', [], FLUENT_SNIPPETS_PLUGIN_VERSION);
         wp_enqueue_script('fluent_snippets_app', FLUENT_SNIPPETS_PLUGIN_URL . 'dist/app.js', ['jquery'], FLUENT_SNIPPETS_PLUGIN_VERSION, true);
 
         $indexConfig = Helper::getIndexedConfig();

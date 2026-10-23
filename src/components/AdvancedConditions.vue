@@ -41,7 +41,7 @@
 </template>
 
 <script type="text/babel">
-import FilterContainer from '@/components/richFilters/FilterContainer';
+import FilterContainer from '@/components/richFilters/FilterContainer.vue';
 import {InfoFilled} from '@element-plus/icons-vue'
 import {markRaw} from "vue";
 
