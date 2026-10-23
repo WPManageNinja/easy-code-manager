@@ -2,17 +2,17 @@
     <div class="fsnip_safe">
         <div class="fsnip_warn" v-if="config.is_defined_disabled">
             <h3>{{$t('Safe Mode is Enabled')}}</h3>
-            <p>{{ $t('Safe Mode is enabled, which means your snippets are not executing. You can disable Safe Mode by removing the following code from your wp-config.php file (or wherever it is defined):') }}</p>
+            <p>{{ $t('Safe_Mode_Constant_Notice') }}</p>
             <code>define('FLUENT_SNIPPETS_SAFE_MODE', true);</code>
         </div>
         <div class="fsnip_warn" v-else-if="config.is_filtered_disabled">
             <h3>{{$t('Safe Mode is Enabled')}}</h3>
-            <p>{{ $t('It looks like you enabled Safe Mode via a filter hook, which means your snippets are not executing. The filter hook used to enable Safe Mode is:') }}</p>
+            <p>{{ $t('Safe_Mode_Filter_Notice') }}</p>
             <code>add_filter('fluent_snippets/run_snippets', '__return_false');</code>
         </div>
         <div class="fsnip_warn" v-else-if="config.is_forced_disabled">
             <h3>{{$t('Safe Mode is Enabled')}}</h3>
-            <p>{{ $t('It looks like you enabled Safe Mode via a URL, which means your snippets are not executing. Review your code, and once you are ready, disable Safe Mode again.') }}</p>
+            <p>{{ $t('Safe_Mode_Url_Notice') }}</p>
             <el-button @click="disableSafeMode" :disabled="working" v-loading="working">{{$t('Disable Safe Mode')}}</el-button>
         </div>
     </div>

@@ -6,8 +6,8 @@ License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 6.0
 Requires PHP: 7.3
-Tested up to: 7.0
-Stable tag: 10.56
+Tested up to: 7.1
+Stable tag: 10.57
 
 Fast, file-based code snippets plugin. Insert header & footer scripts and add PHP, CSS, JS & HTML snippets with conditional logic. Zero DB queries.
 
@@ -174,6 +174,16 @@ Quite the opposite. Unlike other code snippets plugins, FluentSnippets does not 
 
 == Changelog ==
 
+= 10.57 - Oct 19, 2026 =
+- Restored the REST routes for creating and editing snippets (POST snippets, snippets/create, snippets/update), removed in 10.56 without notice. That removal was a breaking API change and should have been listed as one here
+- Adding and editing snippets through the REST API is now off by default. Turn it on in Settings, or set FLUENT_SNIPPETS_REST_AUTHORING in wp-config.php
+- The REST API switch can only be changed on the Settings screen, not with an Application Password, and FLUENT_SNIPPETS_REST_AUTHORING set to 'false' or 'no' now means off
+- snippets/update changes only the fields it is sent, so editing code no longer touches a snippet's status
+- Added an optional expected_hash check to snippets/update: if the snippet changed since it was read, nothing is saved and the reply is a 409
+- snippets/find and every REST write now return a code_hash, and writes return the saved snippet
+- Fixed the line-wrap setting being reset whenever the snippet index was rebuilt
+- Improved translations: sentences are no longer split into pieces, every string with a placeholder carries a note for translators, and several confusing or ungrammatical strings were rewritten
+
 = 10.56 - Aug 12, 2026 =
 - Added a dark mode, switchable from the admin bar and shared with the other Fluent plugins
 - Redesigned every screen: the snippet list, the editor, Settings and About
@@ -252,6 +262,9 @@ Quite the opposite. Unlike other code snippets plugins, FluentSnippets does not 
 * Fix: Backspace not working with some mobile keyboards
 
 == Upgrade Notice ==
+
+= 10.57 =
+Restores the REST API routes for creating and editing snippets, now off by default: turn them on in Settings if an outside tool needs them. Also improves translations and fixes the line-wrap setting being reset.
 
 = 10.56 =
 A redesign of every screen, plus a new dark mode you can switch from the admin bar. Includes accessibility and contrast improvements throughout and several fixes to the snippet list, editor and pagination. Your snippets are untouched by this update.

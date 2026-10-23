@@ -13,7 +13,8 @@
                 <UploadFilled/>
             </el-icon>
             <div class="el-upload__text">
-                {{ $t('Drop JSON file here or') }} <em>{{ $t('click to upload') }}</em>
+                <!-- translators: %s: a "click to upload" link -->
+                <span v-html="$t('Drop a JSON file here or %s', '<em>' + $t('click to upload') + '</em>')"></span>
             </div>
         </el-upload>
         <p>{{$t('Only import snippets from sources you trust.')}}</p>

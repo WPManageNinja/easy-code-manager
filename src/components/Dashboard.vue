@@ -62,7 +62,7 @@
                         at the top of the page says why; this says what to do instead.
                     -->
                     <p v-else>
-                        {{ $t('There are no snippets on this site yet, and this screen cannot add one. Put a snippet file into wp-content/fluent-snippets and it will appear here.') }}
+                        {{ $t('Dashboard_Empty_Read_Only') }}
                     </p>
                 </div>
             </div>
@@ -182,7 +182,7 @@
                                 -->
                                 <el-switch v-if="!scope.row.error" v-model="scope.row.status" active-value="published"
                                            inactive-value="draft" :disabled="!canEdit"
-                                           :aria-label="$t('Activate %s', scope.row.name)"
+                                           :aria-label="/* translators: %s: snippet name */ $t('Activate %s', scope.row.name)"
                                            @change="updateSnippetStatus(scope.row)"></el-switch>
                             </template>
                         </el-table-column>
@@ -232,21 +232,21 @@
                                     -->
                                     <div class="fsnip_row_actions">
                                         <router-link class="fsnip_row_action" :title="$t('Edit')"
-                                                     :aria-label="$t('Edit %s', scope.row.name)"
+                                                     :aria-label="/* translators: %s: snippet name */ $t('Edit %s', scope.row.name)"
                                                      :to="{ name: 'edit_snippet', params: { snippet_name: scope.row.file_name } }">
                                             <el-icon aria-hidden="true"><EditPen/></el-icon>
                                         </router-link>
                                         <button type="button" class="fsnip_row_action" :title="$t('Download')"
-                                                :aria-label="$t('Download %s', scope.row.name)"
+                                                :aria-label="/* translators: %s: snippet name */ $t('Download %s', scope.row.name)"
                                                 @click="exportSnippets([scope.row.file_name])">
                                             <el-icon aria-hidden="true"><Download/></el-icon>
                                         </button>
                                         <el-popconfirm v-if="canEdit" width="220" @confirm="confirmDeleteSnippet(scope.row)"
-                                                       :title="$t('Are you sure to delete this?')">
+                                                       :title="$t('Delete this snippet?')">
                                             <template #reference>
                                                 <button type="button" class="fsnip_row_action is_danger"
                                                         :title="$t('Delete')"
-                                                        :aria-label="$t('Delete %s', scope.row.name)">
+                                                        :aria-label="/* translators: %s: snippet name */ $t('Delete %s', scope.row.name)">
                                                     <el-icon aria-hidden="true"><Delete/></el-icon>
                                                 </button>
                                             </template>
@@ -308,7 +308,7 @@
                                         saying what the number was.
                                     -->
                                     <span class="fsnip_row_priority"
-                                          :title="$t('Priority %s', scope.row.priority)">
+                                          :title="/* translators: %s: the snippet's priority number */ $t('Priority %s', scope.row.priority)">
                                         <el-icon aria-hidden="true">
                                             <!-- Descending bars: a queue, shortest last. -->
                                             <svg viewBox="0 0 12 12" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -406,21 +406,21 @@
                                     -->
                                     <div class="group_file_meta">
                                         <div class="snippet_actions">
-                                        <span :title="$t('Updated At:') + ' '"><el-icon aria-hidden="true"><Stopwatch/></el-icon>
+                                        <span :title="$t('Updated At:')"><el-icon aria-hidden="true"><Stopwatch/></el-icon>
                                             <span class="fsnip_sr_only">{{ $t('Updated At:') }} </span>{{
                                                 relativeTimeFromUtc(snippet.updated_at)
                                             }}</span>
                                             <span class="fc_middot" aria-hidden="true">|</span>
                                             <el-popconfirm v-if="canEdit" width="220" @confirm="confirmDeleteSnippet(snippet)"
-                                                           :title="$t('Are you sure to delete this?')">
+                                                           :title="$t('Delete this snippet?')">
                                                 <template #reference>
                                                     <button type="button" class="fsnip_delete"
-                                                            :aria-label="$t('Delete %s', snippet.name)">{{ $t('delete') }}</button>
+                                                            :aria-label="/* translators: %s: snippet name */ $t('Delete %s', snippet.name)">{{ $t('delete') }}</button>
                                                 </template>
                                             </el-popconfirm>
                                             <span class="fc_middot" aria-hidden="true">|</span>
                                             <button type="button" class="fsnip_download"
-                                                    :aria-label="$t('Download %s', snippet.name)"
+                                                    :aria-label="/* translators: %s: snippet name */ $t('Download %s', snippet.name)"
                                                     @click="exportSnippets([snippet.file_name])">
                                             <el-icon aria-hidden="true">
                                                 <download />
@@ -432,7 +432,7 @@
                                             <span v-if="!snippet.error">
                                             <el-switch size="small" :disabled="!canEdit" v-model="snippet.status" active-value="published"
                                                        inactive-value="draft"
-                                                       :aria-label="$t('Activate %s', snippet.name)"
+                                                       :aria-label="/* translators: %s: snippet name */ $t('Activate %s', snippet.name)"
                                                        @change="updateSnippetStatus(snippet)"></el-switch>
                                             {{ snippet.status }}
                                         </span>
@@ -479,15 +479,15 @@
                                     </span>
                                         <span class="fc_middot" aria-hidden="true">|</span>
                                         <el-popconfirm v-if="canEdit" width="220" @confirm="confirmDeleteSnippet(snippet)"
-                                                       :title="$t('Are you sure to delete this?')">
+                                                       :title="$t('Delete this snippet?')">
                                             <template #reference>
                                                 <button type="button" class="fsnip_delete"
-                                                        :aria-label="$t('Delete %s', snippet.name)">{{ $t('delete') }}</button>
+                                                        :aria-label="/* translators: %s: snippet name */ $t('Delete %s', snippet.name)">{{ $t('delete') }}</button>
                                             </template>
                                         </el-popconfirm>
                                         <span class="fc_middot" aria-hidden="true">|</span>
                                         <button type="button" class="fsnip_download"
-                                                :aria-label="$t('Download %s', snippet.name)"
+                                                :aria-label="/* translators: %s: snippet name */ $t('Download %s', snippet.name)"
                                                 @click="exportSnippets([snippet.file_name])">
                                         <el-icon aria-hidden="true">
                                             <download />
@@ -498,7 +498,7 @@
                                         <span>
                                         <el-switch v-if="!snippet.error" size="small" :disabled="!canEdit" v-model="snippet.status"
                                                    active-value="published" inactive-value="draft"
-                                                   :aria-label="$t('Activate %s', snippet.name)"
+                                                   :aria-label="/* translators: %s: snippet name */ $t('Activate %s', snippet.name)"
                                                    @change="updateSnippetStatus(snippet)"></el-switch>
                                         {{ snippet.status }}
                                     </span>

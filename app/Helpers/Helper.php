@@ -406,7 +406,12 @@ class Helper
             'legacy_status'       => Arr::get($previousConfig['meta'], 'legacy_status'),
             'auto_disable'        => Arr::get($previousConfig['meta'], 'auto_disable', 'yes'),
             'auto_publish'        => Arr::get($previousConfig['meta'], 'auto_publish', 'no'),
-            'remove_on_uninstall' => Arr::get($previousConfig['meta'], 'remove_on_uninstall', 'no')
+            'remove_on_uninstall' => Arr::get($previousConfig['meta'], 'remove_on_uninstall', 'no'),
+            // Both are saved by SettingsController and were missing from this list, so the
+            // next rebuild quietly reset them. For rest_authoring that would mean remote
+            // authoring switching itself off the first time anyone saved a snippet.
+            'enable_line_wrap'    => Arr::get($previousConfig['meta'], 'enable_line_wrap', 'no'),
+            'rest_authoring'      => Arr::get($previousConfig['meta'], 'rest_authoring', 'no')
         ];
 
         $errorFiles = Arr::get($previousConfig, 'error_files', []);

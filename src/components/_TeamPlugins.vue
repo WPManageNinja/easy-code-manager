@@ -7,7 +7,7 @@
         </div>
         <div class="box_body">
             <p class="fss_team_lead">
-                {{ $t('FluentSnippets is built by WPManageNinja, who also make these. All of them are free on WordPress.org, and install from here without leaving the page.') }}
+                {{ $t('Team_Plugins_Intro') }}
             </p>
 
             <ul class="fss_team_grid">

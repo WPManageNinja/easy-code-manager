@@ -40,7 +40,7 @@
                     <p>{{$t('__SNIPPET_FATAL_ERROR__')}}</p>
                     <p><strong>{{$t('Error Message:')}}</strong> {{snippet.error}}</p>
                     <el-button v-if="canEdit" @click="saveCode(true)" :disabled="loading || saving" type="primary">
-                        {{$t('Try Reactivate')}}
+                        {{$t('Reactivate')}}
                     </el-button>
                 </div>
                 <snippet-form :errors="errors" :snippet="snippet"></snippet-form>

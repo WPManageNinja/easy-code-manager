@@ -1,0 +1,38 @@
+{
+    "_comment": "Read by i18n.node.js (generator) and tests/lint/translation-map.js. Paths are relative to the repo root. The `runtime` block is only used by the fluent-plugins-skills installer.",
+    "textDomain": "easy-code-manager",
+    "namespace": "FluentSnippets\\App\\Services",
+    "abspathGuard": false,
+    "helpers": {
+        "t": [
+            "$t"
+        ],
+        "n": [
+            "$_n"
+        ],
+        "x": [
+            "$_x"
+        ]
+    },
+    "reservedWords": "reserved18n.json",
+    "targets": [
+        {
+            "name": "admin",
+            "sourceDirs": [
+                "src"
+            ],
+            "output": "app/Services/Trans.php",
+            "className": "Trans",
+            "method": "getStrings"
+        }
+    ],
+    "runtime": {
+        "file": "src/i18n.js",
+        "mapGlobal": "window.fluentSnippetAdmin.i18n",
+        "definitions": [
+            "src/app.js:124 ($t)",
+            "src/Bits/Rest.js:3 ($t)"
+        ],
+        "packageManager": "pnpm"
+    }
+}

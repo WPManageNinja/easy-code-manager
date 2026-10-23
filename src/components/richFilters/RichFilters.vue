@@ -71,7 +71,7 @@ export default {
         add_label: {
             type: String,
             default() {
-                return 'Add a new filter to run your snippet only under specific conditions.';
+                return 'Rich_Filters_Add_Label';
             }
         },
         filterOptions: {

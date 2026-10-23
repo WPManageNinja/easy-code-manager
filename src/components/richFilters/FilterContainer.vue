@@ -42,7 +42,7 @@ export default {
         },
         add_label: {
             type: String,
-            default: 'Add a new filter to run your snippet only under specific conditions.'
+            default: 'Rich_Filters_Add_Label'
         },
         filterOptions: {
             type: Array,

@@ -17,7 +17,7 @@ export var routes = [
         component: Dashboard,
         meta: {
             active: 'dashboard',
-            title: 'Snippets'
+            title: 'Route_Title_Snippets'
         }
     },
     {
@@ -27,7 +27,7 @@ export var routes = [
         props: true,
         meta: {
             active: 'dashboard',
-            title: 'Edit snippet'
+            title: 'Route_Title_Edit_Snippet'
         }
     },
     {
@@ -36,7 +36,7 @@ export var routes = [
         component: CreateSnippet,
         meta: {
             active: 'dashboard',
-            title: 'Create new snippet'
+            title: 'Route_Title_Create_Snippet'
         }
     },
     {
@@ -45,7 +45,7 @@ export var routes = [
         component: Settings,
         meta: {
             active: 'settings',
-            title: 'Settings'
+            title: 'Route_Title_Settings'
         }
     },
     {
@@ -54,7 +54,7 @@ export var routes = [
         component: About,
         meta: {
             active: 'about',
-            title: 'About'
+            title: 'Route_Title_About'
         }
     }
 ];

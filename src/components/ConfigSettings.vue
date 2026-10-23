@@ -25,7 +25,7 @@
                 <div class="fsnip_setting">
                     <div class="fsnip_setting_text">
                         <strong>{{ $t('Publish new snippets straight away') }}</strong>
-                        <p>{{ $t('A snippet runs from the moment you save it. Turn this off and every new snippet is saved as a draft instead, so nothing runs until you say so.') }}</p>
+                        <p>{{ $t('Settings_Auto_Activate_Help') }}</p>
                     </div>
                     <div class="fsnip_setting_control">
                         <!--
@@ -42,7 +42,7 @@
                 <div class="fsnip_setting">
                     <div class="fsnip_setting_text">
                         <strong>{{ $t('Deactivate a snippet that causes a fatal error') }}</strong>
-                        <p>{{ $t('When a snippet throws a fatal error it is switched off on the spot, and the list tells you which one and why. This is what stops one bad snippet from taking the site down with it.') }}</p>
+                        <p>{{ $t('Settings_Auto_Disable_Help') }}</p>
 
                         <div v-if="settings.auto_disable != 'yes'" class="fsnip_setting_warning" role="alert">
                             {{ $t('__SNIPPET_AUTO_DISABLE_INS__') }}
@@ -65,13 +65,39 @@
                     </div>
                 </div>
 
+                <!--
+                    The only setting here that changes what someone outside wp-admin can do,
+                    so turning it on asks first (toggleRestAuthoring). The details - endpoints,
+                    request format, the wp-config constant - live in the doc, not on this screen.
+                -->
+                <div class="fsnip_setting">
+                    <div class="fsnip_setting_text">
+                        <strong>{{ $t('Enable REST API to manage snippets') }}</strong>
+                        <p>
+                            {{ $t('Lets other apps add and edit snippets on this site. Only turn this on if an outside tool needs it.') }}
+                            <a href="https://fluentsnippets.com/docs/rest-api" target="_blank" rel="noopener">{{ $t('Learn more') }}<span class="fsnip_sr_only">{{ $t('(opens in a new tab)') }}</span></a>
+                        </p>
+
+                        <div v-if="rest_authoring_locked !== null" class="fsnip_setting_warning" role="note">
+                            {{ $t('This is set in wp-config.php, so you can only change it there.') }}
+                        </div>
+                    </div>
+                    <div class="fsnip_setting_control">
+                        <el-switch :disabled="!canEdit || rest_authoring_locked !== null"
+                                   :model-value="settings.rest_authoring"
+                                   @update:model-value="toggleRestAuthoring"
+                                   active-value="yes" inactive-value="no"
+                                   :aria-label="$t('Enable REST API to manage snippets')"/>
+                    </div>
+                </div>
+
                 <div class="fsnip_setting is_pending">
                     <div class="fsnip_setting_text">
                         <strong>
                             {{ $t('Delete every snippet when the plugin is uninstalled') }}
                             <span class="fsnip_tag is_neutral">{{ $t('Coming soon') }}</span>
                         </strong>
-                        <p>{{ $t('Uninstalling leaves your snippet files on disk, so reinstalling picks up where you left off. This will make removal complete instead.') }}</p>
+                        <p>{{ $t('Settings_Delete_On_Uninstall_Help') }}</p>
                     </div>
                     <div class="fsnip_setting_control">
                         <el-switch :disabled="true" v-model="settings.remove_on_uninstall"
@@ -99,7 +125,7 @@
 
             <div v-if="!fetching" class="box_body">
                 <p class="fsnip_lede">
-                    {{ $t('Safe Mode turns every snippet off at once, without going through the admin. It is the way back in if a snippet ever locks you out of your own site - so save this URL somewhere you can reach when WordPress will not load.') }}
+                    {{ $t('Settings_Safe_Mode_Url_Help') }}
                 </p>
 
                 <label class="fsnip_field_label" for="fsnip_safe_url">{{ $t('Your Safe Mode URL') }}</label>
@@ -128,13 +154,13 @@
                         {{ $t('Regenerate') }}
                     </el-button>
                     <span>
-                        {{ $t('Issues a new URL and stops the current one working. Do this if it has been somewhere it should not have been - a shared document, a support thread, a screenshot.') }}
+                        {{ $t('Settings_Safe_Mode_Rotate_Help') }}
                     </span>
                 </div>
 
                 <div class="fsnip_setting_aside">
                     <strong>{{ $t('Or turn it on from wp-config.php') }}</strong>
-                    <p>{{ $t('If you would rather not rely on a URL, this does the same thing and cannot be triggered by anyone who has not got file access:') }}</p>
+                    <p>{{ $t('Settings_Safe_Mode_Constant_Help') }}</p>
                     <code>define('FLUENT_SNIPPETS_SAFE_MODE', true);</code>
                 </div>
             </div>
@@ -160,13 +186,13 @@
 
             <div v-if="!fetching" class="box_body">
                 <p class="fsnip_lede">
-                    {{ $t('Standalone Mode writes your snippets into a must-use plugin, so they keep running whether or not FluentSnippets is installed. Deactivate this plugin, or delete it, and your code carries on working.') }}
+                    {{ $t('Settings_Standalone_Help') }}
                 </p>
 
                 <template v-if="is_standalone">
                     <div class="fsnip_setting_aside is_on">
                         <strong>{{ $t('Your snippets no longer depend on this plugin') }}</strong>
-                        <p>{{ $t('They are loaded from mu-plugins. Uninstalling FluentSnippets will not stop them; turning this off below will hand them back to the plugin.') }}</p>
+                        <p>{{ $t('Settings_Standalone_Active_Notice') }}</p>
                     </div>
 
                     <el-button v-if="canEdit" v-loading="saving" :disabled="saving" @click="updateStandAloneMode('no')">
@@ -197,7 +223,9 @@ export default {
                 auto_publish: 'yes',
                 enable_line_wrap: 'no',
                 remove_on_uninstall: 'no',
+                rest_authoring: 'no',
             },
+            rest_authoring_locked: null,
             secret_url: '',
             fetching: true,
             saving: false,
@@ -213,6 +241,7 @@ export default {
                     this.settings = response.settings;
                     this.secret_url = response.secret_url;
                     this.is_standalone = response.is_standalone;
+                    this.rest_authoring_locked = response.rest_authoring_locked;
                     this.appVars.is_standalone = response.is_standalone;
                     if (!this.settings.enable_line_wrap) {
                         this.settings.enable_line_wrap = 'no';
@@ -253,7 +282,7 @@ export default {
          */
         regenerateSecretUrl() {
             this.$confirm(
-                this.$t('The current Safe Mode URL will stop working immediately. Anywhere you have saved it - a password manager, a runbook, your phone - will need the new one.'),
+                this.$t('Settings_Safe_Mode_Rotate_Confirm'),
                 this.$t('Generate a new Safe Mode URL?'),
                 {
                     confirmButtonText: this.$t('Regenerate'),
@@ -276,6 +305,31 @@ export default {
                     });
             }).catch(() => {
                 // Dismissed the dialog. $confirm rejects on cancel; nothing to report.
+            });
+        },
+        /**
+         * Turning it on asks first, because it widens what a stolen credential can do.
+         * Turning it off does not - that only ever narrows it. Either way it is saved with
+         * the Save Settings button, like every other toggle in this card.
+         */
+        toggleRestAuthoring(value) {
+            if (value !== 'yes') {
+                this.settings.rest_authoring = value;
+                return;
+            }
+
+            this.$confirm(
+                this.$t('Settings_Rest_Authoring_Warning'),
+                this.$t('Turn on the REST API?'),
+                {
+                    confirmButtonText: this.$t('Turn on'),
+                    cancelButtonText: this.$t('Cancel'),
+                    type: 'warning'
+                }
+            ).then(() => {
+                this.settings.rest_authoring = 'yes';
+            }).catch(() => {
+                // Dismissed. The switch never moved, because it only follows the setting.
             });
         },
         copyItem(copyText) {

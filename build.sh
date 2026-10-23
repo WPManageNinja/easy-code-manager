@@ -3,7 +3,7 @@
 # Build FluentSnippets into builds/easy-code-manager.zip.
 #
 #     ./build.sh                  everything: strings, tests, assets, package
-#     ./build.sh --loco           also run Loco extract/sync (needs a WordPress install)
+#     ./build.sh --pot            also regenerate language/easy-code-manager.pot (needs WP-CLI)
 #     ./build.sh --skip-tests     package without running the test suite
 #     ./build.sh --skip-assets    package the dist/ that is already on disk
 #     ./build.sh --help
@@ -27,7 +27,7 @@ ZIP_FILE="builds/$PLUGIN_SLUG.zip"
 # node_modules/ and the build tooling never reach a user.
 PACKAGE_ITEMS="app dist language easy-code-manager.php readme.txt index.php"
 
-with_loco=false
+with_pot=false
 run_tests=true
 build_assets=true
 
@@ -50,7 +50,8 @@ usage() {
 
 for arg in "$@"; do
     case "$arg" in
-        --loco)        with_loco=true ;;
+        # --loco is the old name; WP-CLI replaced Loco because Loco drops translators comments.
+        --pot|--loco)  with_pot=true ;;
         --skip-tests)  run_tests=false ;;
         --skip-assets) build_assets=false ;;
         # Accepted so an old invocation does not fail. Both are the default now.
@@ -101,15 +102,19 @@ step "Collecting translatable strings"
 # under --loco, as it used to be) means a release can never ship strings that were never
 # offered for translation.
 node i18n.node.js || fail "string extraction failed."
+node tests/lint/translation-map.js || fail "translation map lint failed. Fix the call sites it names, then run: pnpm run translate"
 
-if [ "$with_loco" = true ]; then
-    step "Syncing Loco translations"
+if [ "$with_pot" = true ]; then
+    step "Regenerating the POT file"
     require_tool wp
-    wp loco extract "$PLUGIN_SLUG" || fail "wp loco extract failed."
-    wp loco sync "$PLUGIN_SLUG" || fail "wp loco sync failed."
+    # WP-CLI, not Loco: both find the same strings, but only make-pot keeps the
+    # translators comments, and it needs no WordPress install.
+    wp i18n make-pot . "language/$PLUGIN_SLUG.pot" --domain="$PLUGIN_SLUG" \
+        --exclude=node_modules,vendor,assets,tests,dev,dev-docs,user-docs,docs,_docs,src,language,builds,dist \
+        || fail "wp i18n make-pot failed."
     info "language/$PLUGIN_SLUG.pot updated"
 else
-    info "skipping Loco extract/sync (pass --loco to refresh language/$PLUGIN_SLUG.pot)"
+    info "skipping POT regeneration (pass --pot to refresh language/$PLUGIN_SLUG.pot)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -134,6 +139,15 @@ if [ "$run_tests" = true ]; then
             test_failures=$((test_failures + 1))
         fi
     done
+
+    # Proof-of-catch for the translation lint: every check must still fire on its fixtures.
+    if output=$(node tests/lint/translation-map.js --self-test 2>&1); then
+        info "${C_GREEN}ok${C_OFF}    translation-map self-test"
+    else
+        info "${C_RED}FAIL${C_OFF}  translation-map self-test"
+        printf '%s\n' "$output" | sed 's/^/          /'
+        test_failures=$((test_failures + 1))
+    fi
 
     [ "$test_failures" -eq 0 ] || fail "$test_failures test file(s) failed. Nothing was packaged."
 else
