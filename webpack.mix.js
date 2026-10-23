@@ -2,7 +2,7 @@
 let mix = require('laravel-mix');
 const AutoImport = require('unplugin-auto-import/webpack').default;
 const { ElementPlusResolver } = require('unplugin-vue-components/resolvers');
-const VueComponents = require('unplugin-vue-components/webpack').default;
+const VueComponents = require('unplugin-vue-components/webpack');
 var path = require('path');
 
 mix.webpackConfig({
@@ -41,6 +41,9 @@ mix.options({
     ]
 });
 
-mix.js('src/app.js', 'dist').vue({ version: 3 })
+// runtimeOnly: every template is an SFC compiled at build time. Without it Mix aliases the
+// full build, and after the 2026-10 dependency update its template compiler was no longer
+// shaken out (about 80 KB).
+mix.js('src/app.js', 'dist').vue({ version: 3, runtimeOnly: true })
     .copy('src/images', 'dist/images')
     .setPublicPath('dist');

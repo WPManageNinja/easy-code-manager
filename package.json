@@ -20,7 +20,7 @@
     "sass-loader": "^16.0.5",
     "tailwindcss": "^3.4.19",
     "unplugin-auto-import": "^19.1.2",
-    "unplugin-vue-components": "^28.5.0",
+    "unplugin-vue-components": "^30.0.0",
     "vue-loader": "^17.4.2"
   },
   "dependencies": {
@@ -41,5 +41,16 @@
     "vue": "^3.5.13",
     "vue-codemirror": "^6.1.1",
     "vue-router": "^4.5.1"
+  },
+  "overrides": {
+    "webpack": "~5.105.4",
+    "yaml@1": "^1.10.3",
+    "sockjs": {
+      "uuid": "^11.1.1"
+    },
+    "node-notifier": {
+      "uuid": "^11.1.1"
+    },
+    "postcss-selector-parser@6": "^7.1.7"
   }
 }
