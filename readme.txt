@@ -183,6 +183,7 @@ Quite the opposite. Unlike other code snippets plugins, FluentSnippets does not 
 - snippets/find and every REST write now return a code_hash, and writes return the saved snippet
 - Fixed the line-wrap setting being reset whenever the snippet index was rebuilt
 - Improved translations: sentences are no longer split into pieces, every string with a placeholder carries a note for translators, and several confusing or ungrammatical strings were rewritten
+- Updated the admin screen's libraries (Vue, Element Plus, CodeMirror)
 
 = 10.56 - Aug 12, 2026 =
 - Added a dark mode, switchable from the admin bar and shared with the other Fluent plugins
