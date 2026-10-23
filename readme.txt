@@ -174,7 +174,7 @@ Quite the opposite. Unlike other code snippets plugins, FluentSnippets does not 
 
 == Changelog ==
 
-= 10.57 - Oct 19, 2026 =
+= 10.57 - Oct 23, 2026 =
 - Restored the REST routes for creating and editing snippets (POST snippets, snippets/create, snippets/update), removed in 10.56 without notice. That removal was a breaking API change and should have been listed as one here
 - Adding and editing snippets through the REST API is now off by default. Turn it on in Settings, or set FLUENT_SNIPPETS_REST_AUTHORING in wp-config.php
 - The REST API switch can only be changed on the Settings screen, not with an Application Password, and FLUENT_SNIPPETS_REST_AUTHORING set to 'false' or 'no' now means off
