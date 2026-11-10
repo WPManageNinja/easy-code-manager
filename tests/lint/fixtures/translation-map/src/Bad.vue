@@ -20,6 +20,10 @@
         <!-- 9. trailing space: a concatenation fragment -->
         <span>{{ $t('Wait until ') }}{{ date }}</span>
 
+        <!-- 10. numbered placeholder without the $: WordPress reads it as unordered -->
+        <!-- translators: %1s is the page, %2s the page count -->
+        <p>{{ $t('Page %1s of %2s', page, pages) }}</p>
+
         <!-- good: translator comment on the line above, carried into the map -->
         <!-- translators: %s is the item count -->
         <p>{{ $t('%s items', total) }}</p>
@@ -27,9 +31,12 @@
         <!-- good: reserved word, expanded to its long text -->
         <p>{{ $t('Long_Help_Text') }}</p>
 
-        <!-- good: plural pair, both forms become keys -->
+        <!-- good: plural pair, one plural entry with every translated form -->
         <!-- translators: %s is the number of tickets -->
         <p>{{ $_n('%s ticket', '%s tickets', total) }}</p>
+
+        <!-- bad: the plural form is not a literal -->
+        <p>{{ $_n('%s file', pluralLabel, count) }}</p>
 
         <!-- good: contextual key -->
         <span>{{ $_x('Open', 'Ticket status') }}</span>
