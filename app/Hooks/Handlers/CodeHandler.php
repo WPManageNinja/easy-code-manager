@@ -133,7 +133,7 @@ class CodeHandler
 
         $result = ob_get_clean();
 
-        if ($result) {
+        if (is_string($result) && $result !== '') {
             return $result;
         }
 

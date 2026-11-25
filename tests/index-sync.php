@@ -282,6 +282,18 @@ function runtimeMatches($runner, $body)
 $model = new \FluentSnippets\App\Model\Snippet();
 $runners = [new \FluentSnippets\App\Services\CodeRunner(), new \FluentSnippets\Mu\CodeRunner()];
 $body = "\r\n/* restored */\n";
+// Older headers may put the marker directly after the metadata comment.
+// Keep ordinary documentation in the description and preserve the body verbatim.
+$description = 'The // <Internal Doc End> ?> label marks the end of the header.';
+foreach (["\n", "\r\n"] as $eol) {
+    $legacyHeader = "// <Internal Doc Start>" . $eol . "/*" . $eol
+        . '* @description: ' . $description . $eol . '*/' . $eol . '// <Internal Doc End> ?>';
+    foreach (['', $eol] as $separator) {
+        [$meta, $code] = $model->parseBlock($legacyHeader . $separator . '/* example */');
+        restoredCheck('legacy comment header', ($meta['description'] ?? null) === $description
+            && $code === '/* example */', 'legacy content differs');
+    }
+}
 foreach (['native' => PHP_EOL, 'foreign' => PHP_EOL === "\n" ? "\r\n" : "\n"] as $kind => $eol) {
     $suffix = str_repeat('x', 110);
     foreach (['css', 'js'] as $type) {
@@ -303,6 +315,27 @@ foreach (['native' => PHP_EOL, 'foreign' => PHP_EOL === "\n" ? "\r\n" : "\n"] as
 }
 
 $markerBody = "/* // <Internal Doc End> ?>" . PHP_EOL . "// <Internal Doc Start> */";
+// Cached admin CSS is enqueued on the page, while both editor callbacks still
+// need the on-disk source (the cache contains the generated stylesheet only).
+$cachedDir = $storage . '/cached';
+wp_mkdir_p($cachedDir);
+file_put_contents($cachedDir . '/css.css', '/* cached stylesheet */');
+$config['published']['css.php']['load_as_file'] = 'yes';
+Helper::saveIndexedConfig($config);
+foreach ($runners as $runner) {
+    $GLOBALS['snippetHooks'] = [];
+    $GLOBALS['editorCss'] = [];
+    $runner->runSnippets();
+    $settings = $GLOBALS['snippetHooks']['block_editor_settings_all'][0]([]);
+    $GLOBALS['snippetHooks']['enqueue_block_editor_assets'][0]();
+    restoredCheck('cached editor output with data set ' . get_class($runner),
+        isset($GLOBALS['snippetHooks']['admin_enqueue_scripts'])
+        && ($settings['styles'][0]['css'] ?? null) === $body
+        && ($GLOBALS['editorCss']['wp-edit-blocks'] ?? null) === $body, 'cached editor output differs');
+}
+unlink($cachedDir . '/css.css');
+Helper::cacheSnippetIndex();
+
 foreach (['css', 'js'] as $type) {
     file_put_contents($storage . '/' . $type . '.php', restoredHeader($type, 'Marker text', PHP_EOL) . PHP_EOL . $markerBody);
 }

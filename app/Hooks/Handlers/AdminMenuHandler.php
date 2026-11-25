@@ -171,7 +171,7 @@ class AdminMenuHandler
             $fileContent = file_get_contents($snippetFile);
             [$docBlockArray, $code] = $snippetModel->parseBlock($fileContent);
 
-            if (empty($docBlockArray) || empty($code)) {
+            if (empty($docBlockArray) || $code === null || $code === '') {
                 continue;
             }
 

@@ -402,19 +402,18 @@ class Snippet
             return [null, null];
         }
 
-        // Prefer a terminated marker; legacy files can start the code on the marker line.
-        $parts = preg_split('~// <Internal Doc End> \?>\r?\n~', $fileContent[1], 2);
-        if (count($parts) < 2) {
-            $parts = explode('// <Internal Doc End> ?>', $fileContent[1], 2);
+        // The marker belongs immediately after the metadata comment and optional guard.
+        // Split the comment first so marker text in either metadata or code stays literal.
+        $parts = explode('*/', $fileContent[1], 2);
+        $marker = '~\A\s*(?:\?>\s*)?(?:<\?php[^\r\n/]*)?// <Internal Doc End> \?>(?:\r?\n)?~';
+        if (count($parts) !== 2 || strncmp(ltrim($parts[0]), '/*', 2) !== 0 || !preg_match($marker, $parts[1], $match)) {
+            return $codeOnly ? '' : [null, null];
         }
-        $docBlock = $parts[0];
-        $code = $parts[1] ?? null;
 
-        if (!$docBlock || !$code) {
-            if ($codeOnly) {
-                return '';
-            }
-            return [null, null];
+        $docBlock = $parts[0];
+        $code = substr($parts[1], strlen($match[0]));
+        if ($code === '') {
+            return $codeOnly ? '' : [null, null];
         }
 
         if ($codeOnly) {
