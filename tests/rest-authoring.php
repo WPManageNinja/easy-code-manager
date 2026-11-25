@@ -71,6 +71,8 @@ function get_current_user_id() { return 7; }
 function __($text, $domain = '') { return $text; }
 function is_user_logged_in() { return $GLOBALS['fs_test']['logged_in']; }
 function current_user_can($cap) { return !empty($GLOBALS['fs_test']['caps'][$cap]); }
+function is_multisite() { return !empty($GLOBALS['fs_test']['network']); }
+function is_super_admin() { return !empty($GLOBALS['fs_test']['super_admin']); }
 function wp_is_file_mod_allowed($context) { return $GLOBALS['fs_test']['file_mods']; }
 function rest_authorization_required_code() { return 403; }
 function rest_get_authenticated_app_password() { return array_key_exists('app_password', $GLOBALS['fs_test']) ? $GLOBALS['fs_test']['app_password'] : 'app-pass-uuid'; }
@@ -129,6 +131,7 @@ require $base . 'app/Services/PhpValidator.php';
 require $base . 'app/Services/SnippetErrors.php';
 require $base . 'app/Services/Permissions.php';
 require $base . 'app/Services/RestAuthoring.php';
+require $base . 'app/Services/FluentSnippetCondition.php';
 require $base . 'app/Services/Router.php';
 require $base . 'app/Http/Controllers/SnippetsController.php';
 require $base . 'app/Http/Controllers/SettingsController.php';
@@ -287,6 +290,16 @@ $legacy = SnippetsController::updateSnippet(new WP_REST_Request([
 check('pre-10.56 update (full meta JSON, code inside) still works', !is_wp_error($legacy) && $legacy['snippet']['meta']['name'] === 'Rest Probe Renamed', describe($legacy));
 check('created_by cannot be set from the request', strpos(readFile_($fileName), '@created_by: 999') === false);
 check('updated_by is whoever is authenticated', strpos(readFile_($fileName), '@updated_by: 7') !== false);
+
+$GLOBALS['fs_test']['network'] = $GLOBALS['fs_test']['super_admin'] = true;
+$scope = ['mode' => 'only', 'network' => 1, 'sites' => [3]];
+foreach ([['network_sites' => $scope], ['description' => 'Partial update'], ['network_sites' => null]] as $patch) {
+    $response = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $fileName, 'meta' => $patch]));
+    $expected = $patch === ['network_sites' => null] ? null : $scope;
+    check('REST preserves or explicitly clears site scope: ' . json_encode($patch),
+        !is_wp_error($response) && ($response['snippet']['meta']['network_sites'] ?? null) === $expected, describe($response));
+}
+$GLOBALS['fs_test']['network'] = $GLOBALS['fs_test']['super_admin'] = false;
 
 $before = readFile_($fileName);
 $broken = SnippetsController::updateSnippet(new WP_REST_Request([

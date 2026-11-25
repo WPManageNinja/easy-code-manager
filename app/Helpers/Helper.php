@@ -428,6 +428,7 @@ class Helper
             'priority',
             'group',
             'condition',
+            'network_sites',
             'load_as_file',
             'load_in_block_editor'
         ];
@@ -1006,6 +1007,13 @@ PHP;
 
     public static function validateMeta($meta)
     {
+        if (is_array($meta) && array_key_exists('network_sites', $meta) && is_multisite() && !is_super_admin()) {
+            return new \WP_Error('forbidden', __('Only a network Super Admin can select sites.', 'easy-code-manager'), ['status' => 403]);
+        }
+        if (isset($meta['network_sites']) && !\FluentSnippets\App\Services\FluentSnippetCondition::validSiteScope($meta['network_sites'])) {
+            return new \WP_Error('invalid_network_sites', __('Select at least one valid network site.', 'easy-code-manager'), ['status' => 422]);
+        }
+
         $labels = [
             'name'   => __('Snippet Name', 'easy-code-manager'),
             'status' => __('Status', 'easy-code-manager'),

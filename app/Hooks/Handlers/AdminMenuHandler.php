@@ -480,6 +480,7 @@ class AdminMenuHandler
              * for itself, and has to, because nothing stops someone calling them directly.
              */
             'can_edit'                   => Permissions::canEdit(),
+            'network_id'                 => is_multisite() && is_super_admin() ? get_current_network_id() : 0,
             'read_only_notice'           => Permissions::isReadOnly() ? Permissions::readOnlyNotice() : null,
             /*
              * Localised as 'has_line_wrap' until 2026-08-11, but _CodeEditor.vue reads

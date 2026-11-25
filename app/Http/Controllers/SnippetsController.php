@@ -29,6 +29,7 @@ class SnippetsController
         'run_at',
         'priority',
         'condition',
+        'network_sites',
         'load_as_file',
         'load_in_block_editor',
     ];
@@ -119,7 +120,7 @@ class SnippetsController
             return $tooLarge;
         }
 
-        $meta = Arr::only($meta, self::AUTHORABLE_META);
+        $meta = self::authorableMeta($meta);
 
         if ($malformed = self::refuseMalformedMeta($meta)) {
             return $malformed;
@@ -227,7 +228,7 @@ class SnippetsController
         // Unknown keys are dropped rather than refused: the pre-10.56 route was usually fed
         // the whole meta array the editor works with, created_at and is_valid included,
         // and those callers have to keep working.
-        $meta = Arr::only($meta, self::AUTHORABLE_META);
+        $meta = self::authorableMeta($meta);
 
         if ($malformed = self::refuseMalformedMeta($meta)) {
             return $malformed;
@@ -429,12 +430,19 @@ class SnippetsController
 
     /**
      * Every meta value is written into the snippet's header as one line of text, so
-     * anything but a scalar would be stored as the word "Array". `condition` is the one
-     * structured field, and it has to be an object.
+     * unrecognized structures would be stored as the word "Array". Conditions and
+     * network site restrictions have their own JSON encoding.
      */
     private static function refuseMalformedMeta($meta)
     {
         foreach ($meta as $key => $value) {
+            if ($key === 'network_sites') {
+                // null explicitly restores the all-sites default. Helper validates the contents.
+                if ($value === null || is_array($value)) {
+                    continue;
+                }
+                return new \WP_Error('invalid_meta', __('Network site scope must be an object or null.', 'easy-code-manager'), ['status' => 400]);
+            }
             $valid = $key === 'condition' ? is_array($value) : (is_scalar($value) || $value === null);
 
             if (!$valid) {
@@ -447,6 +455,17 @@ class SnippetsController
         }
 
         return false;
+    }
+
+    private static function authorableMeta($meta)
+    {
+        $fields = Arr::only($meta, self::AUTHORABLE_META);
+        // Arr::only omits null. For site targeting, null explicitly clears the
+        // restriction; omission leaves it alone during a partial REST update.
+        if (array_key_exists('network_sites', $meta)) {
+            $fields['network_sites'] = $meta['network_sites'];
+        }
+        return $fields;
     }
 
     private static function refuseOversizedCode($code)

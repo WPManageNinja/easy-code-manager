@@ -45,6 +45,8 @@
             </label>
         </div>
 
+        <network-sites :snippet="snippet" />
+
         <div v-if="snippet.meta.run_at == 'shortcode'">
             <div v-if="is_new">
                 <p>{{$t('You can view the shortcode after you save this snippet')}}</p>
@@ -67,11 +69,13 @@
 <script type="text/babel">
 import {CopyDocument} from '@element-plus/icons-vue';
 import {markRaw} from "vue";
+import NetworkSites from './_NetworkSites.vue';
 
 export default {
     name: 'WhereRun',
     props: ['snippet', 'is_new'],
     components: {
+        NetworkSites,
         CopyDocument: markRaw(CopyDocument)
     },
     data() {

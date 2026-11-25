@@ -115,6 +115,9 @@ class CodeHandler
 
         // check condition
         $conditionalClass = new FluentSnippetCondition();
+        if (!FluentSnippetCondition::matchesSiteScope(Arr::get($snippet, 'meta.network_sites'))) {
+            return '';
+        }
         if (!$conditionalClass->evaluate(Arr::get($snippet, 'condition', []))) {
             return $this->shortCodeError(__('Snippet condition is not valid', 'easy-code-manager'));
         }

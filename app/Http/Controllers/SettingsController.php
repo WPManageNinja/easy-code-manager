@@ -248,6 +248,34 @@ class SettingsController
         $optionKey = $request->get_param('rest_key');
         $options = [];
 
+        if ($optionKey === 'network_sites') {
+            if (!is_multisite() || !is_super_admin()) {
+                return new \WP_Error('forbidden', __('Only a network Super Admin can select sites.', 'easy-code-manager'), ['status' => 403]);
+            }
+            $args = ['network_id' => get_current_network_id(), 'number' => 25, 'orderby' => 'id', 'order' => 'ASC'];
+            $search = $request->get_param('search');
+            if ($search !== null && !is_string($search)) {
+                return new \WP_Error('invalid_search', __('Enter a site address or ID.', 'easy-code-manager'), ['status' => 400]);
+            }
+            $search = sanitize_text_field((string) $search);
+            $selected = $request->get_param('values');
+            if (is_array($selected)) {
+                $ids = wp_parse_id_list(array_filter(array_slice($selected, 0, 25), 'is_scalar'));
+                if (!$ids) {
+                    return ['options' => [], 'is_cachable' => false];
+                }
+                $args['site__in'] = $ids;
+            } elseif (ctype_digit($search)) {
+                $args['site__in'] = [(int) $search];
+            } elseif ($search !== '') {
+                $args['search'] = '*' . $search . '*';
+            }
+            foreach (get_sites($args) as $site) {
+                $options[] = ['id' => (int) $site->blog_id, 'title' => $site->domain . $site->path];
+            }
+            return ['options' => $options, 'is_cachable' => false];
+        }
+
         if ($optionKey == 'tax_term_groups') {
             // Get public taxonomies
             $taxonomies = get_taxonomies([

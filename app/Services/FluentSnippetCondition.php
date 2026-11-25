@@ -4,8 +4,52 @@ namespace FluentSnippets\App\Services;
 
 class FluentSnippetCondition
 {
-    public function evaluate($conditionSettings)
+    public static function validSiteScope($scope)
     {
+        if (!is_array($scope) || !isset($scope['mode'], $scope['network'], $scope['sites'])
+            || !in_array($scope['mode'], ['only', 'except'], true)
+            || !self::isSiteId($scope['network']) || !is_array($scope['sites']) || !$scope['sites']
+            || array_values($scope['sites']) !== $scope['sites']) {
+            return false;
+        }
+
+        foreach ($scope['sites'] as $id) {
+            if (!self::isSiteId($id)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static function isSiteId($id)
+    {
+        return (is_int($id) || is_string($id)) && (int) $id > 0 && (string) (int) $id === (string) $id;
+    }
+
+    public static function matchesSiteScope($scope)
+    {
+        if ($scope === null) {
+            return true;
+        }
+        if (!is_multisite() || !self::validSiteScope($scope)) {
+            return false;
+        }
+
+        // get_site() follows switch_to_blog(), including switches across networks.
+        $site = get_site();
+        if (!$site || (int) $site->network_id !== (int) $scope['network']) {
+            return false;
+        }
+        $listed = in_array(get_current_blog_id(), $scope['sites']);
+        return $scope['mode'] === 'only' ? $listed : !$listed;
+    }
+
+    public function evaluate($conditionSettings, $siteScope = null)
+    {
+        if (!self::matchesSiteScope($siteScope)) {
+            return false;
+        }
+
         if (empty($conditionSettings) || empty($conditionSettings['status']) || $conditionSettings['status'] != 'yes' || empty($conditionSettings['items'])) {
             return true;
         }

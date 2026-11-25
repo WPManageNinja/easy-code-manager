@@ -295,6 +295,14 @@ class Snippet
             return SnippetErrors::fileMissing($fileName);
         }
 
+        // Older clients can edit a shared snippet without sending this field. Only
+        // an explicit null clears a restriction already present in its file.
+        if (!array_key_exists('network_sites', $metaData)) {
+            $previous = $this->findByFileName($fileName);
+            if (!is_wp_error($previous) && isset($previous['meta']['network_sites'])) {
+                $metaData['network_sites'] = $previous['meta']['network_sites'];
+            }
+        }
         $docBlockString = $this->parseInputMeta($metaData, true);
         $fullCode = $docBlockString . $code;
 
@@ -468,6 +476,12 @@ class Snippet
             $docBlockArray[$key] = trim(implode(':', $arr));
         }
 
+        if (isset($docBlockArray['network_sites'])) {
+            $scope = json_decode($docBlockArray['network_sites'], true);
+            // An unreadable restriction must not turn into an unrestricted snippet.
+            $docBlockArray['network_sites'] = is_array($scope) ? $scope : [];
+        }
+
         if (!empty($docBlockArray['condition'])) {
             $data = json_decode($docBlockArray['condition'], true);
             if ($data && is_array($data)) {
@@ -510,6 +524,7 @@ class Snippet
             'run_at'       => '',
             'load_as_file' => '',
             'load_in_block_editor' => '',
+            'network_sites' => null,
             'condition'    => [
                 'status' => 'no',
                 'run_if' => 'assertive',
@@ -528,6 +543,11 @@ class Snippet
             return $metaData;
         }
 
+        if ($metaData['network_sites'] === null) {
+            unset($metaData['network_sites']);
+        } else {
+            $metaData['network_sites'] = json_encode($metaData['network_sites']);
+        }
         $metaData['condition'] = json_encode($metaData['condition']);
 
         // Helper::sanitizeMetaValue() has to neutralise `*` in every meta value, because
