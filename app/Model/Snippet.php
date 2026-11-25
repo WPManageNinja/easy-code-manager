@@ -393,7 +393,7 @@ class Snippet
     public function parseBlock($fileContent, $codeOnly = false)
     {
         // get content from // <Internal Doc Start> to // <Internal Doc End>
-        $fileContent = explode('// <Internal Doc Start>', $fileContent);
+        $fileContent = explode('// <Internal Doc Start>', $fileContent, 2);
 
         if (count($fileContent) < 2) {
             if ($codeOnly) {
@@ -402,31 +402,19 @@ class Snippet
             return [null, null];
         }
 
-        // Try different possible formats of the end marker
-        $endMarkers = [
-            '// <Internal Doc End> ?>' . PHP_EOL,
-            '// <Internal Doc End> ?>',
-            '<?php if (!defined("ABSPATH")) { return;} // <Internal Doc End> ?>' . PHP_EOL,
-            '<?php if (!defined("ABSPATH")) { return;} // <Internal Doc End> ?>'
-        ];
-
-        $docBlock = null;
-        $code = null;
-
-        foreach ($endMarkers as $marker) {
-            $parts = explode($marker, $fileContent[1]);
-            if (count($parts) > 1) {
-                $docBlock = $parts[0];
-                $code = $parts[1];
-                break;
-            }
+        // The marker belongs immediately after the metadata comment and optional guard.
+        // Split the comment first so marker text in either metadata or code stays literal.
+        $parts = explode('*/', $fileContent[1], 2);
+        // The guard can span lines. Stop at its first closing PHP tag.
+        $marker = '~\A\s*(?:\?>\s*)?(?:<\?php\b(?:(?!\?>).)*?)?// <Internal Doc End> \?>(?:\r?\n)?~s';
+        if (count($parts) !== 2 || strncmp(ltrim($parts[0]), '/*', 2) !== 0 || !preg_match($marker, $parts[1], $match)) {
+            return $codeOnly ? '' : [null, null];
         }
 
-        if (!$docBlock || !$code) {
-            if ($codeOnly) {
-                return '';
-            }
-            return [null, null];
+        $docBlock = $parts[0];
+        $code = substr($parts[1], strlen($match[0]));
+        if ($code === '') {
+            return $codeOnly ? '' : [null, null];
         }
 
         if ($codeOnly) {

@@ -329,7 +329,7 @@ class CodeRunner
     private function parseBlock($fileContent, $codeOnly = false)
     {
         // get content from // <Internal Doc Start> to // <Internal Doc End>
-        $fileContent = explode('// <Internal Doc Start>', $fileContent);
+        $fileContent = explode('// <Internal Doc Start>', $fileContent, 2);
 
         if (count($fileContent) < 2) {
             if ($codeOnly) {
@@ -338,9 +338,17 @@ class CodeRunner
             return [null, null];
         }
 
-        $fileContent = explode('// <Internal Doc End> ?>' . PHP_EOL, $fileContent[1]);
-        $docBlock = $fileContent[0];
-        $code = $fileContent[1];
+        // The marker belongs immediately after the metadata comment and optional guard.
+        // Split the comment first so marker text in either metadata or code stays literal.
+        $parts = explode('*/', $fileContent[1], 2);
+        // The guard can span lines. Stop at its first closing PHP tag.
+        $marker = '~\A\s*(?:\?>\s*)?(?:<\?php\b(?:(?!\?>).)*?)?// <Internal Doc End> \?>\r?\n~s';
+        if (count($parts) !== 2 || strncmp(ltrim($parts[0]), '/*', 2) !== 0 || !preg_match($marker, $parts[1], $match)) {
+            return $codeOnly ? '' : [null, null];
+        }
+
+        $docBlock = $parts[0];
+        $code = substr($parts[1], strlen($match[0]));
 
         if ($codeOnly) {
             return $code;

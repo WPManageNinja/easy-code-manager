@@ -231,6 +231,155 @@ $config = readIndex($storage);
 check('the index is empty', empty($config['published']) && empty($config['draft']));
 check('settles back to no-rebuild with zero snippets', Helper::syncSnippetIndex() === false);
 
+// Backups can have a different header separator from this host. Exercise the
+// rebuilt index, model and registered callbacks against the same on-disk files.
+function add_action($hook, $callback) { $GLOBALS['snippetHooks'][$hook][] = $callback; }
+function add_filter($hook, $callback) { add_action($hook, $callback); }
+function wp_add_inline_style($handle, $code) { $GLOBALS['editorCss'][$handle] = $code; }
+
+require $base . 'app/Services/FluentSnippetCondition.php';
+require $base . 'app/Services/CodeRunner.php';
+require $base . 'app/Services/mu.stub';
+
+function restoredCheck($name, $passed, $message)
+{
+    global $checks, $failures;
+    $checks++;
+    if (!$passed) {
+        $failures++;
+    }
+    echo $passed ? "CASE PASS $name\n" : "CASE FAIL $name -- $message\n";
+}
+
+function restoredHeader($type, $description, $eol)
+{
+    return implode($eol, [
+        '<?php', '// <Internal Doc Start>', '/*', '* @name: Restore',
+        '* @status: published', '* @type: ' . $type, '* @run_at: admin_head',
+        '* @description: ' . $description, '* @load_in_block_editor: yes',
+        '*/', '?>', '<?php if (!defined("ABSPATH")) { return;} // <Internal Doc End> ?>'
+    ]);
+}
+
+function runtimeMatches($runner, $body)
+{
+    $GLOBALS['snippetHooks'] = [];
+    $GLOBALS['editorCss'] = [];
+    $runner->runSnippets();
+    ob_start();
+    foreach ($GLOBALS['snippetHooks']['admin_head'] as $render) {
+        $render();
+    }
+    $html = ob_get_clean();
+    $styles = $GLOBALS['snippetHooks']['block_editor_settings_all'][0]([]);
+    $GLOBALS['snippetHooks']['enqueue_block_editor_assets'][0]();
+    return strpos($html, '<style>' . $body . '</style>') !== false
+        && strpos($html, '<script>' . $body . '</script>') !== false
+        && ($styles['styles'][0]['css'] ?? null) === $body
+        && ($GLOBALS['editorCss']['wp-edit-blocks'] ?? null) === $body;
+}
+
+$model = new \FluentSnippets\App\Model\Snippet();
+$runners = [new \FluentSnippets\App\Services\CodeRunner(), new \FluentSnippets\Mu\CodeRunner()];
+$body = "\r\n/* restored */\n";
+// Older headers may put the marker directly after the metadata comment.
+// Keep ordinary documentation in the description and preserve the body verbatim.
+$description = 'The // <Internal Doc End> ?> label marks the end of the header.';
+foreach (["\n", "\r\n"] as $eol) {
+    $legacyHeader = "// <Internal Doc Start>" . $eol . "/*" . $eol
+        . '* @description: ' . $description . $eol . '*/' . $eol . '// <Internal Doc End> ?>';
+    foreach (['', $eol] as $separator) {
+        [$meta, $code] = $model->parseBlock($legacyHeader . $separator . '/* example */');
+        restoredCheck('legacy comment header', ($meta['description'] ?? null) === $description
+            && $code === '/* example */', 'legacy content differs');
+    }
+}
+foreach (['native' => PHP_EOL, 'foreign' => PHP_EOL === "\n" ? "\r\n" : "\n"] as $kind => $eol) {
+    $suffix = str_repeat('x', 110);
+    foreach (['css', 'js'] as $type) {
+        $header = restoredHeader($type, 'First' . $eol . $suffix, $eol);
+        file_put_contents($storage . '/' . $type . '.php', $header . $eol . $body);
+    }
+    Helper::cacheSnippetIndex();
+    $config = readIndex($storage);
+    restoredCheck("$kind description", $config['published']['css.php']['description'] === substr('First. ' . $suffix, 0, 101), 'description differs');
+    $found = $model->findByFileName('css.php');
+    if ($kind === 'native') {
+        restoredCheck('native and bare marker', $found['code'] === $body && $model->parseBlock($header . 'same line', true) === 'same line', 'stored body differs');
+    } else {
+        restoredCheck('foreign stored body', $found['code'] === $body, 'stored body differs');
+    }
+    foreach ($runners as $runner) {
+        restoredCheck("$kind runtime output with data set " . get_class($runner), runtimeMatches($runner, $body), 'runtime output differs');
+    }
+}
+
+$markerBody = "/* // <Internal Doc End> ?>" . PHP_EOL . "// <Internal Doc Start> */";
+// Cached admin CSS is enqueued on the page, while both editor callbacks still
+// need the on-disk source (the cache contains the generated stylesheet only).
+$cachedDir = $storage . '/cached';
+wp_mkdir_p($cachedDir);
+file_put_contents($cachedDir . '/css.css', '/* cached stylesheet */');
+$config['published']['css.php']['load_as_file'] = 'yes';
+Helper::saveIndexedConfig($config);
+foreach ($runners as $runner) {
+    $GLOBALS['snippetHooks'] = [];
+    $GLOBALS['editorCss'] = [];
+    $runner->runSnippets();
+    $settings = $GLOBALS['snippetHooks']['block_editor_settings_all'][0]([]);
+    $GLOBALS['snippetHooks']['enqueue_block_editor_assets'][0]();
+    restoredCheck('cached editor output with data set ' . get_class($runner),
+        isset($GLOBALS['snippetHooks']['admin_enqueue_scripts'])
+        && ($settings['styles'][0]['css'] ?? null) === $body
+        && ($GLOBALS['editorCss']['wp-edit-blocks'] ?? null) === $body, 'cached editor output differs');
+}
+unlink($cachedDir . '/css.css');
+Helper::cacheSnippetIndex();
+
+// Formatters may wrap the PHP guard without changing its meaning.
+foreach (['css', 'js'] as $type) {
+    $header = str_replace('<?php if', '<?php' . PHP_EOL . 'if', restoredHeader($type, 'Wrapped guard', PHP_EOL));
+    file_put_contents($storage . '/' . $type . '.php', $header . PHP_EOL . $body);
+}
+foreach ($runners as $runner) {
+    restoredCheck('wrapped guard with data set ' . get_class($runner), runtimeMatches($runner, $body), 'wrapped guard lost the snippet');
+}
+Helper::cacheSnippetIndex();
+$wrapped = $model->findByFileName('css.php');
+restoredCheck('wrapped guard with data set model and index', $wrapped['code'] === $body
+    && isset(readIndex($storage)['published']['css.php']), 'wrapped guard lost the snippet');
+
+foreach (['css', 'js'] as $type) {
+    file_put_contents($storage . '/' . $type . '.php', restoredHeader($type, 'Marker text', PHP_EOL) . PHP_EOL . $markerBody);
+}
+Helper::cacheSnippetIndex();
+restoredCheck('marker text in body with data set model', $model->findByFileName('css.php')['code'] === $markerBody, 'body was truncated');
+foreach ($runners as $runner) {
+    restoredCheck('marker text in body with data set ' . get_class($runner), runtimeMatches($runner, $markerBody), 'body was truncated');
+}
+restoredCheck('empty or missing header', $model->parseBlock('plain body') === [null, null]
+    && $model->parseBlock($header . PHP_EOL) === [null, null]
+    && $model->parseBlock('plain body', true) === '', 'unexpected empty result');
+
+// A restore can leave an indexed file incomplete. No source from a partial header
+// should reach the page, and a missing separator must not raise a PHP warning.
+file_put_contents($storage . '/css.php', "<?php\n// <Internal Doc Start>\n/* incomplete */");
+foreach ($runners as $runner) {
+    $GLOBALS['snippetHooks'] = [];
+    $runner->runSnippets();
+    $warnings = [];
+    set_error_handler(function ($level, $message) use (&$warnings) {
+        $warnings[] = $message;
+        return true;
+    });
+    try {
+        $settings = $GLOBALS['snippetHooks']['block_editor_settings_all'][0]([]);
+    } finally {
+        restore_error_handler();
+    }
+    restoredCheck('incomplete runtime header with data set ' . get_class($runner), $settings === [] && !$warnings, 'incomplete header warned or emitted code');
+}
+
 echo "\n";
 if ($failures) {
     echo "$failures of $checks checks FAILED\n";
