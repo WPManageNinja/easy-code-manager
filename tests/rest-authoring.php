@@ -329,6 +329,22 @@ foreach ([['network_sites' => $scope], ['description' => 'Partial update'], ['ne
 $GLOBALS['fs_test']['network'] = $GLOBALS['fs_test']['super_admin'] = false;
 
 $createData = ['code' => '/* publication retry */', 'meta' => ['name' => 'Publication retry', 'type' => 'js', 'run_at' => 'wp_footer', 'status' => 'draft']];
+$prior = Helper::getIndexedConfig(false);
+$prior['error_files'][$fileName] = 'Paused by fixture';
+Helper::saveIndexedConfig($prior);
+$GLOBALS['fs_test']['listener']['fluent_snippets/snippet_updated'] = function () use ($fileName, $storage) {
+    check('the old revision remains paused while the replacement is pending', isset(Helper::getRuntimeConfig()['error_files'][$fileName]));
+    rename($storage . '/index.php', $storage . '/prior-index');
+    mkdir($storage . '/index.php');
+};
+$reactivate = ['file_name' => $fileName, 'reactivate' => true, 'code' => '/* updated fixture */'];
+$failedUpdate = SnippetsController::updateSnippet(new WP_REST_Request($reactivate));
+unset($GLOBALS['fs_test']['listener']['fluent_snippets/snippet_updated']);
+rmdir($storage . '/index.php');
+rename($storage . '/prior-index', $storage . '/index.php');
+check('a failed reactivation leaves the published revision paused', errorStatus($failedUpdate) === 503 && isset(Helper::getIndexedConfig(false)['error_files'][$fileName]));
+$restored = SnippetsController::updateSnippet(new WP_REST_Request($reactivate));
+check('a successful retry clears the pause', !is_wp_error($restored) && !isset(Helper::getRuntimeConfig()['error_files'][$fileName]));
 $beforeFiles = glob($storage . '/*.php');
 $GLOBALS['fs_test']['listener']['fluent_snippets/snippet_created'] = function () use ($storage) {
     rename($storage . '/index.php', $storage . '/prior-index');
@@ -394,6 +410,16 @@ echo "\nAn Application Password cannot flip the switch\n";
 
 $GLOBALS['fs_test']['caps']['manage_options'] = true;
 $allSettings = ['auto_disable' => 'yes', 'auto_publish' => 'no', 'remove_on_uninstall' => 'no', 'enable_line_wrap' => 'no'];
+$lockPath = $storage . '/.fluent-snippets-write.lock';
+$markerPath = $storage . '/cached/.fluent-safe-mode';
+touch($markerPath);
+chmod($lockPath, 0400);
+try {
+    $recovery = SettingsController::disableSafeMode(new WP_REST_Request());
+    check('an authorized administrator can clear marker-only Safe Mode with a read-only library lock', !is_wp_error($recovery) && !file_exists($markerPath), describe($recovery));
+} finally {
+    chmod($lockPath, 0600);
+}
 
 setRestAuthoring('no');
 $flip = SettingsController::saveSettings(new WP_REST_Request(['settings' => $allSettings + ['rest_authoring' => 'yes']]));

@@ -166,16 +166,21 @@ class Helper
      * the JSON the editor is waiting for arrives unparseable — turning "the folder is
      * not writable" into "the server sent back an unexpected response".
      */
-    public static function atomicPut($file, $contents, $requireReplacement = false, $permissionSource = '')
+    public static function atomicPut($file, $contents, $requireReplacement = false, $privateRevision = false)
     {
         $dir = dirname($file);
 
-        $tmpFile = @tempnam($dir, '.fluent-snippets-tmp');
+        // An executable copy must not inherit a different ACL from the library directory.
+        // The deployer's private temp directory supplies its initial permissions.
+        $stage = $privateRevision
+            ? (defined('FLUENT_SNIPPETS_REVISION_TEMP_DIR') ? FLUENT_SNIPPETS_REVISION_TEMP_DIR : sys_get_temp_dir())
+            : $dir;
+        $tmpFile = @tempnam($stage, '.fluent-snippets-tmp');
 
-        // tempnam() silently falls back to the system temp dir when $dir is not
-        // writable, and a cross-device rename() is not atomic. Only take the atomic
-        // path when the temp file really landed next to the target.
-        if ($tmpFile === false || (dirname($tmpFile) !== $dir && realpath(dirname($tmpFile)) !== realpath($dir))) {
+        // Reject tempnam's silent fallback and cross-device rename before writing any bytes.
+        $sourceDevice = $tmpFile !== false && $privateRevision ? (@stat($tmpFile)['dev'] ?? null) : null;
+        if ($tmpFile === false || realpath(dirname($tmpFile)) !== realpath($stage) ||
+            ($privateRevision && ($sourceDevice === null || $sourceDevice !== (@stat($dir)['dev'] ?? null) || !@chmod($tmpFile, 0600)))) {
             if ($tmpFile !== false) {
                 @unlink($tmpFile);
             }
@@ -192,12 +197,7 @@ class Helper
         // tempnam() creates the file as 0600. Keep whatever the target already used so
         // host-specific setups (group-writable files, for instance) survive the swap.
         $perms = is_file($file) ? (@fileperms($file) & 0777) : 0;
-        if ($permissionSource) {
-            if (!self::matchRevisionPermissions($tmpFile, $permissionSource)) {
-                @unlink($tmpFile);
-                return false;
-            }
-        } else {
+        if (!$privateRevision) {
             @chmod($tmpFile, $perms ? $perms : 0644);
         }
 
@@ -524,7 +524,7 @@ class Helper
         $data['error_files'] = array_intersect_key($errorFiles, $data['published'] + $data['draft']);
 
         $written = self::saveIndexedConfig($data);
-        if ($written !== false && (is_multisite() || array_column($previousConfig['published'] ?? [], 'revision'))) {
+        if ($written !== false) {
             self::pruneSnippetRevisions($data['published'], $previousConfig['published'] ?? []);
         }
         return $written;
@@ -538,7 +538,7 @@ class Helper
         $path = SnippetRevision::path($canonical, $revision);
         $type = $snippet['meta']['type'];
         $bytes = in_array($type, ['PHP', 'php_content'], true) ? SnippetRevision::executable($source, $canonical) : $source;
-        if (!self::writeRevisionFile($path, $bytes, $canonical)) {
+        if (!self::writeRevisionFile($path, $bytes, true)) {
             return false;
         }
         // Emergency recovery can still write here if deployments later make the library parent read-only.
@@ -555,30 +555,13 @@ class Helper
         return $revision;
     }
 
-    private static function matchRevisionPermissions($path, $source)
-    {
-        clearstatcache(true, $source);
-        $sourceStat = @stat($source);
-        $stat = @stat($path);
-        if (!$sourceStat || !$stat) {
-            return false;
-        }
-        $mode = 0600 | ($sourceStat['mode'] & 0044);
-        if (($mode & 0044) && $stat['gid'] !== $sourceStat['gid'] && !@chgrp($path, $sourceStat['gid'])) {
-            return false;
-        }
-        return ($stat['mode'] & 0777) === $mode || @chmod($path, $mode);
-    }
-
-    private static function writeRevisionFile($path, $bytes, $permissionSource = '')
+    private static function writeRevisionFile($path, $bytes, $privateRevision = false)
     {
         if (is_file($path)) {
-            if ($permissionSource && !self::matchRevisionPermissions($path, $permissionSource)) {
-                return false;
-            }
-            return hash_file('sha256', $path) === hash('sha256', $bytes);
+            // An explicitly provisioned copy retains the deployer's access controls.
+            return is_readable($path) && hash_file('sha256', $path) === hash('sha256', $bytes);
         }
-        return self::atomicPut($path, $bytes, true, $permissionSource) === strlen($bytes);
+        return self::atomicPut($path, $bytes, true, $privateRevision) === strlen($bytes);
     }
 
     private static function pruneSnippetRevisions($published, $previous)
@@ -726,7 +709,13 @@ PHP;
             !is_writable(self::getStorageDir()) || (!$config && !glob(self::getStorageDir() . '/*.php'))) {
             return $config;
         }
-        self::syncSnippetIndex();
+        $retryKey = 'fluent_snippets_prepare_' . md5(self::getStorageDir());
+        if (get_site_transient($retryKey)) {
+            return $config;
+        }
+        if (is_wp_error(self::syncSnippetIndex())) {
+            set_site_transient($retryKey, true, 60);
+        }
         return self::getIndexedConfig();
     }
 
@@ -1130,24 +1119,27 @@ PHP;
             return $snippet;
         }
 
-        if ($reactivate) {
-            $config = Helper::getIndexedConfig();
-            if (isset($config['error_files'][$fileName])) {
-                unset($config['error_files'][$fileName]);
-            }
+        $published = self::publishSnippetWrite($snippet, 'fluent_snippets/snippet_updated');
+        if (!$reactivate || is_wp_error($published)) {
+            return $published;
+        }
+
+        // Keep the old revision paused until the replacement is visible to readers.
+        $config = self::getIndexedConfig(false);
+        if (isset($config['error_files'][$fileName])) {
+            unset($config['error_files'][$fileName]);
             if (self::saveIndexedConfig($config) === false) {
                 return self::indexSyncError();
             }
-            $revision = $config['published'][$fileName]['revision'] ?? '';
-            if (preg_match('/^[a-f0-9]{64}$/D', $revision)) {
-                $marker = self::getStorageDir() . '/cached/.fluent-quarantine-' . $revision;
-                if (is_file($marker) && !@unlink($marker)) {
-                    return self::indexSyncError();
-                }
+        }
+        $revision = $config['published'][$fileName]['revision'] ?? '';
+        if (preg_match('/^[a-f0-9]{64}$/D', $revision)) {
+            $marker = self::getStorageDir() . '/cached/.fluent-quarantine-' . $revision;
+            if (is_file($marker) && !@unlink($marker)) {
+                return self::indexSyncError();
             }
         }
-
-        return self::publishSnippetWrite($snippet, 'fluent_snippets/snippet_updated');
+        return $published;
     }
 
     public static function createSnippet($data)

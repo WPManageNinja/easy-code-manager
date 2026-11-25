@@ -32,6 +32,8 @@ register_shutdown_function(function () use ($storage) {
 
 function is_multisite() { return $GLOBALS['multisite']; }
 function wp_is_file_mod_allowed($context) { return $GLOBALS['canPrepare'] ?? true; }
+function get_site_transient($key) { return $GLOBALS['retryAfter'][$key] ?? false; }
+function set_site_transient($key, $value, $seconds) { $GLOBALS['retryAfter'][$key] = $value; }
 function is_super_admin() { return $GLOBALS['superAdmin']; }
 function get_current_blog_id() { return $GLOBALS['blog']; }
 function get_current_network_id() { return $GLOBALS['network']; }
@@ -172,7 +174,11 @@ if ($case === 'publication' || $case === 'all') {
     chmod($path, 0640);
     Helper::cacheSnippetIndex();
     clearstatcache(true, $copy);
-    expectNetworkResult((fileperms($copy) & 0777) === 0640 && filegroup($copy) === filegroup($path), 'published revision preserves shared-group read access');
+    expectNetworkResult((fileperms($copy) & 0777) === 0600, 'a source group is never granted access to a generated revision');
+    chmod($copy, 0640);
+    Helper::cacheSnippetIndex();
+    clearstatcache(true, $copy);
+    expectNetworkResult((fileperms($copy) & 0777) === 0640, 'a reused revision retains explicitly provisioned group access');
     $model->updateSnippet($file, '/* next revision */', $meta + ['network_sites' => $except]);
     Helper::cacheSnippetIndex();
     $next = Helper::getIndexedConfig()['published'][$file];
@@ -264,6 +270,15 @@ if ($case === 'compatibility' || $case === 'all') {
         Helper::prepareRuntime();
         expectNetworkResult(Helper::hasUnpreparedPhp(Helper::getIndexedConfig(false)), 'read-only policy leaves legacy PHP paused');
         $canPrepare = true;
+        $lock = fopen($storage . '/.fluent-snippets-write.lock', 'c');
+        flock($lock, LOCK_EX);
+        Helper::prepareRuntime();
+        fclose($lock);
+        Helper::prepareRuntime();
+        expectNetworkResult(Helper::hasUnpreparedPhp(Helper::getIndexedConfig(false)), 'a failed automatic upgrade backs off on following requests');
+        expectNetworkResult(Helper::syncSnippetIndex() === true, 'dashboard sync retries immediately during backoff');
+        $retryAfter = [];
+        Helper::saveIndexedConfig($config);
         Helper::prepareRuntime();
         expectNetworkResult(!Helper::hasUnpreparedPhp(Helper::getIndexedConfig(false)), 'writable library automatically prepares PHP');
         $hooks = [];
@@ -319,5 +334,24 @@ if ($case === 'compatibility' || $case === 'all') {
     fclose($pipes[1]);
     proc_close($process);
     expectNetworkResult(isset(Helper::getRuntimeConfig()['error_files'][$native]), 'current revision quarantine survives writer contention');
+    chmod($storage . '/cached', 0311);
+    try {
+        foreach ([\FluentSnippets\App\Services\SnippetRevision::class, \FluentSnippets\Mu\SnippetRevision::class] as $resolver) {
+            $recovered = $resolver::recoveryConfig($storage, Helper::getIndexedConfig(false));
+            expectNetworkResult(isset($recovered['error_files'][$native]), 'known recovery marker works in a searchable, unlistable directory');
+        }
+    } finally {
+        chmod($storage . '/cached', 0700);
+    }
+    $multisite = false;
+    foreach (Helper::getIndexedConfig(false)['published'] as $name => $record) {
+        if (in_array($record['type'], ['PHP', 'php_content'], true)) {
+            $model->deleteSnippet($name);
+        }
+    }
+    Helper::cacheSnippetIndex();
+    touch($currentFile, time() - 8 * 86400);
+    Helper::cacheSnippetIndex();
+    expectNetworkResult(!is_file($currentFile), 'a later single-site publication retires expired revisions after the last PHP removal');
     echo "ok - compatibility\n";
 }

@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-25T19:28:57+00:00\n"
+"POT-Creation-Date: 2026-11-25T19:45:38+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: easy-code-manager\n"
@@ -36,106 +36,106 @@ msgstr ""
 msgid "Open FluentSnippets on a site included in this selection to validate and save this PHP snippet."
 msgstr ""
 
-#: app/Helpers/Helper.php:797
+#: app/Helpers/Helper.php:786
 msgid "The snippet index could not be read, so a new Safe Mode URL could not be issued."
 msgstr ""
 
-#: app/Helpers/Helper.php:861
+#: app/Helpers/Helper.php:850
 msgid "Update the installed FluentSnippets standalone runner before saving a site selection."
 msgstr ""
 
 #. translators: %s: script or style
-#: app/Helpers/Helper.php:1021
+#: app/Helpers/Helper.php:1010
 #, php-format
 msgid "Remove the wrapping <%s> tag"
 msgstr ""
 
 #. translators: 1: script or style, 2: script or style
-#: app/Helpers/Helper.php:1026
+#: app/Helpers/Helper.php:1015
 #, php-format
 msgid "FluentSnippets outputs the <%1$s> element for you and puts this snippet inside it. A second <%2$s> tag in the code ends up printed as literal text on the page, and the snippet does nothing."
 msgstr ""
 
 #. translators: 1: opening tag, 2: closing tag
-#: app/Helpers/Helper.php:1032
+#: app/Helpers/Helper.php:1021
 #, php-format
 msgid "Delete the opening %1$s and its matching %2$s, and keep only what was between them."
 msgstr ""
 
-#: app/Helpers/Helper.php:1075
+#: app/Helpers/Helper.php:1064
 msgid "WordPress could not open the snippet library for writing. Check its file permissions and retry."
 msgstr ""
 
-#: app/Helpers/Helper.php:1079
+#: app/Helpers/Helper.php:1068
 msgid "Another snippet save is in progress. Retry after it finishes."
 msgstr ""
 
 #. translators: %s is the editable snippet filename.
-#: app/Helpers/Helper.php:1199
+#: app/Helpers/Helper.php:1191
 #, php-format
 msgid "The snippet file %s exists, but publication failed. Recover that file before creating another snippet."
 msgstr ""
 
-#: app/Helpers/Helper.php:1226
+#: app/Helpers/Helper.php:1218
 msgid "The snippet file was saved, but WordPress could not update the library index. Check its write permissions and sync the snippets before continuing."
 msgstr ""
 
-#: app/Helpers/Helper.php:1231
+#: app/Helpers/Helper.php:1223
 msgid "WordPress could not sync the snippet index. Check the library permissions and retry."
 msgstr ""
 
-#: app/Helpers/Helper.php:1253
+#: app/Helpers/Helper.php:1245
 msgid "Remove the opening <?php tag"
 msgstr ""
 
-#: app/Helpers/Helper.php:1254
+#: app/Helpers/Helper.php:1246
 msgid "FluentSnippets writes the opening PHP tag itself when it saves the file, so a second one in your code would be printed onto the page as text."
 msgstr ""
 
-#: app/Helpers/Helper.php:1255
+#: app/Helpers/Helper.php:1247
 msgid "Delete the <?php line at the very top of the snippet and keep the rest as it is."
 msgstr ""
 
-#: app/Helpers/Helper.php:1285
-#: app/Http/Controllers/SettingsController.php:274
+#: app/Helpers/Helper.php:1277
+#: app/Http/Controllers/SettingsController.php:286
 msgid "Only a network Super Admin can select sites."
 msgstr ""
 
-#: app/Helpers/Helper.php:1288
+#: app/Helpers/Helper.php:1280
 msgid "Select at least one valid network site."
 msgstr ""
 
-#: app/Helpers/Helper.php:1298
+#: app/Helpers/Helper.php:1290
 #: app/Services/Trans.php:241
 msgid "Snippet Name"
 msgstr ""
 
-#: app/Helpers/Helper.php:1299
+#: app/Helpers/Helper.php:1291
 #: app/Services/Trans.php:256
 msgid "Status"
 msgstr ""
 
-#: app/Helpers/Helper.php:1300
+#: app/Helpers/Helper.php:1292
 #: app/Services/Trans.php:243
 msgid "Snippet Type"
 msgstr ""
 
-#: app/Helpers/Helper.php:1301
+#: app/Helpers/Helper.php:1293
 msgid "Where to run"
 msgstr ""
 
 #. translators: %s: name of the field that was left empty
-#: app/Helpers/Helper.php:1310
+#: app/Helpers/Helper.php:1302
 #, php-format
 msgid "%s is required"
 msgstr ""
 
-#: app/Helpers/Helper.php:1316
+#: app/Helpers/Helper.php:1308
 msgid "A snippet cannot be stored without this. It is written into the file header and is what tells FluentSnippets when and how to run your code."
 msgstr ""
 
 #. translators: %s: name of the field that was left empty
-#: app/Helpers/Helper.php:1319
+#: app/Helpers/Helper.php:1311
 #, php-format
 msgid "Fill in the %s field on the right and save again."
 msgstr ""
@@ -571,23 +571,23 @@ msgstr ""
 msgid "Settings has been successfully updated"
 msgstr ""
 
-#: app/Http/Controllers/SettingsController.php:185
+#: app/Http/Controllers/SettingsController.php:197
 msgid "Safe mode has been disabled"
 msgstr ""
 
-#: app/Http/Controllers/SettingsController.php:201
+#: app/Http/Controllers/SettingsController.php:213
 msgid "Standalone mode has been activated"
 msgstr ""
 
-#: app/Http/Controllers/SettingsController.php:203
+#: app/Http/Controllers/SettingsController.php:215
 msgid "Standalone mode has been deactivated"
 msgstr ""
 
-#: app/Http/Controllers/SettingsController.php:279
+#: app/Http/Controllers/SettingsController.php:291
 msgid "Enter a site address or ID."
 msgstr ""
 
-#: app/Http/Controllers/SettingsController.php:305
+#: app/Http/Controllers/SettingsController.php:317
 msgid "WordPress could not load the network sites. Try the search again."
 msgstr ""
 
@@ -888,6 +888,10 @@ msgstr ""
 
 #: app/Services/SnippetErrors.php:318
 msgid "Copy your code somewhere safe, go back to the snippet list and create it again."
+msgstr ""
+
+#: app/Services/SnippetRevision.php:181
+msgid "Snippet paused after a PHP error."
 msgstr ""
 
 #: app/Services/TeamPlugins.php:124

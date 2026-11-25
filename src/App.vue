@@ -118,7 +118,7 @@
                     </div>
                 </div>
 
-                <router-view></router-view>
+                <router-view @library-prepared="libraryPrepared = true"></router-view>
             </div>
         </main>
     </div>
@@ -159,6 +159,7 @@ export default {
                 }
             ],
             hasServerError: false,
+            libraryPrepared: false,
             announcement: ''
         }
     },
@@ -166,7 +167,7 @@ export default {
         // Built server-side, because the reason is a fact about wp-config.php that the
         // browser has no way of knowing. Null unless the screen really is read-only.
         libraryNotices() {
-            return [this.appVars.read_only_notice, this.appVars.preparation_notice].filter(Boolean);
+            return [this.appVars.read_only_notice, !this.libraryPrepared && this.appVars.preparation_notice].filter(Boolean);
         }
     },
     methods: {

@@ -174,13 +174,11 @@ class SnippetRevision
         if (is_file($dir . '/cached/.fluent-safe-mode')) {
             $config['meta']['force_disabled'] = 'yes';
         }
-        $markers = glob($dir . '/cached/.fluent-quarantine-*');
-        if ($markers) {
-            $markers = array_flip(array_map('basename', $markers));
-            foreach ($config['published'] ?? [] as $name => $record) {
-                if (isset($record['revision'], $markers['.fluent-quarantine-' . $record['revision']])) {
-                    $config['error_files'][$name] = $config['error_files'][$name] ?? 'Snippet paused after a PHP error.';
-                }
+        foreach ($config['published'] ?? [] as $name => $record) {
+            $revision = $record['revision'] ?? '';
+            if (is_string($revision) && preg_match('/^[a-f0-9]{64}$/D', $revision) &&
+                is_file($dir . '/cached/.fluent-quarantine-' . $revision)) {
+                $config['error_files'][$name] = $config['error_files'][$name] ?? __('Snippet paused after a PHP error.', 'easy-code-manager');
             }
         }
         return $config;

@@ -157,6 +157,8 @@ On upgrade, a writable installation automatically prepares its published PHP sni
 
 To prepare the library, activate the updated plugin on the writable installation and open its Snippets dashboard. Check that the PHP preparation warning has cleared. For standalone mode, deploy the updated standalone runner together with the prepared library.
 
+New hidden revision files start with owner-only permissions. If WP-CLI and the web server run as different users, grant the web account read access to each new revision as part of deployment. Sync preserves permissions on existing revisions. On hosts with inherited access rules, use a private staging directory accessible only to the publishing account. By default the plugin uses PHP's system temp directory. If it has inherited reader access or is on a different filesystem from the library, set FLUENT_SNIPPETS_REVISION_TEMP_DIR in wp-config.php to a private directory on the same filesystem as the library.
+
 As a network Super Admin, open the snippet editor and find Network sites under Where to Run. Choose Only selected sites or All except selected sites, search by site address or ID, and save the snippet. All sites is the default for existing snippets. The site selection works alongside the snippet's normal run location and conditional rules.
 
 PHP snippets are validated by running their code. Save or import a restricted PHP snippet from one of its included sites so that validation runs in the intended context.

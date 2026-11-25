@@ -157,9 +157,16 @@ class SettingsController
             return $restricted;
         }
 
-        return Helper::withSnippetWriteLock(function () {
+        $result = Helper::withSnippetWriteLock(function () {
             return self::restoreNormalMode();
         });
+        if (is_wp_error($result) && $result->get_error_code() === 'storage_unavailable') {
+            $config = Helper::getIndexedConfig(false);
+            if ($config && ($config['meta']['force_disabled'] ?? 'no') !== 'yes') {
+                return self::clearSafeModeMarker();
+            }
+        }
+        return $result;
     }
 
     private static function restoreNormalMode()
@@ -176,6 +183,11 @@ class SettingsController
                 return Helper::indexSyncError();
             }
         }
+        return self::clearSafeModeMarker();
+    }
+
+    private static function clearSafeModeMarker()
+    {
         $marker = Helper::getStorageDir() . '/cached/.fluent-safe-mode';
         if (is_file($marker) && !@unlink($marker)) {
             return Helper::indexSyncError();

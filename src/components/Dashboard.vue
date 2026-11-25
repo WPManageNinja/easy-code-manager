@@ -557,6 +557,7 @@ import Fuse from 'fuse.js'
 import ImportExportChoice from "./ExportImport/ImportExportChoice.vue";
 
 export default {
+    emits: ['library-prepared'],
     name: 'Dashboard',
     data() {
         return {
@@ -659,6 +660,7 @@ export default {
                     if (!response.changed) {
                         return;
                     }
+                    this.$emit('library-prepared');
 
                     // Wait for the first load to settle before re-fetching, otherwise its
                     // pre-rebuild response could land last and put the stale list back.
