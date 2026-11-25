@@ -257,7 +257,7 @@ class SettingsController
             if ($search !== null && !is_string($search)) {
                 return new \WP_Error('invalid_search', __('Enter a site address or ID.', 'easy-code-manager'), ['status' => 400]);
             }
-            $search = sanitize_text_field((string) $search);
+            $search = preg_replace('#^https?://#i', '', sanitize_text_field((string) $search));
             $selected = $request->get_param('values');
             if (is_array($selected)) {
                 $ids = wp_parse_id_list(array_filter(array_slice($selected, 0, 25), 'is_scalar'));
@@ -267,6 +267,11 @@ class SettingsController
                 $args['site__in'] = $ids;
             } elseif (ctype_digit($search)) {
                 $args['site__in'] = [(int) $search];
+            } elseif (strpos($search, '/') > 0) {
+                // Site queries store the domain and path in separate columns.
+                [$domain, $path] = explode('/', $search, 2);
+                $args['domain'] = $domain;
+                $args['path'] = trailingslashit('/' . $path);
             } elseif ($search !== '') {
                 $args['search'] = '*' . $search . '*';
             }
