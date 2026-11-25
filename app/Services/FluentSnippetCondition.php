@@ -91,8 +91,25 @@ class FluentSnippetCondition
             return $this->checkValues($tagIds, $value, $operator);
         }
 
-        if ($key == 'list_ids') {
+        if ($key === 'list_ids' || $key === 'tags_list_ids') {
+            if (!function_exists('fluentcrm_get_current_contact')) {
+                return false;
+            }
+
             $currentContact = fluentcrm_get_current_contact();
+            // The editor's Contact Lists rule requires a known contact and selected list IDs.
+            // Keep the older list_ids rule's handling of visitors without a contact.
+            if ($key === 'tags_list_ids') {
+                if (!$currentContact || !is_array($value) || !in_array($operator, ['in', 'not_in'], true)) {
+                    return false;
+                }
+                foreach ($value as $id) {
+                    if ((!is_string($id) && !is_int($id)) || !preg_match('/^[1-9][0-9]*$/D', (string) $id)) {
+                        return false;
+                    }
+                }
+            }
+
             if (!$currentContact) {
                 $listIds = [];
             } else {
