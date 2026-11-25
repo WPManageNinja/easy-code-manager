@@ -730,9 +730,9 @@ PHP;
         return false;
     }
 
-    public static function getRuntimeConfig()
+    public static function getRuntimeConfig($fileName = null)
     {
-        return SnippetRevision::recoveryConfig(self::getStorageDir(), self::getIndexedConfig());
+        return SnippetRevision::recoveryConfig(self::getStorageDir(), self::getIndexedConfig(), $fileName);
     }
 
     public static function getSecretKey()
@@ -1119,6 +1119,9 @@ PHP;
             return $snippet;
         }
 
+        if ($reactivate && !self::retainPauseDuringPublication($fileName)) {
+            return self::indexSyncError();
+        }
         $published = self::publishSnippetWrite($snippet, 'fluent_snippets/snippet_updated');
         if (!$reactivate || is_wp_error($published)) {
             return $published;
@@ -1132,14 +1135,29 @@ PHP;
                 return self::indexSyncError();
             }
         }
+        return $published;
+    }
+
+    private static function retainPauseDuringPublication($fileName)
+    {
+        $config = self::getIndexedConfig(false);
         $revision = $config['published'][$fileName]['revision'] ?? '';
-        if (preg_match('/^[a-f0-9]{64}$/D', $revision)) {
-            $marker = self::getStorageDir() . '/cached/.fluent-quarantine-' . $revision;
-            if (is_file($marker) && !@unlink($marker)) {
-                return self::indexSyncError();
+        if (!preg_match('/^[a-f0-9]{64}$/D', $revision)) {
+            return true;
+        }
+        $marker = self::getStorageDir() . '/cached/.fluent-quarantine-' . $revision;
+        if (!is_file($marker)) {
+            return true;
+        }
+        // Keep the pause in the index before acknowledging the old revision's marker.
+        // Once publication starts, any new marker belongs to a subsequent failure.
+        if (!isset($config['error_files'][$fileName])) {
+            $config['error_files'][$fileName] = __('Snippet paused after a PHP error.', 'easy-code-manager');
+            if (self::saveIndexedConfig($config) === false) {
+                return false;
             }
         }
-        return $published;
+        return @unlink($marker);
     }
 
     public static function createSnippet($data)

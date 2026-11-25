@@ -43,11 +43,15 @@ class SnippetsController
      */
     public static function syncIndex(\WP_REST_Request $request)
     {
-        if (!wp_is_file_mod_allowed('fluent_snippets')) {
-            return ['changed' => false];
+        $changed = wp_is_file_mod_allowed('fluent_snippets') ? Helper::syncSnippetIndex() : false;
+        if (is_wp_error($changed)) {
+            return $changed;
         }
-        $changed = Helper::syncSnippetIndex();
-        return is_wp_error($changed) ? $changed : ['changed' => $changed];
+        $result = ['changed' => $changed];
+        if ($request->get_param('check_preparation')) {
+            $result['prepared'] = !Helper::hasUnpreparedPhp(Helper::getIndexedConfig(false));
+        }
+        return $result;
     }
 
     public static function getSnippets(\WP_REST_Request $request)

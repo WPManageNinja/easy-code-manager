@@ -86,13 +86,13 @@ class CodeHandler
             return '';
         }
 
-        $config = Helper::getRuntimeConfig();
+        $fileName = sanitize_file_name($fileName . '.php');
+        $config = Helper::getRuntimeConfig($fileName);
 
         if (Arr::get($config, 'meta.force_disabled') == 'yes') {
             return $this->shortCodeError(__('Snippets are disabled', 'easy-code-manager'));
         }
 
-        $fileName = sanitize_file_name($fileName . '.php');
         if (isset($config['error_files'][$fileName])) {
             return $this->shortCodeError(__('Snippet has an error', 'easy-code-manager'));
         }

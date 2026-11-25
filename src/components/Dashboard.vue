@@ -655,12 +655,14 @@ export default {
             // deploy, a migration, a deleted index.php. Fired once per app boot and
             // deliberately not awaited, so the list still renders from the existing
             // index straight away.
-            this.$post('snippets/sync-index')
+            this.$post('snippets/sync-index', {check_preparation: this.appVars.preparation_notice ? 1 : 0})
                 .then(response => {
+                    if (response.prepared) {
+                        this.$emit('library-prepared');
+                    }
                     if (!response.changed) {
                         return;
                     }
-                    this.$emit('library-prepared');
 
                     // Wait for the first load to settle before re-fetching, otherwise its
                     // pre-rebuild response could land last and put the stale list back.

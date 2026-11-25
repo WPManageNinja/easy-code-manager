@@ -334,6 +334,7 @@ if ($case === 'compatibility' || $case === 'all') {
     fclose($pipes[1]);
     proc_close($process);
     expectNetworkResult(isset(Helper::getRuntimeConfig()['error_files'][$native]), 'current revision quarantine survives writer contention');
+    expectNetworkResult(!isset(Helper::getRuntimeConfig('unrelated.php')['error_files'][$native]), 'shortcode recovery consults only its requested revision');
     chmod($storage . '/cached', 0311);
     try {
         foreach ([\FluentSnippets\App\Services\SnippetRevision::class, \FluentSnippets\Mu\SnippetRevision::class] as $resolver) {

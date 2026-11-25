@@ -166,7 +166,7 @@ class SnippetRevision
         return $canonical;
     }
 
-    public static function recoveryConfig($dir, $config)
+    public static function recoveryConfig($dir, $config, $fileName = null)
     {
         if (!$config) {
             return $config;
@@ -174,7 +174,11 @@ class SnippetRevision
         if (is_file($dir . '/cached/.fluent-safe-mode')) {
             $config['meta']['force_disabled'] = 'yes';
         }
-        foreach ($config['published'] ?? [] as $name => $record) {
+        $published = $config['published'] ?? [];
+        if ($fileName !== null) {
+            $published = isset($published[$fileName]) ? [$fileName => $published[$fileName]] : [];
+        }
+        foreach ($published as $name => $record) {
             $revision = $record['revision'] ?? '';
             if (is_string($revision) && preg_match('/^[a-f0-9]{64}$/D', $revision) &&
                 is_file($dir . '/cached/.fluent-quarantine-' . $revision)) {

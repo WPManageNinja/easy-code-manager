@@ -345,6 +345,21 @@ rename($storage . '/prior-index', $storage . '/index.php');
 check('a failed reactivation leaves the published revision paused', errorStatus($failedUpdate) === 503 && isset(Helper::getIndexedConfig(false)['error_files'][$fileName]));
 $restored = SnippetsController::updateSnippet(new WP_REST_Request($reactivate));
 check('a successful retry clears the pause', !is_wp_error($restored) && !isset(Helper::getRuntimeConfig()['error_files'][$fileName]));
+$markerForCurrent = function () use ($fileName, $storage) {
+    $record = Helper::getIndexedConfig(false)['published'][$fileName];
+    return $storage . '/cached/.fluent-quarantine-' . $record['revision'];
+};
+touch($markerForCurrent());
+$GLOBALS['fs_test']['listener']['fluent_snippets/snippet_updated'] = function () use ($markerForCurrent, $fileName) {
+    check('marker-only reactivation keeps a pause in the index during publication', isset(Helper::getIndexedConfig(false)['error_files'][$fileName]));
+    Helper::cacheSnippetIndex();
+    touch($markerForCurrent());
+};
+$reactivate['code'] = '/* another harmless replacement */';
+$replacement = SnippetsController::updateSnippet(new WP_REST_Request($reactivate));
+unset($GLOBALS['fs_test']['listener']['fluent_snippets/snippet_updated']);
+check('a new pause recorded at publication survives reactivation', !is_wp_error($replacement) && isset(Helper::getRuntimeConfig($fileName)['error_files'][$fileName]));
+unlink($markerForCurrent());
 $beforeFiles = glob($storage . '/*.php');
 $GLOBALS['fs_test']['listener']['fluent_snippets/snippet_created'] = function () use ($storage) {
     rename($storage . '/index.php', $storage . '/prior-index');
