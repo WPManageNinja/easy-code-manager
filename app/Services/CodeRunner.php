@@ -33,12 +33,17 @@ class CodeRunner
             return '';
         }
 
-        return end(self::$runningSnippets);
+        return end(self::$runningSnippets)['name'];
     }
 
-    public static function pushRunningSnippet($fileName)
+    public static function getRunningFile()
     {
-        self::$runningSnippets[] = $fileName;
+        return self::$runningSnippets ? end(self::$runningSnippets)['file'] : '';
+    }
+
+    public static function pushRunningSnippet($fileName, $file = '')
+    {
+        self::$runningSnippets[] = ['name' => $fileName, 'file' => $file];
     }
 
     public static function popRunningSnippet()
@@ -108,8 +113,7 @@ class CodeRunner
             }
 
             $canonical = $storageDir . '/' . sanitize_file_name($fileName);
-            $file = SnippetRevision::resolve($canonical, $snippet);
-            if (!$file) {
+            if (!is_file($canonical)) {
                 $hasInvalidFiles = true;
                 continue;
             }
@@ -125,16 +129,12 @@ class CodeRunner
                         $hookName = 'setup_theme';
                     }
 
-                    add_action($hookName, function () use ($file, $fileName, $snippet, $conditionalClass) {
-                        if (!$conditionalClass->evaluateSnippet($snippet)) {
+                    add_action($hookName, function () use ($canonical, $fileName, $snippet, $conditionalClass) {
+                        if ($this->get($snippet, 'run_at') === 'backend' && !is_admin()) {
                             return;
                         }
-
-                        $runAt = $this->get($snippet, 'run_at', 'all');
-                        if ($runAt == 'backend') {
-                            if (is_admin()) {
-                                $this->runSnippetFile($file, $fileName);
-                            }
+                        $file = SnippetRevision::resolve($canonical, $snippet, $lease);
+                        if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                             return;
                         }
 
@@ -158,8 +158,10 @@ class CodeRunner
                             }
                         }
 
-                        add_action($runAt, function () use ($file, $snippet, $conditionalClass, $loadUrl, $isFooter) {
-                            if (!$conditionalClass->evaluateSnippet($snippet)) {
+                        add_action($runAt, function () use ($canonical, $snippet, $conditionalClass, $loadUrl, $isFooter) {
+                            $legacyAsset = $loadUrl ? $this->storageDir . '/cached/' . basename($loadUrl) : '';
+                            $file = SnippetRevision::resolve($canonical, $snippet, $lease, $legacyAsset);
+                            if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                                 return;
                             }
 
@@ -180,8 +182,9 @@ class CodeRunner
 
                     $isBlockStyle = $this->get($snippet, 'load_in_block_editor', '') === 'yes';
                     if ($isBlockStyle) {
-                        add_filter('block_editor_settings_all', function ($settings) use ($snippet, $file) {
-                            if (!FluentSnippetCondition::matchesSiteScope($snippet['network_sites'] ?? null)) {
+                        add_filter('block_editor_settings_all', function ($settings) use ($snippet, $canonical) {
+                            $file = SnippetRevision::resolve($canonical, $snippet, $lease);
+                            if (!$file || !FluentSnippetCondition::matchesSiteScope($snippet['network_sites'] ?? null)) {
                                 return $settings;
                             }
                             $code = $this->parseBlock(file_get_contents($file), true);
@@ -218,8 +221,9 @@ class CodeRunner
                     }
 
                     if ($isAdminCss) {
-                        add_action('enqueue_block_editor_assets', function () use ($file, $snippet, $conditionalClass, $loadUrl) {
-                            if (!$conditionalClass->evaluateSnippet($snippet)) {
+                        add_action('enqueue_block_editor_assets', function () use ($canonical, $snippet, $conditionalClass, $loadUrl) {
+                            $file = SnippetRevision::resolve($canonical, $snippet, $lease);
+                            if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                                 return;
                             }
 
@@ -228,8 +232,10 @@ class CodeRunner
                         });
                     }
 
-                    add_action($runAt, function () use ($file, $snippet, $conditionalClass, $loadUrl) {
-                        if (!$conditionalClass->evaluateSnippet($snippet)) {
+                    add_action($runAt, function () use ($canonical, $snippet, $conditionalClass, $loadUrl) {
+                        $legacyAsset = $loadUrl ? $this->storageDir . '/cached/' . basename($loadUrl) : '';
+                        $file = SnippetRevision::resolve($canonical, $snippet, $lease, $legacyAsset);
+                        if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                             return;
                         }
 
@@ -249,8 +255,9 @@ class CodeRunner
                 case 'php_content':
                     $runAt = $snippet['run_at'];
                     if (in_array($runAt, ['wp_footer', 'wp_head', 'wp_body_open'])) {
-                        add_action($runAt, function () use ($file, $fileName, $snippet, $conditionalClass) {
-                            if (!$conditionalClass->evaluateSnippet($snippet)) {
+                        add_action($runAt, function () use ($canonical, $fileName, $snippet, $conditionalClass) {
+                            $file = SnippetRevision::resolve($canonical, $snippet, $lease);
+                            if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                                 return;
                             }
                             $this->runSnippetFile($file, $fileName);
@@ -258,14 +265,15 @@ class CodeRunner
                     }
                     if (isset($filterMaps[$runAt])) {
                         $filter = $filterMaps[$runAt];
-                        add_filter($filter['hook'], function ($content) use ($file, $fileName, $snippet, $conditionalClass, $filter) {
+                        add_filter($filter['hook'], function ($content) use ($canonical, $fileName, $snippet, $conditionalClass, $filter) {
                             if (!empty($filter['is_single'])) {
                                 if (!is_singular() || !in_the_loop() || !is_main_query()) {
                                     return $content;
                                 }
                             }
 
-                            if (!$conditionalClass->evaluateSnippet($snippet)) {
+                            $file = SnippetRevision::resolve($canonical, $snippet, $lease);
+                            if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                                 return $content;
                             }
 
@@ -312,7 +320,7 @@ class CodeRunner
      */
     private function runSnippetFile($file, $fileName)
     {
-        self::pushRunningSnippet($fileName);
+        self::pushRunningSnippet($fileName, $file);
 
         try {
             require_once $file;

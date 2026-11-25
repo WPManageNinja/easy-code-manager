@@ -344,7 +344,10 @@ class SnippetsController
             return $deleted;
         }
 
-        do_action('fluent_snippets/snippet_deleted', $fileName);
+        $published = Helper::publishSnippetWrite($fileName, 'fluent_snippets/snippet_deleted');
+        if (is_wp_error($published)) {
+            return $published;
+        }
 
         return [
             'message' => __('Snippet has been deleted successfully', 'easy-code-manager')

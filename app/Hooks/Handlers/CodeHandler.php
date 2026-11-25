@@ -100,7 +100,7 @@ class CodeHandler
             if (!$published) {
                 return '';
             }
-            $file = \FluentSnippets\App\Services\SnippetRevision::resolve(Helper::getStorageDir() . '/' . $fileName, $published);
+            $file = \FluentSnippets\App\Services\SnippetRevision::resolve(Helper::getStorageDir() . '/' . $fileName, $published, $lease);
             if (!$file) {
                 return '';
             }
@@ -109,6 +109,9 @@ class CodeHandler
             $snippet = (new Snippet())->findByFileName($fileName);
             if (is_wp_error($snippet)) {
                 return $this->shortCodeError($snippet->get_error_message());
+            }
+            if (!\FluentSnippets\App\Services\SnippetRevision::resolve($snippet['file'], $snippet['meta'], $lease)) {
+                return '';
             }
         }
 
@@ -137,7 +140,7 @@ class CodeHandler
 
         // Tracked like the hook-run snippets, so a shortcode snippet that fatals inside a
         // function it calls is attributed to the snippet rather than to that function.
-        CodeRunner::pushRunningSnippet($fileName);
+        CodeRunner::pushRunningSnippet($fileName, $snippet['file']);
 
         try {
             $maybeReturn = include $snippet['file'];
@@ -211,24 +214,26 @@ class CodeHandler
 
         $result = Helper::withSnippetWriteLock(function () use ($args, $error) {
             return $this->recordFatalError($args, $error);
-        });
-        return is_wp_error($result) ? $args : $result;
+        }, true);
+        if (is_wp_error($result)) {
+            error_log('FluentSnippets could not open the snippet library to record a failure. Check its filesystem permissions.');
+            return $args;
+        }
+        return $result;
     }
 
     private function recordFatalError($args, $error)
     {
         $file = $error['file'];
+        $config = Helper::getIndexedConfig(false);
 
         $isSnippetFile = $this->isSnippetFile($file);
 
         if ($isSnippetFile) {
             $fileName = basename($file);
             if (preg_match('/^\.fluent-rev-([a-f0-9]{64})\.php$/D', $fileName, $match)) {
-                $published = Helper::getIndexedConfig()['published'] ?? [];
+                $published = $config['published'] ?? [];
                 $fileName = array_search($match[1], array_column($published, 'revision', 'file_name'), true);
-                if (!$fileName) {
-                    $fileName = CodeRunner::getRunningSnippet();
-                }
             }
         } else {
             /*
@@ -242,14 +247,16 @@ class CodeHandler
              * fatal does not unwind. That snippet is the one that led here.
              */
             $fileName = CodeRunner::getRunningSnippet();
+            $runningFile = basename(CodeRunner::getRunningFile());
+            if (preg_match('/^\.fluent-rev-([a-f0-9]{64})\.php$/D', $runningFile, $match) &&
+                ($config['published'][$fileName]['revision'] ?? '') !== $match[1]) {
+                return $args;
+            }
         }
 
         if (!$fileName) {
             return $args;
         }
-
-        // let's get the indexed config
-        $config = Helper::getIndexedConfig();
 
         if (empty($config)) {
             return $args;
@@ -286,7 +293,9 @@ class CodeHandler
 
         $config['error_files'][$fileName] = $message;
 
-        Helper::saveIndexedConfig($config, $this->storageDir . '/index.php');
+        if (Helper::saveIndexedConfig($config, $this->storageDir . '/index.php') === false) {
+            error_log('FluentSnippets could not record a snippet failure. Check the snippet library permissions.');
+        }
 
         return $args;
     }

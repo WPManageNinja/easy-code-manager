@@ -349,6 +349,18 @@ check('a damaged file is reported as unreadable metadata', errorStatus($editErro
 $removed = SnippetsController::deleteSnippet(new WP_REST_Request(['fluent_saving_snippet_name' => $brokenFile]));
 check('a damaged snippet can still be removed', !is_wp_error($removed) && !is_file($storage . '/' . $brokenFile), describe($removed));
 
+$deleteFixture = Helper::createSnippet($createData);
+$GLOBALS['fs_test']['listener']['fluent_snippets/snippet_deleted'] = function () use ($storage) {
+    rename($storage . '/index.php', $storage . '/before-delete-index');
+    mkdir($storage . '/index.php');
+};
+$deleteResult = SnippetsController::deleteSnippet(new WP_REST_Request(['fluent_saving_snippet_name' => $deleteFixture]));
+unset($GLOBALS['fs_test']['listener']['fluent_snippets/snippet_deleted']);
+rmdir($storage . '/index.php');
+rename($storage . '/before-delete-index', $storage . '/index.php');
+check('a partial deletion reports the failed index refresh', errorStatus($deleteResult) === 503 && !is_file($storage . '/' . $deleteFixture));
+Helper::cacheSnippetIndex();
+
 $before = readFile_($fileName);
 $broken = SnippetsController::updateSnippet(new WP_REST_Request([
     'file_name' => $fileName,

@@ -308,6 +308,11 @@ class Snippet
             return SnippetErrors::fileMissing($fileName);
         }
 
+        $lease = \FluentSnippets\App\Services\SnippetRevision::lockSource($file, LOCK_EX, $busy);
+        if (!$lease) {
+            return $busy ? Helper::snippetBusyError() : SnippetErrors::writeFailed($file);
+        }
+
         // Older clients can edit a shared snippet without sending this field. Only
         // an explicit null clears a restriction already present in its file.
         if (!array_key_exists('network_sites', $metaData)) {
@@ -404,6 +409,10 @@ class Snippet
             return new \WP_Error('file_not_found', __('File not found.', 'easy-code-manager'), ['status' => 404]);
         }
 
+        $lease = \FluentSnippets\App\Services\SnippetRevision::lockSource($file, LOCK_EX, $busy);
+        if (!$lease) {
+            return $busy ? Helper::snippetBusyError() : SnippetErrors::writeFailed($file);
+        }
         if (!@unlink($file)) {
             return new \WP_Error('delete_failed', __('WordPress could not remove the snippet file. Check its file permissions and retry.', 'easy-code-manager'), ['status' => 503]);
         }

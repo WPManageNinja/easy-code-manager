@@ -164,7 +164,7 @@ class Helper
      * the JSON the editor is waiting for arrives unparseable — turning "the folder is
      * not writable" into "the server sent back an unexpected response".
      */
-    public static function atomicPut($file, $contents, $requireReplacement = false)
+    public static function atomicPut($file, $contents, $requireReplacement = false, $private = false)
     {
         $dir = dirname($file);
 
@@ -190,7 +190,14 @@ class Helper
         // tempnam() creates the file as 0600. Keep whatever the target already used so
         // host-specific setups (group-writable files, for instance) survive the swap.
         $perms = is_file($file) ? (@fileperms($file) & 0777) : 0;
-        @chmod($tmpFile, $perms ? $perms : 0644);
+        if ($private) {
+            if (!@chmod($tmpFile, 0600)) {
+                @unlink($tmpFile);
+                return false;
+            }
+        } else {
+            @chmod($tmpFile, $perms ? $perms : 0644);
+        }
 
         // rename() cannot overwrite an existing file on Windows.
         if (!$requireReplacement && DIRECTORY_SEPARATOR === '\\' && is_file($file)) {
@@ -529,7 +536,7 @@ class Helper
         $path = SnippetRevision::path($canonical, $revision);
         $type = $snippet['meta']['type'];
         $bytes = in_array($type, ['PHP', 'php_content'], true) ? SnippetRevision::executable($source, $canonical) : $source;
-        if (!self::writeRevisionFile($path, $bytes)) {
+        if (!self::writeRevisionFile($path, $bytes, true)) {
             return false;
         }
         if (in_array($type, ['css', 'js'], true) && $snippet['meta']['load_as_file'] === 'yes') {
@@ -541,12 +548,15 @@ class Helper
         return $revision;
     }
 
-    private static function writeRevisionFile($path, $bytes)
+    private static function writeRevisionFile($path, $bytes, $private = false)
     {
         if (is_file($path)) {
+            if ($private && (fileperms($path) & 0777) !== 0600 && !@chmod($path, 0600)) {
+                return false;
+            }
             return hash_file('sha256', $path) === hash('sha256', $bytes);
         }
-        return self::atomicPut($path, $bytes, true) === strlen($bytes);
+        return self::atomicPut($path, $bytes, true, $private) === strlen($bytes);
     }
 
     private static function pruneSnippetRevisions($published, $previous)
@@ -602,7 +612,7 @@ PHP;
 
         $code .= 'return ' . var_export($data, true) . ';';
 
-        $bytesWritten = self::atomicPut($cacheFile, $code, true);
+        $bytesWritten = self::atomicPut($cacheFile, $code, is_multisite() || !empty($data['meta']['snippet_revisions']));
 
         self::invalidateOpcache($cacheFile);
 
@@ -793,6 +803,7 @@ PHP;
     {
         return defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION')
             && FLUENT_SNIPPETS_RUNNING_MU_VERSION === FLUENT_SNIPPETS_PLUGIN_VERSION
+            && class_exists('FluentSnippets\\Mu\\SnippetRevision', false)
             && method_exists('FluentSnippets\\Mu\\SnippetRevision', 'resolve');
     }
 
@@ -986,7 +997,12 @@ PHP;
     private static $writingSnippets = false;
     private static $lastIndexWrite;
 
-    public static function withSnippetWriteLock(callable $operation)
+    public static function snippetBusyError()
+    {
+        return new \WP_Error('library_busy', __('Another operation is using this snippet. Retry after it finishes.', 'easy-code-manager'), ['status' => 409]);
+    }
+
+    public static function withSnippetWriteLock(callable $operation, $wait = false)
     {
         if (!is_multisite() || self::$writingSnippets) {
             return $operation();
@@ -1001,7 +1017,7 @@ PHP;
             return new \WP_Error('storage_unavailable', __('WordPress could not open the snippet library for writing. Check its file permissions and retry.', 'easy-code-manager'), ['status' => 503]);
         }
         try {
-            if (!flock($handle, LOCK_EX | LOCK_NB)) {
+            if (!flock($handle, $wait ? LOCK_EX : LOCK_EX | LOCK_NB)) {
                 return new \WP_Error('library_busy', __('Another snippet save is in progress. Retry after it finishes.', 'easy-code-manager'), ['status' => 409]);
             }
             self::$writingSnippets = true;
@@ -1112,6 +1128,7 @@ PHP;
         if (is_wp_error($published)) {
             $deleted = $snippetModel->deleteSnippet($snippet);
             if (is_wp_error($deleted)) {
+                /* translators: %s is the editable snippet filename. */
                 return new \WP_Error('create_incomplete', sprintf(__('The snippet file %s exists, but publication failed. Recover that file before creating another snippet.', 'easy-code-manager'), $snippet), ['file_name' => $snippet, 'status' => 503]);
             }
             return self::indexSyncError();
@@ -1132,7 +1149,7 @@ PHP;
             self::cacheSnippetIndex();
         }
         if (self::$lastIndexWrite === false) {
-            return self::indexWriteError();
+            return $action === 'fluent_snippets/snippet_deleted' ? self::indexSyncError() : self::indexWriteError();
         }
         return $file;
     }

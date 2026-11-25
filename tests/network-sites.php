@@ -47,6 +47,8 @@ function apply_filters($tag, $value) { return $value; }
 function add_action($tag, $callback) { $GLOBALS['hooks'][$tag][] = $callback; }
 function add_filter($tag, $callback) { add_action($tag, $callback); }
 function do_action() {}
+function wp_enqueue_style($handle, $url) { $GLOBALS['enqueued'][] = $url; }
+function wp_enqueue_script($handle, $url) { $GLOBALS['enqueued'][] = $url; }
 class WP_Error {}
 function is_wp_error($value) { return $value instanceof WP_Error; }
 function is_admin() { return false; }
@@ -159,6 +161,11 @@ if ($case === 'publication' || $case === 'all') {
     Helper::cacheSnippetIndex();
     $first = Helper::getIndexedConfig()['published'][$file];
     $path = $storage . '/' . $file;
+    $copy = \FluentSnippets\App\Services\SnippetRevision::path($path, $first['revision']);
+    chmod($path, 0600);
+    Helper::cacheSnippetIndex();
+    clearstatcache(true, $copy);
+    expectNetworkResult((fileperms($copy) & 0777) === 0600, 'published source is private after republication');
     $model->updateSnippet($file, '/* next revision */', $meta + ['network_sites' => $except]);
     Helper::cacheSnippetIndex();
     $next = Helper::getIndexedConfig()['published'][$file];
@@ -170,8 +177,10 @@ if ($case === 'publication' || $case === 'all') {
         expectNetworkResult($revision::parse(file_get_contents($currentFile), true) === '/* next revision */', 'new requests use the new revision');
         $legacy = ['file_name' => $file];
         file_put_contents($path, str_replace('@network_sites:', '@network_sites :', file_get_contents($path)));
-        $frozen = $revision::resolve($path, $legacy);
-        expectNetworkResult($legacy['network_sites'] === $except && $frozen !== $path, 'legacy header grammar and snapshot selection match');
+        $native = $revision::resolve($path, $legacy, $lease);
+        expectNetworkResult($legacy['network_sites'] === $except && $native === $path, 'legacy selection preserves the native source directory');
+        expectNetworkResult(is_wp_error($model->updateSnippet($file, 'busy', $meta)), 'a writer retries while legacy code is using the source');
+        fclose($lease);
     }
     $meta['type'] = 'css';
     $meta['load_as_file'] = 'yes';
@@ -200,5 +209,89 @@ if ($case === 'publication' || $case === 'all') {
     expectNetworkResult(is_wp_error(Helper::publishSnippetWrite($file, 'fluent_snippets/snippet_updated')), 'a failed index publication returns an error');
     rmdir($storage . '/index.php');
     rename($storage . '/saved-index', $storage . '/index.php');
+    unlink($path);
+    foreach ([\FluentSnippets\App\Services\SnippetRevision::class, \FluentSnippets\Mu\SnippetRevision::class] as $reader) {
+        expectNetworkResult($reader::resolve($path, $record) === false, 'deleted authoring files stop on an older index');
+    }
     echo "ok - publication\n";
+}
+
+if ($case === 'compatibility' || $case === 'all') {
+    file_put_contents($storage . '/dependency.inc', '<?php return "sibling resolved";');
+    foreach ([CodeRunner::class, \FluentSnippets\Mu\CodeRunner::class] as $runner) {
+        $native = $model->createSnippet('<?php echo require "dependency.inc";', [
+            'name' => 'Native source', 'type' => 'php_content', 'run_at' => 'wp_footer', 'status' => 'published'
+        ]);
+        $external = [];
+        foreach (['css' => 'wp_head', 'js' => 'wp_footer'] as $type => $hook) {
+            $asset = $model->createSnippet('/* external */', [
+                'name' => 'External ' . $type, 'type' => $type, 'run_at' => $hook, 'load_as_file' => 'yes', 'status' => 'published'
+            ]);
+            $cache = basename($asset, '.php') . '.' . $type;
+            file_put_contents(Helper::getCachedDir() . '/' . $cache, '/* external */');
+            $external[$asset] = FLUENT_SNIPPETS_STORAGE_URL . '/cached/' . $cache;
+        }
+        Helper::cacheSnippetIndex();
+        $config = Helper::getIndexedConfig(false);
+        $config['published'] = array_intersect_key($config['published'], [$native => true] + $external);
+        foreach ($config['published'] as &$published) {
+            unset($published['revision']);
+        }
+        unset($published);
+        Helper::saveIndexedConfig($config);
+        $hooks = $enqueued = [];
+        chmod($storage, 0555);
+        try {
+            (new $runner())->runSnippets();
+            ob_start();
+            foreach ($hooks['wp_footer'] ?? [] as $callback) $callback();
+            $rendered = ob_get_clean();
+            foreach ($hooks['wp_enqueue_scripts'] ?? [] as $callback) $callback();
+        } finally {
+            chmod($storage, 0700);
+        }
+        expectNetworkResult($rendered === 'sibling resolved', 'legacy PHP includes its sibling in a read-only library');
+        expectNetworkResult(count($enqueued) === 2 && !array_diff($external, $enqueued), 'legacy CSS and JS retain their external URL');
+    }
+    $multisite = false;
+    $handler = new CodeHandler();
+    $directory = new ReflectionProperty(CodeHandler::class, 'storageDir');
+    $directory->setAccessible(true);
+    $directory->setValue($handler, $storage);
+    $config['meta']['snippet_revisions'] = false;
+    $config['meta']['force_disabled'] = 'yes';
+    chmod($storage, 0555);
+    try {
+        expectNetworkResult(Helper::saveIndexedConfig($config) !== false, 'single-site emergency index remains writable');
+        expectNetworkResult(Helper::getIndexedConfig(false)['meta']['force_disabled'] === 'yes', 'single-site emergency flag persists');
+        $handler->maybeHandleFatalError(['response' => 500], ['file' => $storage . '/' . $native, 'message' => 'Compatibility check']);
+        expectNetworkResult(isset(Helper::getIndexedConfig(false)['error_files'][$native]), 'single-site quarantine persists with a read-only parent');
+    } finally {
+        chmod($storage, 0700);
+    }
+    $multisite = true;
+    Helper::cacheSnippetIndex();
+    $published = Helper::getIndexedConfig(false)['published'][$native];
+    $before = \FluentSnippets\App\Services\SnippetRevision::path($storage . '/' . $native, $published['revision']);
+    $model->updateSnippet($native, 'replacement', $published);
+    Helper::cacheSnippetIndex();
+    $config = Helper::getIndexedConfig(false);
+    unset($config['error_files'][$native]);
+    Helper::saveIndexedConfig($config);
+    CodeRunner::pushRunningSnippet($native, $before);
+    $handler->maybeHandleFatalError(['response' => 500], ['file' => $before, 'message' => 'Retired file']);
+    $handler->maybeHandleFatalError(['response' => 500], ['file' => __FILE__, 'message' => 'Retired callback']);
+    CodeRunner::popRunningSnippet();
+    expectNetworkResult(!isset(Helper::getIndexedConfig(false)['error_files'][$native]), 'retired code cannot quarantine its replacement');
+    $current = Helper::getIndexedConfig(false)['published'][$native]['revision'];
+    $currentFile = \FluentSnippets\App\Services\SnippetRevision::path($storage . '/' . $native, $current);
+    $hold = '$f = fopen($argv[1], "c"); flock($f, LOCK_EX); echo "locked\n"; flush(); usleep(250000);';
+    $command = escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($hold) . ' ' . escapeshellarg($storage . '/.fluent-snippets-write.lock');
+    $process = proc_open($command, [1 => ['pipe', 'w']], $pipes);
+    expectNetworkResult(is_resource($process) && trim(fgets($pipes[1])) === 'locked', 'independent library writer acquired the lock');
+    $handler->maybeHandleFatalError(['response' => 500], ['file' => $currentFile, 'message' => 'Current callback']);
+    fclose($pipes[1]);
+    proc_close($process);
+    expectNetworkResult(isset(Helper::getIndexedConfig(false)['error_files'][$native]), 'current revision quarantine survives writer contention');
+    echo "ok - compatibility\n";
 }

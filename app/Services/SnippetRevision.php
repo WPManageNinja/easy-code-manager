@@ -118,9 +118,9 @@ class SnippetRevision
     }
 
     // A copied PHP snippet must still resolve relative resources as its author intended.
-    public static function executable($source, $canonical, $temporary = false)
+    public static function executable($source, $canonical)
     {
-        if (stripos($source, '__FILE__') === false && (!$temporary || stripos($source, '__DIR__') === false)) {
+        if (stripos($source, '__FILE__') === false) {
             return $source;
         }
         $result = '';
@@ -128,9 +128,7 @@ class SnippetRevision
             if (!is_array($token)) {
                 $result .= $token;
             } elseif ($token[0] === T_FILE) {
-                $result .= $temporary ? var_export($canonical, true) : '(__DIR__ . ' . var_export('/' . basename($canonical), true) . ')';
-            } elseif ($temporary && $token[0] === T_DIR) {
-                $result .= var_export(dirname($canonical), true);
+                $result .= '(__DIR__ . ' . var_export('/' . basename($canonical), true) . ')';
             } else {
                 $result .= $token[1];
             }
@@ -138,55 +136,61 @@ class SnippetRevision
         return $result;
     }
 
-    // Keep the temporary file alive through WordPress's last callback in this request.
-    private static $legacyFiles = [];
+    // Keep the handle in the caller's scope until the callback has finished.
+    // An authoring write takes the exclusive lock before replacing this same file.
+    public static function lockSource($file, $operation, &$busy = null)
+    {
+        $busy = false;
+        $handle = @fopen($file, 'rb');
+        if (!$handle) {
+            return false;
+        }
+        if (flock($handle, $operation | LOCK_NB, $wouldBlock)) {
+            clearstatcache(true, $file);
+            $opened = fstat($handle);
+            $current = @stat($file);
+            if ($opened && $current && $opened['dev'] === $current['dev'] && $opened['ino'] === $current['ino']) {
+                return $handle;
+            }
+            $busy = true;
+        } else {
+            $busy = (bool) $wouldBlock;
+        }
+        fclose($handle);
+        return false;
+    }
 
-    public static function resolve($canonical, &$meta)
+    public static function resolve($canonical, &$meta, &$lease = null, $legacyAsset = '')
     {
         if (isset($meta['revision'])) {
-            if (!is_string($meta['revision']) || !preg_match('/^[a-f0-9]{64}$/D', $meta['revision'])) {
+            if (!is_file($canonical) || !is_string($meta['revision']) || !preg_match('/^[a-f0-9]{64}$/D', $meta['revision'])) {
                 return false;
             }
             $path = self::path($canonical, $meta['revision']);
             return is_file($path) ? $path : false;
         }
 
-        // A read-only network may still have a pre-upgrade index. Freeze one read of
-        // the authored file so its metadata and code cannot come from different saves.
-        $source = @file_get_contents($canonical);
+        $lease = self::lockSource($canonical, LOCK_SH);
+        if (!$lease) {
+            return false;
+        }
+        $source = stream_get_contents($lease);
         if ($source === false) {
             return false;
         }
-        if (!is_multisite() && !isset($meta['network_sites'])) {
-            // A copied library may still carry a network selection in its authoring
-            // file even when the old index predates this field.
-            if (strpos($source, 'network_sites') !== false) {
-                [$header] = self::parse($source);
-                if (isset($header['network_sites'])) {
-                    return false;
-                }
-            }
-            return $canonical;
-        }
-        [$current] = self::parse($source);
+        [$current, $body] = self::parse($source);
         if (!$current || $current['status'] !== 'published') {
             return false;
         }
-        $meta = array_merge($meta, $current);
-        $meta['load_as_file'] = 'no';
-        $key = $canonical . ':' . hash('sha256', $source);
-        if (!isset(self::$legacyFiles[$key])) {
-            $temp = tmpfile();
-            if (!$temp) {
-                return false;
-            }
-            $bytes = self::executable($source, realpath($canonical) ?: $canonical, true);
-            if (fwrite($temp, $bytes) !== strlen($bytes) || !fflush($temp)) {
-                fclose($temp);
-                return false;
-            }
-            self::$legacyFiles[$key] = $temp;
+        if ($legacyAsset && is_multisite() && @file_get_contents($legacyAsset) !== $body) {
+            return false;
         }
-        return stream_get_meta_data(self::$legacyFiles[$key])['uri'];
+        foreach (['type', 'run_at'] as $key) {
+            if (isset($meta[$key]) && $meta[$key] !== $current[$key]) {
+                return false;
+            }
+        }
+        $meta = array_merge($meta, $current);
+        return $canonical;
     }
 }
