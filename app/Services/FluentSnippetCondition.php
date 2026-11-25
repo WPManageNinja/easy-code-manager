@@ -126,9 +126,16 @@ class FluentSnippetCondition
         }
 
         // FluentCRM caches identified contacts. Reuse a miss across this runner's snippets
-        // until the WordPress identity changes or a CRM contact is created or updated.
-        $context = [get_current_blog_id(), get_current_user_id(),
-            did_action('fluent_crm/contact_created'), did_action('fluent_crm/contact_updated')];
+        // until the identity changes. CRM's preference form can set its cookie between hooks.
+        $crmCookie = $_COOKIE['fc_hash_secure'] ?? null;
+        $context = [
+            get_current_blog_id(),
+            get_current_user_id(),
+            is_string($crmCookie) ? hash('sha256', $crmCookie, true) : null,
+            did_action('profile_update'),
+            did_action('fluent_crm/contact_created'),
+            did_action('fluent_crm/contact_updated')
+        ];
         if ($this->missingListContactContext === $context) {
             return false;
         }

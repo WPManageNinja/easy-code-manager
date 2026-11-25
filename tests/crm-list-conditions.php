@@ -118,6 +118,14 @@ $conditions->evaluate($settings);
 $GLOBALS['crmFixtureChanges']++;
 $GLOBALS['crmFixtureContact'] = $contact;
 $cases['repeated miss'] = $cases['repeated miss'] && $conditions->evaluate($settings);
+$GLOBALS['crmFixtureContact'] = null;
+$GLOBALS['crmFixtureUser'] = 0;
+$conditions->evaluate($settings);
+// FluentCRM's preference form can identify this visitor between two snippet callbacks.
+$_COOKIE['fc_hash_secure'] = 'local-fixture-identity';
+$GLOBALS['crmFixtureContact'] = $contact;
+$cases['visitor identified mid-request'] = $conditions->evaluate($settings);
+unset($_COOKIE['fc_hash_secure']);
 $cases['unavailable membership'] = true;
 foreach (['contact', 'lists'] as $failure) {
     $GLOBALS['crmFixtureFailure'] = $failure;
@@ -128,7 +136,8 @@ foreach (['contact', 'lists'] as $failure) {
     }
 }
 $messages = ['assigned list' => 'matching editor list was rejected', 'list exclusion' => 'identified nonmember was rejected',
-    'repeated miss' => 'missing contact lookup was repeated', 'unavailable membership' => 'CRM read interrupted evaluation'];
+    'repeated miss' => 'missing contact lookup was repeated', 'unavailable membership' => 'CRM read interrupted evaluation',
+    'visitor identified mid-request' => 'earlier miss hid a newly identified contact'];
 $failures = 0;
 foreach ($cases as $name => $passed) {
     if ($mode !== '' && $mode !== $name) {
