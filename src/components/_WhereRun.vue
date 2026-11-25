@@ -45,7 +45,7 @@
             </label>
         </div>
 
-        <network-sites :snippet="snippet" />
+        <network-sites :key="snippet.file_name" :snippet="snippet" />
 
         <div v-if="snippet.meta.run_at == 'shortcode'">
             <div v-if="is_new">

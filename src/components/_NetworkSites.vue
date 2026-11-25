@@ -8,7 +8,7 @@
             <el-option value="except" :label="$t('All except selected sites')" :disabled="!network" />
         </el-select>
         <template v-if="mode !== 'all'">
-            <el-select :model-value="ids" @update:model-value="setIds" multiple filterable remote
+            <el-select v-if="labelsReady" :model-value="ids" @update:model-value="setIds" multiple filterable remote
                        :aria-label="$t('Selected sites')" :placeholder="$t('Search by site address or ID')"
                        :disabled="!canEdit || !sameNetwork" :loading="loading" :remote-method="search"
                        @visible-change="open => open && search('')">
@@ -23,7 +23,7 @@
 export default {
     props: ['snippet'],
     data() {
-        return { options: [], labels: {}, loading: false, request: 0 };
+        return { options: [], labels: {}, labelsReady: false, loading: false, request: 0 };
     },
     computed: {
         network() { return Number(this.appVars.network_id); },
@@ -44,8 +44,10 @@ export default {
             return Array.from(choices.values());
         }
     },
-    mounted() {
-        if (this.sameNetwork && this.ids.length) this.loadSelectedLabels();
+    async mounted() {
+        // Remote selects cache the initial tag labels. Resolve saved names before mounting the picker.
+        if (this.sameNetwork && this.ids.length) await this.loadSelectedLabels();
+        this.labelsReady = true;
     },
     methods: {
         async loadSelectedLabels() {
