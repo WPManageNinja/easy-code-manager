@@ -5,6 +5,10 @@
  *
  * Supply a deterministic term query result without changing any site data.
  */
+if (!defined('WP_CLI') || !WP_CLI) {
+    exit;
+}
+
 $request = new WP_REST_Request('GET', '/fluent-snippets/settings/options');
 $request->set_param('rest_key', 'tax_term_groups');
 

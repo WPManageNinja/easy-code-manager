@@ -263,7 +263,7 @@ class SettingsController
             ]);
 
             foreach ($terms as $term) {
-                if (!isset($formattedTaxGroups[$term->taxonomy])) {
+                if (!isset($options[$term->taxonomy])) {
                     $options[$term->taxonomy] = [
                         'label'   => $term->taxonomy,
                         'options' => [],
