@@ -166,8 +166,25 @@ class FluentSnippetCondition
     {
         switch ($key) {
             case 'date_range':
-                $currentTime = current_time('timestamp');
-                return $this->checkValues($currentTime, $value, $operator);
+                if (!is_array($value) || count($value) !== 2) {
+                    return false;
+                }
+
+                $value = array_values($value);
+
+                if (!is_string($value[0]) || !is_string($value[1]) || $value[0] === '' || $value[1] === '') {
+                    return false;
+                }
+
+                $range = [$this->parseDateTime($value[0]), $this->parseDateTime($value[1])];
+
+                if (in_array(false, $range, true) || $range[0] > $range[1]) {
+                    return false;
+                }
+
+                $operator = str_replace('date_', 'number_', $operator);
+
+                return $this->checkValues(current_time('timestamp'), $range, $operator);
             case 'day_of_week':
                 $dayOfWeek = strtolower(date('D', current_time('timestamp')));
                 return $this->checkValues($dayOfWeek, $value, $operator);
@@ -186,6 +203,22 @@ class FluentSnippetCondition
         }
 
         return false;
+    }
+
+    private function parseDateTime($value)
+    {
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d H:i', $value);
+        $errors = \DateTimeImmutable::getLastErrors();
+
+        if (
+            !$date ||
+            (is_array($errors) && ($errors['warning_count'] || $errors['error_count'])) ||
+            $date->format('Y-m-d H:i') !== $value
+        ) {
+            return false;
+        }
+
+        return $date->getTimestamp();
     }
 
     private function getCurrentPageType()
@@ -328,11 +361,11 @@ class FluentSnippetCondition
                 return strtotime($sourceValue) >= $range[0] && strtotime($sourceValue) <= $range[1];
             case 'date_not_within':
                 $range = [strtotime($dataValue[0]), strtotime($dataValue[1])];
-                return strtotime($sourceValue) <= $range[0] || strtotime($sourceValue) >= $range[1];
+                return strtotime($sourceValue) < $range[0] || strtotime($sourceValue) > $range[1];
             case 'number_within':
                 return $sourceValue >= $dataValue[0] && $sourceValue <= $dataValue[1];
             case 'number_not_within':
-                return $sourceValue <= $dataValue[0] || $sourceValue >= $dataValue[1];
+                return $sourceValue < $dataValue[0] || $sourceValue > $dataValue[1];
             case 'days_before':
                 return strtotime($sourceValue) < strtotime("-{$dataValue} days", current_time('timestamp'));
             case 'days_within':
