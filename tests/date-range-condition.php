@@ -66,6 +66,8 @@ assertDateRange('start boundary complement', false, '2026-11-24 00:00:00', 'date
 assertDateRange('end boundary', true, '2026-12-30 00:00:00', 'date_within', $holidayRange);
 assertDateRange('end boundary complement', false, '2026-12-30 00:00:00', 'date_not_within', $holidayRange);
 assertDateRange('malformed range', false, '2026-11-25 12:00:00', 'date_within', ['invalid', '2026-12-30 00:00']);
+assertDateRange('invalid calendar date', false, '2026-03-03 00:00:00', 'date_within', ['2026-02-30 00:00', '2026-03-05 00:00']);
+assertDateRange('invalid calendar date complement', false, '2026-03-03 00:00:00', 'date_not_within', ['2026-02-30 00:00', '2026-03-05 00:00']);
 assertDateRange('reversed range', false, '2026-11-25 12:00:00', 'date_within', array_reverse($holidayRange));
 
-echo "OK - 12 date-range condition assertions passed.\n";
+echo "OK - 14 date-range condition assertions passed.\n";

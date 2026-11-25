@@ -176,7 +176,7 @@ class FluentSnippetCondition
                     return false;
                 }
 
-                $range = [strtotime($value[0]), strtotime($value[1])];
+                $range = [$this->parseDateTime($value[0]), $this->parseDateTime($value[1])];
 
                 if (in_array(false, $range, true) || $range[0] > $range[1]) {
                     return false;
@@ -203,6 +203,22 @@ class FluentSnippetCondition
         }
 
         return false;
+    }
+
+    private function parseDateTime($value)
+    {
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d H:i', $value);
+        $errors = \DateTimeImmutable::getLastErrors();
+
+        if (
+            !$date ||
+            (is_array($errors) && ($errors['warning_count'] || $errors['error_count'])) ||
+            $date->format('Y-m-d H:i') !== $value
+        ) {
+            return false;
+        }
+
+        return $date->getTimestamp();
     }
 
     private function getCurrentPageType()
