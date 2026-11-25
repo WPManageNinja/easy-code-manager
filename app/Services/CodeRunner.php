@@ -329,7 +329,7 @@ class CodeRunner
     private function parseBlock($fileContent, $codeOnly = false)
     {
         // get content from // <Internal Doc Start> to // <Internal Doc End>
-        $fileContent = explode('// <Internal Doc Start>', $fileContent);
+        $fileContent = explode('// <Internal Doc Start>', $fileContent, 2);
 
         if (count($fileContent) < 2) {
             if ($codeOnly) {
@@ -338,7 +338,11 @@ class CodeRunner
             return [null, null];
         }
 
-        $fileContent = explode('// <Internal Doc End> ?>' . PHP_EOL, $fileContent[1]);
+        // The header may have been written on another OS. Consume only its final newline.
+        $fileContent = preg_split('~// <Internal Doc End> \?>\r?\n~', $fileContent[1], 2);
+        if (count($fileContent) < 2) {
+            return $codeOnly ? '' : [null, null];
+        }
         $docBlock = $fileContent[0];
         $code = $fileContent[1];
 

@@ -445,7 +445,7 @@ class Helper
             $fileName = basename($snippet['file']);
 
             // remove new line from $meta['description'] and limit to it 101 chars
-            $meta['description'] = substr(str_replace(PHP_EOL, ". ", $meta['description']), 0, 101);
+            $meta['description'] = substr(str_replace(["\r\n", "\n"], '. ', $meta['description']), 0, 101);
 
             if ($snippet['status'] != 'published') {
                 $snippet['status'] = 'draft';

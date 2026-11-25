@@ -393,7 +393,7 @@ class Snippet
     public function parseBlock($fileContent, $codeOnly = false)
     {
         // get content from // <Internal Doc Start> to // <Internal Doc End>
-        $fileContent = explode('// <Internal Doc Start>', $fileContent);
+        $fileContent = explode('// <Internal Doc Start>', $fileContent, 2);
 
         if (count($fileContent) < 2) {
             if ($codeOnly) {
@@ -402,25 +402,13 @@ class Snippet
             return [null, null];
         }
 
-        // Try different possible formats of the end marker
-        $endMarkers = [
-            '// <Internal Doc End> ?>' . PHP_EOL,
-            '// <Internal Doc End> ?>',
-            '<?php if (!defined("ABSPATH")) { return;} // <Internal Doc End> ?>' . PHP_EOL,
-            '<?php if (!defined("ABSPATH")) { return;} // <Internal Doc End> ?>'
-        ];
-
-        $docBlock = null;
-        $code = null;
-
-        foreach ($endMarkers as $marker) {
-            $parts = explode($marker, $fileContent[1]);
-            if (count($parts) > 1) {
-                $docBlock = $parts[0];
-                $code = $parts[1];
-                break;
-            }
+        // Prefer a terminated marker; legacy files can start the code on the marker line.
+        $parts = preg_split('~// <Internal Doc End> \?>\r?\n~', $fileContent[1], 2);
+        if (count($parts) < 2) {
+            $parts = explode('// <Internal Doc End> ?>', $fileContent[1], 2);
         }
+        $docBlock = $parts[0];
+        $code = $parts[1] ?? null;
 
         if (!$docBlock || !$code) {
             if ($codeOnly) {
