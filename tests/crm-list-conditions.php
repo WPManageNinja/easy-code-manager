@@ -1,5 +1,8 @@
 <?php
 // Run with php tests/crm-list-conditions.php. Each dependency state needs a fresh process.
+if (PHP_SAPI !== 'cli') {
+    return;
+}
 require dirname(__DIR__) . '/app/Services/FluentSnippetCondition.php';
 
 use FluentSnippets\App\Services\FluentSnippetCondition;
@@ -15,6 +18,9 @@ class CrmListFixtureIds
 
     public function pluck($field)
     {
+        if ($GLOBALS['crmFixtureFailure'] === 'lists') {
+            throw new RuntimeException('Fixture membership data unavailable.');
+        }
         if ($field !== 'id') {
             throw new RuntimeException('Expected membership IDs');
         }
@@ -45,13 +51,27 @@ $legacy = crmRule('list_ids', 'in', ['23']);
 if ($mode !== 'crm-absent') {
     define('FLUENTCRM', true);
 }
+if ($mode === 'legacy-helper-absent') {
+    exit(crmMatches($legacy) ? 1 : 0);
+}
 if ($mode === 'crm-absent' || $mode === 'helper-absent') {
     exit(crmMatches($include) || crmMatches($exclude) ? 1 : 0);
 }
 
+$GLOBALS['crmFixtureReads'] = 0;
+$GLOBALS['crmFixtureFailure'] = '';
+$GLOBALS['crmFixtureUser'] = 1;
+$GLOBALS['crmFixtureChanges'] = 0;
+function get_current_user_id() { return $GLOBALS['crmFixtureUser']; }
+function get_current_blog_id() { return 1; }
+function did_action($hook) { return $hook === 'fluent_crm/contact_created' ? $GLOBALS['crmFixtureChanges'] : 0; }
 if (defined('FLUENTCRM')) {
     function fluentcrm_get_current_contact()
     {
+        $GLOBALS['crmFixtureReads']++;
+        if ($GLOBALS['crmFixtureFailure'] === 'contact') {
+            throw new RuntimeException('Fixture contact data unavailable.');
+        }
         return $GLOBALS['crmFixtureContact'];
     }
 }
@@ -75,12 +95,40 @@ foreach (['crm-absent', 'helper-absent'] as $dependency) {
     $invalid = $invalid && $status === 0;
 }
 $cases['invalid editor rule'] = $invalid;
+if ($mode === '' || $mode === 'legacy missing helper') {
+    passthru(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' legacy-helper-absent', $status);
+    $cases['legacy missing helper'] = $status === 0;
+}
 $GLOBALS['crmFixtureContact'] = null;
 $cases['unknown contact'] = !crmMatches($include) && !crmMatches($exclude);
 $cases['legacy and tag'] = $cases['legacy and tag'] && !crmMatches($legacy) &&
     crmMatches(crmRule('list_ids', 'not_in', ['23'])) && !crmMatches($tag);
 
-$messages = ['assigned list' => 'matching editor list was rejected', 'list exclusion' => 'identified nonmember was rejected'];
+$conditions = new FluentSnippetCondition();
+$settings = ['status' => 'yes', 'items' => [[$include]]];
+$readsBefore = $GLOBALS['crmFixtureReads'];
+$cases['repeated miss'] = !$conditions->evaluate($settings) && !$conditions->evaluate($settings) &&
+    !$conditions->evaluate($settings) && $GLOBALS['crmFixtureReads'] === $readsBefore + 1;
+$GLOBALS['crmFixtureUser']++;
+$GLOBALS['crmFixtureContact'] = $contact;
+$contact->lists = new CrmListFixtureIds([23]);
+$cases['repeated miss'] = $cases['repeated miss'] && $conditions->evaluate($settings);
+$GLOBALS['crmFixtureContact'] = null;
+$conditions->evaluate($settings);
+$GLOBALS['crmFixtureChanges']++;
+$GLOBALS['crmFixtureContact'] = $contact;
+$cases['repeated miss'] = $cases['repeated miss'] && $conditions->evaluate($settings);
+$cases['unavailable membership'] = true;
+foreach (['contact', 'lists'] as $failure) {
+    $GLOBALS['crmFixtureFailure'] = $failure;
+    try {
+        $cases['unavailable membership'] = !crmMatches($include) && !crmMatches($exclude) && $cases['unavailable membership'];
+    } catch (RuntimeException $exception) {
+        $cases['unavailable membership'] = false;
+    }
+}
+$messages = ['assigned list' => 'matching editor list was rejected', 'list exclusion' => 'identified nonmember was rejected',
+    'repeated miss' => 'missing contact lookup was repeated', 'unavailable membership' => 'CRM read interrupted evaluation'];
 $failures = 0;
 foreach ($cases as $name => $passed) {
     if ($mode !== '' && $mode !== $name) {

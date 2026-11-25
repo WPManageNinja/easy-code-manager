@@ -44,6 +44,8 @@ define('FLUENT_SNIPPETS_RUNNING_MU_VERSION', '{{FLUENT_SNIPPETS_VERSION}}');
 
 class FluentSnippetCondition
 {
+    private $missingListContactContext;
+
     public function evaluate($conditionSettings)
     {
         if (empty($conditionSettings) || empty($conditionSettings['status']) || $conditionSettings['status'] != 'yes' || empty($conditionSettings['items'])) {
@@ -136,20 +138,11 @@ class FluentSnippetCondition
                 return false;
             }
 
-            $currentContact = fluentcrm_get_current_contact();
-            // The editor's Contact Lists rule requires a known contact and selected list IDs.
-            // Keep the older list_ids rule's handling of visitors without a contact.
             if ($key === 'tags_list_ids') {
-                if (!$currentContact || !is_array($value) || !in_array($operator, ['in', 'not_in'], true)) {
-                    return false;
-                }
-                foreach ($value as $id) {
-                    if ((!is_string($id) && !is_int($id)) || !preg_match('/^[1-9][0-9]*$/D', (string) $id)) {
-                        return false;
-                    }
-                }
+                return $this->matchesContactLists($operator, $value);
             }
 
+            $currentContact = fluentcrm_get_current_contact();
             if (!$currentContact) {
                 $listIds = [];
             } else {
@@ -159,6 +152,41 @@ class FluentSnippetCondition
         }
 
         return false;
+    }
+
+    private function matchesContactLists($operator, $listIds)
+    {
+        if (!is_array($listIds) || !in_array($operator, ['in', 'not_in'], true)) {
+            return false;
+        }
+        foreach ($listIds as $id) {
+            if ((!is_string($id) && !is_int($id)) || !preg_match('/^[1-9][0-9]*$/D', (string) $id)) {
+                return false;
+            }
+        }
+
+        // FluentCRM caches identified contacts. Reuse a miss across this runner's snippets
+        // until the WordPress identity changes or a CRM contact is created or updated.
+        $context = [get_current_blog_id(), get_current_user_id(),
+            did_action('fluent_crm/contact_created'), did_action('fluent_crm/contact_updated')];
+        if ($this->missingListContactContext === $context) {
+            return false;
+        }
+        $this->missingListContactContext = null;
+
+        try {
+            $contact = fluentcrm_get_current_contact();
+            if (!$contact) {
+                $this->missingListContactContext = $context;
+                return false;
+            }
+            $memberships = $contact->lists->pluck('id')->toArray();
+        } catch (\Exception $exception) {
+            // An unavailable CRM relationship cannot establish inclusion or exclusion.
+            return false;
+        }
+
+        return $this->checkValues($memberships, $listIds, $operator);
     }
 
     private function evaluatePageCondition($key, $operator, $value)
