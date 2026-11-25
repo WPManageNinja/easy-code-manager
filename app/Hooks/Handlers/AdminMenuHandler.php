@@ -393,9 +393,6 @@ class AdminMenuHandler
     public function render()
     {
         $currentUser = wp_get_current_user();
-        if (Helper::hasUnpreparedPhp(Helper::getIndexedConfig())) {
-            echo '<div class="notice notice-warning"><p>' . esc_html__('Some PHP snippets are paused. Sync the snippet index on a writable installation and deploy the complete library with permissions that allow WordPress to read it.', 'easy-code-manager') . '</p></div>';
-        }
 
         [$tags, $groups] = (new Snippet())->getAllSnippetTagsGroups();
 
@@ -494,6 +491,10 @@ class AdminMenuHandler
             'can_edit'                   => Permissions::canEdit(),
             'network_id'                 => is_multisite() && is_super_admin() ? get_current_network_id() : 0,
             'read_only_notice'           => Permissions::isReadOnly() ? Permissions::readOnlyNotice() : null,
+            'preparation_notice'         => Helper::hasUnpreparedPhp($indexConfig) ? [
+                'title'  => __('Some PHP snippets are paused', 'easy-code-manager'),
+                'reason' => __('Sync the snippet index on a writable installation and deploy the complete library with permissions that allow WordPress to read it.', 'easy-code-manager')
+            ] : null,
             /*
              * Localised as 'has_line_wrap' until 2026-08-11, but _CodeEditor.vue reads
              * appVars.enable_line_wrap — so the editor never saw this value on page load.
