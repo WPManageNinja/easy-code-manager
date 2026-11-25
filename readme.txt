@@ -157,6 +157,8 @@ As a network Super Admin, open the snippet editor and find Network sites under W
 
 PHP snippets are validated by running their code. Save or import a restricted PHP snippet from one of its included sites so that validation runs in the intended context.
 
+When a network library is published, FluentSnippets keeps the editable PHP files and creates revision files for the published code and cached assets. Each request uses one revision. Keep the whole library together when backing up or restoring it. Retired revisions are eligible for cleanup after seven days on the next successful publication. If WordPress cannot replace the index safely, restore write access to the library directory and sync the snippets.
+
 Site IDs belong to a WordPress installation. Review the selection before publishing an imported snippet on another installation. Disable restricted snippets before reverting to a FluentSnippets version that predates site targeting.
 
 = What happens if a code snippet breaks my site? =

@@ -95,10 +95,21 @@ class CodeHandler
             return $this->shortCodeError(__('Snippet has an error', 'easy-code-manager'));
         }
 
-        $snippet = (new Snippet())->findByFileName($fileName);
-
-        if (is_wp_error($snippet)) {
-            return $this->shortCodeError($snippet->get_error_message());
+        $published = $config['published'][$fileName] ?? null;
+        if (is_multisite() || isset($published['revision'])) {
+            if (!$published) {
+                return '';
+            }
+            $file = \FluentSnippets\App\Services\SnippetRevision::resolve(Helper::getStorageDir() . '/' . $fileName, $published);
+            if (!$file) {
+                return '';
+            }
+            $snippet = ['meta' => $published, 'file' => $file];
+        } else {
+            $snippet = (new Snippet())->findByFileName($fileName);
+            if (is_wp_error($snippet)) {
+                return $this->shortCodeError($snippet->get_error_message());
+            }
         }
 
         if (Arr::get($snippet, 'meta.type') !== 'php_content') {
@@ -198,12 +209,27 @@ class CodeHandler
             return $args;
         }
 
+        $result = Helper::withSnippetWriteLock(function () use ($args, $error) {
+            return $this->recordFatalError($args, $error);
+        });
+        return is_wp_error($result) ? $args : $result;
+    }
+
+    private function recordFatalError($args, $error)
+    {
         $file = $error['file'];
 
         $isSnippetFile = $this->isSnippetFile($file);
 
         if ($isSnippetFile) {
             $fileName = basename($file);
+            if (preg_match('/^\.fluent-rev-([a-f0-9]{64})\.php$/D', $fileName, $match)) {
+                $published = Helper::getIndexedConfig()['published'] ?? [];
+                $fileName = array_search($match[1], array_column($published, 'revision', 'file_name'), true);
+                if (!$fileName) {
+                    $fileName = CodeRunner::getRunningSnippet();
+                }
+            }
         } else {
             /*
              * The fatal surfaced outside the storage directory, so $error['file'] is of
@@ -303,8 +329,20 @@ class CodeHandler
         if (isset($_REQUEST['fluent_snippets']) && isset($_REQUEST['snippet_secret'])) {
             $config = Helper::getIndexedConfig();
             if ($config && hash_equals($config['meta']['secret_key'], $_REQUEST['snippet_secret'])) {
-                $config['meta']['force_disabled'] = 'yes';
-                Helper::saveIndexedConfig($config);
+                $result = Helper::withSnippetWriteLock(function () {
+                    $current = Helper::getIndexedConfig(false);
+                    if (!$current || !hash_equals($current['meta']['secret_key'], $_REQUEST['snippet_secret'])) {
+                        return false;
+                    }
+                    $current['meta']['force_disabled'] = 'yes';
+                    return Helper::saveIndexedConfig($current) === false ? Helper::indexSyncError() : true;
+                });
+                if (is_wp_error($result)) {
+                    wp_die(esc_html($result->get_error_message()), '', ['response' => 503]);
+                }
+                if (!$result) {
+                    return false;
+                }
                 header('Location: ' . admin_url('admin.php?page=fluent-snippets'));
                 die();
             }

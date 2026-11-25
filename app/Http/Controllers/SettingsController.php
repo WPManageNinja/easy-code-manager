@@ -79,6 +79,13 @@ class SettingsController
             return $restricted;
         }
 
+        return Helper::withSnippetWriteLock(function () use ($request) {
+            return self::writeSettings($request);
+        });
+    }
+
+    private static function writeSettings($request)
+    {
         $settings = $request->get_param('settings');
 
         if (!is_array($settings)) {
@@ -134,8 +141,8 @@ class SettingsController
 
         $config = Helper::saveIndexedConfig($config);
 
-        if (is_wp_error($config)) {
-            return $config;
+        if ($config === false) {
+            return Helper::indexSyncError();
         }
 
         return [
@@ -150,6 +157,13 @@ class SettingsController
             return $restricted;
         }
 
+        return Helper::withSnippetWriteLock(function () {
+            return self::restoreNormalMode();
+        });
+    }
+
+    private static function restoreNormalMode()
+    {
         $config = Helper::getIndexedConfig();
 
         if (!$config) {
@@ -158,7 +172,9 @@ class SettingsController
 
         $config['meta']['force_disabled'] = 'no';
 
-        $config = Helper::saveIndexedConfig($config);
+        if (Helper::saveIndexedConfig($config) === false) {
+            return Helper::indexSyncError();
+        }
 
         return [
             'message' => __('Safe mode has been disabled', 'easy-code-manager')

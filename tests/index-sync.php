@@ -71,6 +71,7 @@ class WP_Error
     public function __construct($code = '', $message = '') { $this->message = $message; }
 }
 
+require $base . 'app/Services/SnippetRevision.php';
 require $base . 'app/Helpers/Arr.php';
 require $base . 'app/Helpers/Helper.php';
 require $base . 'app/Model/Snippet.php';

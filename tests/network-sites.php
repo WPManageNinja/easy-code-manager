@@ -24,7 +24,7 @@ register_shutdown_function(function () use ($storage) {
         }
         rmdir($storage . '/cached');
     }
-    foreach (array_merge(glob($storage . '/*'), glob($storage . '/.htaccess'), glob($storage . '/.fluent-snippets-write.lock')) as $file) {
+    foreach (array_merge(glob($storage . '/*'), glob($storage . '/.htaccess'), glob($storage . '/.fluent-*')) as $file) {
         unlink($file);
     }
     rmdir($storage);
@@ -53,7 +53,7 @@ function is_admin() { return false; }
 function shortcode_atts($defaults, $args) { return array_merge($defaults, $args); }
 function __($text) { return $text; }
 
-foreach (['Helpers/Arr', 'Helpers/Helper', 'Model/Snippet', 'Services/FluentSnippetCondition', 'Services/CodeRunner', 'Hooks/Handlers/CodeHandler'] as $file) {
+foreach (['Helpers/Arr', 'Helpers/Helper', 'Services/SnippetRevision', 'Model/Snippet', 'Services/FluentSnippetCondition', 'Services/CodeRunner', 'Hooks/Handlers/CodeHandler'] as $file) {
     require $root . '/app/' . $file . '.php';
 }
 require $root . '/app/Services/mu.stub';
@@ -154,14 +154,47 @@ if ($case === 'surfaces' || $case === 'all') {
 
 if ($case === 'publication' || $case === 'all') {
     $meta['type'] = 'js';
-    $model->updateSnippet($file, 'network-marker', $meta + ['network_sites' => $only]);
+    $meta['run_at'] = 'wp_footer';
+    $model->updateSnippet($file, '/* first revision */', $meta + ['network_sites' => $only]);
+    Helper::cacheSnippetIndex();
+    $first = Helper::getIndexedConfig()['published'][$file];
     $path = $storage . '/' . $file;
-    foreach ([\FluentSnippets\App\Services\FluentSnippetCondition::class, \FluentSnippets\Mu\FluentSnippetCondition::class] as $condition) {
-        $blog = 1;
-        expectNetworkResult(!$condition::matchesSnippetFile($path, null), 'the file selection applies before the new index is available');
-        $blog = 2;
-        expectNetworkResult($condition::matchesSnippetFile($path, null), 'included sites match the stored file selection');
+    $model->updateSnippet($file, '/* next revision */', $meta + ['network_sites' => $except]);
+    Helper::cacheSnippetIndex();
+    $next = Helper::getIndexedConfig()['published'][$file];
+    expectNetworkResult($first['revision'] !== $next['revision'], 'changed publications have distinct identities');
+    foreach ([\FluentSnippets\App\Services\SnippetRevision::class, \FluentSnippets\Mu\SnippetRevision::class] as $revision) {
+        $previousFile = $revision::resolve($path, $first);
+        $currentFile = $revision::resolve($path, $next);
+        expectNetworkResult($revision::parse(file_get_contents($previousFile), true) === '/* first revision */', 'an in-flight request retains its original body');
+        expectNetworkResult($revision::parse(file_get_contents($currentFile), true) === '/* next revision */', 'new requests use the new revision');
+        $legacy = ['file_name' => $file];
+        file_put_contents($path, str_replace('@network_sites:', '@network_sites :', file_get_contents($path)));
+        $frozen = $revision::resolve($path, $legacy);
+        expectNetworkResult($legacy['network_sites'] === $except && $frozen !== $path, 'legacy header grammar and snapshot selection match');
     }
+    $meta['type'] = 'css';
+    $meta['load_as_file'] = 'yes';
+    $model->updateSnippet($file, '/* first sheet */', $meta + ['network_sites' => $only]);
+    Helper::cacheSnippetIndex();
+    $original = Helper::getIndexedConfig()['published'][$file]['revision'];
+    $oldAsset = $storage . '/cached/rev-' . $original . '.css';
+    touch($oldAsset, time() - 15 * 86400);
+    $model->updateSnippet($file, '/* next sheet */', $meta + ['network_sites' => $except]);
+    $newHash = hash('sha256', $file . "\0" . file_get_contents($path));
+    $newAsset = $storage . '/cached/rev-' . $newHash . '.css';
+    mkdir($newAsset);
+    expectNetworkResult(Helper::cacheSnippetIndex() === false, 'asset publication errors are reported');
+    expectNetworkResult(Helper::getIndexedConfig(false)['published'][$file]['revision'] === $original, 'failed asset publication retains previous index');
+    rmdir($newAsset);
+    expectNetworkResult(Helper::cacheSnippetIndex() !== false && file_get_contents($newAsset) === '/* next sheet */', 'retry publishes the new immutable asset');
+    expectNetworkResult(file_get_contents($oldAsset) === '/* first sheet */', 'old pages retain their asset after publication');
+    $meta['type'] = 'PHP';
+    $model->updateSnippet($file, '<?php return [__FILE__, __DIR__];', $meta + ['network_sites' => $only]);
+    Helper::cacheSnippetIndex();
+    $record = Helper::getIndexedConfig()['published'][$file];
+    $executable = \FluentSnippets\App\Services\SnippetRevision::resolve($path, $record);
+    expectNetworkResult((include $executable) === [realpath($path), realpath(dirname($path))], 'PHP resolves magic paths to the authoring file');
     rename($storage . '/index.php', $storage . '/saved-index');
     mkdir($storage . '/index.php');
     expectNetworkResult(is_wp_error(Helper::publishSnippetWrite($file, 'fluent_snippets/snippet_updated')), 'a failed index publication returns an error');

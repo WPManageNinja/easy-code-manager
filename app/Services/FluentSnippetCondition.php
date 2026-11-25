@@ -44,42 +44,9 @@ class FluentSnippetCondition
         return $scope['mode'] === 'only' ? $listed : !$listed;
     }
 
-    /**
-     * A saved file can reach disk before the index rebuild finishes. Check its own
-     * header before output, including when an older index has no site selection.
-     */
-    public static function matchesSnippetFile($file, $indexedScope)
+    public function evaluateSnippet($snippet)
     {
-        if (!self::matchesSiteScope($indexedScope)) {
-            return false;
-        }
-        $handle = @fopen($file, 'rb');
-        if (!$handle) {
-            return false;
-        }
-        try {
-            $scope = null;
-            while (($line = fgets($handle)) !== false) {
-                $line = trim($line);
-                if (strpos($line, '* @network_sites:') === 0) {
-                    $scope = json_decode(trim(substr($line, strlen('* @network_sites:'))), true);
-                    if (!is_array($scope)) {
-                        return false;
-                    }
-                } elseif ($line === '*/') {
-                    return self::matchesSiteScope($scope);
-                }
-            }
-            return false;
-        } finally {
-            fclose($handle);
-        }
-    }
-
-    public function evaluateSnippet($snippet, $file)
-    {
-        return self::matchesSnippetFile($file, $snippet['network_sites'] ?? null)
-            && $this->evaluate($snippet['condition']);
+        return self::matchesSiteScope($snippet['network_sites'] ?? null) && $this->evaluate($snippet['condition']);
     }
 
     public function evaluate($conditionSettings)

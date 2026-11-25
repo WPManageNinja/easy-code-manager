@@ -97,6 +97,7 @@ $skipped = [];
 $compared = 0;
 
 foreach ([
+    'SnippetRevision'        => 'app/Services/SnippetRevision.php',
     'FluentSnippetCondition' => 'app/Services/FluentSnippetCondition.php',
     'CodeRunner'             => 'app/Services/CodeRunner.php',
 ] as $class => $sourceFile) {

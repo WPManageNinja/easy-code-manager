@@ -61,7 +61,12 @@ function site_url() { return 'https://example.test'; }
 function content_url($path = '') { return 'https://example.test/wp-content' . $path; }
 function wp_upload_dir() { return ['basedir' => '/tmp/uploads', 'baseurl' => 'https://example.test/uploads']; }
 function apply_filters($tag, $value) { return $value; }
-function do_action($tag, ...$args) { $GLOBALS['fs_test']['actions'][] = [$tag, $args]; }
+function do_action($tag, ...$args) {
+    $GLOBALS['fs_test']['actions'][] = [$tag, $args];
+    if (isset($GLOBALS['fs_test']['listener'][$tag])) {
+        $GLOBALS['fs_test']['listener'][$tag](...$args);
+    }
+}
 function add_action() {}
 function is_wp_error($thing) { return $thing instanceof \WP_Error; }
 function sanitize_file_name($name) { return preg_replace('/[^a-zA-Z0-9._-]/', '', $name); }
@@ -126,6 +131,7 @@ class WP_REST_Server
     const CREATABLE = 'POST';
 }
 
+require $base . 'app/Services/SnippetRevision.php';
 require $base . 'app/Helpers/Arr.php';
 require $base . 'app/Helpers/Helper.php';
 require $base . 'app/Model/Snippet.php';
@@ -299,6 +305,14 @@ $lock = fopen($storage . '/.fluent-snippets-write.lock', 'c');
 flock($lock, LOCK_EX);
 $busy = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $fileName, 'meta' => ['description' => 'Competing edit']]));
 check('a competing edit is refused before reading and merging', errorStatus($busy) === 409, describe($busy));
+$previousCaps = $GLOBALS['fs_test']['caps'];
+$GLOBALS['fs_test']['caps']['manage_options'] = true;
+$busySettings = SettingsController::saveSettings(new WP_REST_Request(['settings' => ['auto_publish' => 'no']]));
+$GLOBALS['fs_test']['caps'] = $previousCaps;
+check('network settings share the publication lock', errorStatus($busySettings) === 409, describe($busySettings));
+$busySync = SnippetsController::syncIndex(new WP_REST_Request([]));
+// A clean sync is allowed to return unchanged without acquiring a lock.
+check('a concurrent sync either needs no write or reports contention', is_wp_error($busySync) ? errorStatus($busySync) === 409 : $busySync['changed'] === false);
 fclose($lock);
 $GLOBALS['fs_test']['site_id'] = 1;
 $refused = SnippetsController::updateSnippet(new WP_REST_Request([
@@ -313,6 +327,27 @@ foreach ([['network_sites' => $scope], ['description' => 'Partial update'], ['ne
         !is_wp_error($response) && ($response['snippet']['meta']['network_sites'] ?? null) === $expected, describe($response));
 }
 $GLOBALS['fs_test']['network'] = $GLOBALS['fs_test']['super_admin'] = false;
+
+$createData = ['code' => '/* publication retry */', 'meta' => ['name' => 'Publication retry', 'type' => 'js', 'run_at' => 'wp_footer', 'status' => 'draft']];
+$beforeFiles = glob($storage . '/*.php');
+$GLOBALS['fs_test']['listener']['fluent_snippets/snippet_created'] = function () use ($storage) {
+    rename($storage . '/index.php', $storage . '/prior-index');
+    mkdir($storage . '/index.php');
+};
+$failedCreate = Helper::createSnippet($createData);
+unset($GLOBALS['fs_test']['listener']['fluent_snippets/snippet_created']);
+rmdir($storage . '/index.php');
+rename($storage . '/prior-index', $storage . '/index.php');
+check('failed creation removes its new file', is_wp_error($failedCreate) && glob($storage . '/*.php') === $beforeFiles);
+$retry = Helper::createSnippet($createData);
+check('retry creates a single snippet', !is_wp_error($retry) && count(glob($storage . '/*.php')) === count($beforeFiles) + 1);
+
+$brokenFile = '900-damaged-fixture.php';
+file_put_contents($storage . '/' . $brokenFile, "Incomplete fixture header\n");
+$editError = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $brokenFile, 'meta' => ['description' => 'Update']]));
+check('a damaged file is reported as unreadable metadata', errorStatus($editError) === 422, describe($editError));
+$removed = SnippetsController::deleteSnippet(new WP_REST_Request(['fluent_saving_snippet_name' => $brokenFile]));
+check('a damaged snippet can still be removed', !is_wp_error($removed) && !is_file($storage . '/' . $brokenFile), describe($removed));
 
 $before = readFile_($fileName);
 $broken = SnippetsController::updateSnippet(new WP_REST_Request([

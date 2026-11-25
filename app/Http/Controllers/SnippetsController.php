@@ -211,7 +211,7 @@ class SnippetsController
         $existing = (new Snippet())->findByFileName($fileName);
 
         if (is_wp_error($existing)) {
-            return self::withStatus($existing, 404);
+            return $existing->get_error_code() === 'file_not_found' ? self::withStatus($existing, 404) : $existing;
         }
 
         $currentCode = self::editableCode($existing);
@@ -339,13 +339,10 @@ class SnippetsController
         $fileName = sanitize_file_name($request->get_param('fluent_saving_snippet_name'));
 
         $snippetModel = new Snippet();
-        $snippet = $snippetModel->findByFileName($fileName);
-
-        if (is_wp_error($snippet)) {
-            return $snippet;
+        $deleted = $snippetModel->deleteSnippet($fileName);
+        if (is_wp_error($deleted)) {
+            return $deleted;
         }
-
-        $snippetModel->deleteSnippet($fileName);
 
         do_action('fluent_snippets/snippet_deleted', $fileName);
 

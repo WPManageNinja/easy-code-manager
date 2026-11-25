@@ -82,6 +82,7 @@ class WP_Error
     public function get_error_data() { return $this->data; }
 }
 
+require $base . 'app/Services/SnippetRevision.php';
 require $base . 'app/Helpers/Arr.php';
 require $base . 'app/Helpers/Helper.php';
 require $base . 'app/Model/Snippet.php';
