@@ -799,7 +799,8 @@ class CodeRunner
         // The marker belongs immediately after the metadata comment and optional guard.
         // Split the comment first so marker text in either metadata or code stays literal.
         $parts = explode('*/', $fileContent[1], 2);
-        $marker = '~\A\s*(?:\?>\s*)?(?:<\?php[^\r\n/]*)?// <Internal Doc End> \?>\r?\n~';
+        // The guard can span lines. Stop at its first closing PHP tag.
+        $marker = '~\A\s*(?:\?>\s*)?(?:<\?php\b(?:(?!\?>).)*?)?// <Internal Doc End> \?>\r?\n~s';
         if (count($parts) !== 2 || strncmp(ltrim($parts[0]), '/*', 2) !== 0 || !preg_match($marker, $parts[1], $match)) {
             return $codeOnly ? '' : [null, null];
         }

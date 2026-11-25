@@ -336,9 +336,23 @@ foreach ($runners as $runner) {
 unlink($cachedDir . '/css.css');
 Helper::cacheSnippetIndex();
 
+// Formatters may wrap the PHP guard without changing its meaning.
+foreach (['css', 'js'] as $type) {
+    $header = str_replace('<?php if', '<?php' . PHP_EOL . 'if', restoredHeader($type, 'Wrapped guard', PHP_EOL));
+    file_put_contents($storage . '/' . $type . '.php', $header . PHP_EOL . $body);
+}
+foreach ($runners as $runner) {
+    restoredCheck('wrapped guard with data set ' . get_class($runner), runtimeMatches($runner, $body), 'wrapped guard lost the snippet');
+}
+Helper::cacheSnippetIndex();
+$wrapped = $model->findByFileName('css.php');
+restoredCheck('wrapped guard with data set model and index', $wrapped['code'] === $body
+    && isset(readIndex($storage)['published']['css.php']), 'wrapped guard lost the snippet');
+
 foreach (['css', 'js'] as $type) {
     file_put_contents($storage . '/' . $type . '.php', restoredHeader($type, 'Marker text', PHP_EOL) . PHP_EOL . $markerBody);
 }
+Helper::cacheSnippetIndex();
 restoredCheck('marker text in body with data set model', $model->findByFileName('css.php')['code'] === $markerBody, 'body was truncated');
 foreach ($runners as $runner) {
     restoredCheck('marker text in body with data set ' . get_class($runner), runtimeMatches($runner, $markerBody), 'body was truncated');
