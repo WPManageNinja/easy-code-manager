@@ -155,6 +155,8 @@ Use one place to define these constants. Back up the shared library before chang
 = How do I run a shared snippet on selected sites? =
 As a network Super Admin, open the snippet editor and find Network sites under Where to Run. Choose Only selected sites or All except selected sites, search by site address or ID, and save the snippet. All sites is the default for existing snippets. The site selection works alongside the snippet's normal run location and conditional rules.
 
+PHP snippets are validated by running their code. Save or import a restricted PHP snippet from one of its included sites so that validation runs in the intended context.
+
 Site IDs belong to a WordPress installation. Review the selection before publishing an imported snippet on another installation. Disable restricted snippets before reverting to a FluentSnippets version that predates site targeting.
 
 = What happens if a code snippet breaks my site? =

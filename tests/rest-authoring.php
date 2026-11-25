@@ -73,6 +73,8 @@ function is_user_logged_in() { return $GLOBALS['fs_test']['logged_in']; }
 function current_user_can($cap) { return !empty($GLOBALS['fs_test']['caps'][$cap]); }
 function is_multisite() { return !empty($GLOBALS['fs_test']['network']); }
 function is_super_admin() { return !empty($GLOBALS['fs_test']['super_admin']); }
+function get_site() { return (object) ['network_id' => 1]; }
+function get_current_blog_id() { return $GLOBALS['fs_test']['site_id'] ?? 3; }
 function wp_is_file_mod_allowed($context) { return $GLOBALS['fs_test']['file_mods']; }
 function rest_authorization_required_code() { return 403; }
 function rest_get_authenticated_app_password() { return array_key_exists('app_password', $GLOBALS['fs_test']) ? $GLOBALS['fs_test']['app_password'] : 'app-pass-uuid'; }
@@ -293,6 +295,17 @@ check('updated_by is whoever is authenticated', strpos(readFile_($fileName), '@u
 
 $GLOBALS['fs_test']['network'] = $GLOBALS['fs_test']['super_admin'] = true;
 $scope = ['mode' => 'only', 'network' => 1, 'sites' => [3]];
+$lock = fopen($storage . '/.fluent-snippets-write.lock', 'c');
+flock($lock, LOCK_EX);
+$busy = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $fileName, 'meta' => ['description' => 'Competing edit']]));
+check('a competing edit is refused before reading and merging', errorStatus($busy) === 409, describe($busy));
+fclose($lock);
+$GLOBALS['fs_test']['site_id'] = 1;
+$refused = SnippetsController::updateSnippet(new WP_REST_Request([
+    'file_name' => $fileName, 'meta' => ['network_sites' => $scope], 'code' => '/* scope check */',
+]));
+check('restricted PHP explains where to save', is_wp_error($refused) && strpos($refused->get_error_message(), 'included') !== false, describe($refused));
+$GLOBALS['fs_test']['site_id'] = 3;
 foreach ([['network_sites' => $scope], ['description' => 'Partial update'], ['network_sites' => null]] as $patch) {
     $response = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $fileName, 'meta' => $patch]));
     $expected = $patch === ['network_sites' => null] ? null : $scope;

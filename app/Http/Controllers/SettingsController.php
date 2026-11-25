@@ -275,7 +275,15 @@ class SettingsController
             } elseif ($search !== '') {
                 $args['search'] = '*' . $search . '*';
             }
-            foreach (get_sites($args) as $site) {
+            global $wpdb;
+            $before = $wpdb->num_queries;
+            $sites = get_sites($args);
+            if ($wpdb->num_queries !== $before && $wpdb->last_error !== '') {
+                // Core can cache an empty ID list after a failed query. Let a retry reach the database.
+                wp_cache_set('last_changed', microtime(), 'sites');
+                return new \WP_Error('network_sites_unavailable', __('WordPress could not load the network sites. Try the search again.', 'easy-code-manager'), ['status' => 503]);
+            }
+            foreach ($sites as $site) {
                 $options[] = ['id' => (int) $site->blog_id, 'title' => $site->domain . $site->path];
             }
             return ['options' => $options, 'is_cachable' => false];

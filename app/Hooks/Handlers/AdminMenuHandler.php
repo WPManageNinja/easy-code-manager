@@ -273,7 +273,17 @@ class AdminMenuHandler
         }
 
         $snippets = Arr::get($fileData, 'snippets', []);
+        $result = Helper::withSnippetWriteLock(function () use ($snippets) {
+            return $this->importLibrarySnippets($snippets);
+        });
+        if (is_wp_error($result)) {
+            $this->sendError($result);
+        }
+        wp_send_json(['snippets' => $result]);
+    }
 
+    private function importLibrarySnippets($snippets)
+    {
         $createdSnippts = [];
 
         $existingSnippets = (new Snippet)->get();
@@ -342,7 +352,7 @@ class AdminMenuHandler
                 }
             }
 
-            $validated = Helper::validateCode($meta['type'], $code);
+            $validated = Helper::validateCode($meta['type'], $code, $meta['network_sites'] ?? null);
 
             if (is_wp_error($validated)) {
                 $createdSnippts[] = [
@@ -374,11 +384,10 @@ class AdminMenuHandler
             ];
         }
 
-        Helper::cacheSnippetIndex();
-
-        wp_send_json([
-            'snippets' => $createdSnippts
-        ]);
+        if (Helper::cacheSnippetIndex() === false) {
+            return Helper::indexWriteError();
+        }
+        return $createdSnippts;
     }
 
     public function render()

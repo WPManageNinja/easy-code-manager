@@ -43,9 +43,8 @@ class SnippetsController
      */
     public static function syncIndex(\WP_REST_Request $request)
     {
-        return [
-            'changed' => Helper::syncSnippetIndex()
-        ];
+        $changed = Helper::syncSnippetIndex();
+        return is_wp_error($changed) ? $changed : ['changed' => $changed];
     }
 
     public static function getSnippets(\WP_REST_Request $request)
@@ -181,6 +180,14 @@ class SnippetsController
             return $restricted;
         }
 
+        // Read and merge partial updates under the same lock as the file and index write.
+        return Helper::withSnippetWriteLock(function () use ($request) {
+            return self::updateSavedSnippet($request);
+        });
+    }
+
+    private static function updateSavedSnippet($request)
+    {
         $fileName = '';
         foreach (['file_name', 'fluent_saving_snippet_name', 'snippet_name'] as $param) {
             $fileName = sanitize_file_name((string)$request->get_param($param));
@@ -269,6 +276,14 @@ class SnippetsController
             return $restricted;
         }
 
+        return Helper::withSnippetWriteLock(function () use ($request) {
+            return self::changeSavedStatus($request);
+        });
+    }
+
+    private static function changeSavedStatus($request)
+    {
+
         $fileName = sanitize_file_name($request->get_param('fluent_saving_snippet_name'));
         $status = sanitize_text_field($request->get_param('status'));
 
@@ -284,11 +299,23 @@ class SnippetsController
         }
 
         $snippet['meta']['status'] = $status;
+        if ($status === 'published' && isset($snippet['meta']['network_sites'])) {
+            $updated = Helper::ensureSiteAwareStandAlone();
+            if (is_wp_error($updated)) {
+                return $updated;
+            }
+        }
 
         $snippetName = $snippetModel->updateSnippet($fileName, $snippet['code'], $snippet['meta']);
 
+        if (is_wp_error($snippetName)) {
+            return $snippetName;
+        }
         do_action('fluent_snippets/snippet_status_updated', $snippetName);
-        do_action('fluent_snippets/snippet_updated', $snippetName);
+        $published = Helper::publishSnippetWrite($snippetName, 'fluent_snippets/snippet_updated');
+        if (is_wp_error($published)) {
+            return $published;
+        }
 
         return [
             'snippet' => $snippet,
@@ -302,6 +329,13 @@ class SnippetsController
             return $restricted;
         }
 
+        return Helper::withSnippetWriteLock(function () use ($request) {
+            return self::deleteSavedSnippet($request);
+        });
+    }
+
+    private static function deleteSavedSnippet($request)
+    {
         $fileName = sanitize_file_name($request->get_param('fluent_saving_snippet_name'));
 
         $snippetModel = new Snippet();

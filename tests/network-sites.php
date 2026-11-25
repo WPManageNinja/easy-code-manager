@@ -24,7 +24,7 @@ register_shutdown_function(function () use ($storage) {
         }
         rmdir($storage . '/cached');
     }
-    foreach (array_merge(glob($storage . '/*'), glob($storage . '/.htaccess')) as $file) {
+    foreach (array_merge(glob($storage . '/*'), glob($storage . '/.htaccess'), glob($storage . '/.fluent-snippets-write.lock')) as $file) {
         unlink($file);
     }
     rmdir($storage);
@@ -85,6 +85,10 @@ if ($case === 'storage' || $case === 'all') {
     expectNetworkResult($model->findByFileName($file)['meta']['network_sites'] === $only, 'older clients preserve site targeting');
     $model->updateSnippet($file, 'updated marker', $meta + ['network_sites' => null]);
     expectNetworkResult(!isset($model->findByFileName($file)['meta']['network_sites']), 'explicit all-sites selection clears the restriction');
+    $model->updateSnippet($file, '0', $meta + ['network_sites' => $only]);
+    $model->updateSnippet($file, 'updated marker', $meta);
+    expectNetworkResult($model->findByFileName($file)['meta']['network_sites'] === $only, 'a zero-valued body preserves its saved selection');
+    expectNetworkResult(is_wp_error(Helper::validateCode('PHP', '<?php /* validation only */', $only)), 'PHP validation requires an included site');
     $superAdmin = false;
     expectNetworkResult(is_wp_error(Helper::validateMeta($meta + ['network_sites' => $except])), 'site administrators cannot change targeting');
     $superAdmin = true;
@@ -146,4 +150,22 @@ if ($case === 'surfaces' || $case === 'all') {
         }
     }
     echo "ok - surfaces\n";
+}
+
+if ($case === 'publication' || $case === 'all') {
+    $meta['type'] = 'js';
+    $model->updateSnippet($file, 'network-marker', $meta + ['network_sites' => $only]);
+    $path = $storage . '/' . $file;
+    foreach ([\FluentSnippets\App\Services\FluentSnippetCondition::class, \FluentSnippets\Mu\FluentSnippetCondition::class] as $condition) {
+        $blog = 1;
+        expectNetworkResult(!$condition::matchesSnippetFile($path, null), 'the file selection applies before the new index is available');
+        $blog = 2;
+        expectNetworkResult($condition::matchesSnippetFile($path, null), 'included sites match the stored file selection');
+    }
+    rename($storage . '/index.php', $storage . '/saved-index');
+    mkdir($storage . '/index.php');
+    expectNetworkResult(is_wp_error(Helper::publishSnippetWrite($file, 'fluent_snippets/snippet_updated')), 'a failed index publication returns an error');
+    rmdir($storage . '/index.php');
+    rename($storage . '/saved-index', $storage . '/index.php');
+    echo "ok - publication\n";
 }

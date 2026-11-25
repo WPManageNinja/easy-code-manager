@@ -274,8 +274,14 @@ class Snippet
             return SnippetErrors::fileMissing($fileName);
         }
 
-        $fileContent = file_get_contents($snippetDir . '/' . $fileName);
+        $fileContent = @file_get_contents($file);
+        if ($fileContent === false) {
+            return new \WP_Error('snippet_unreadable', __('WordPress could not read the saved snippet. Check its file permissions and retry.', 'easy-code-manager'), ['status' => 503]);
+        }
         [$docBlockArray, $code] = $this->parseBlock($fileContent);
+        if ($docBlockArray === null) {
+            return new \WP_Error('snippet_header_unreadable', __('The saved snippet header could not be read. Restore it from a backup before editing.', 'easy-code-manager'), ['status' => 422]);
+        }
 
         return [
             'meta'   => $docBlockArray,
@@ -299,7 +305,10 @@ class Snippet
         // an explicit null clears a restriction already present in its file.
         if (!array_key_exists('network_sites', $metaData)) {
             $previous = $this->findByFileName($fileName);
-            if (!is_wp_error($previous) && isset($previous['meta']['network_sites'])) {
+            if (is_wp_error($previous)) {
+                return $previous;
+            }
+            if (isset($previous['meta']['network_sites'])) {
                 $metaData['network_sites'] = $previous['meta']['network_sites'];
             }
         }
@@ -430,7 +439,7 @@ class Snippet
             }
         }
 
-        if (!$docBlock || !$code) {
+        if ($docBlock === null || $docBlock === '' || $code === null) {
             if ($codeOnly) {
                 return '';
             }

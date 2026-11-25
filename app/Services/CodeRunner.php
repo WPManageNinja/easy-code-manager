@@ -125,7 +125,7 @@ class CodeRunner
                     }
 
                     add_action($hookName, function () use ($file, $fileName, $snippet, $conditionalClass) {
-                        if (!$conditionalClass->evaluate($snippet['condition'], $snippet['network_sites'] ?? null)) {
+                        if (!$conditionalClass->evaluateSnippet($snippet, $file)) {
                             return;
                         }
 
@@ -158,7 +158,7 @@ class CodeRunner
                         }
 
                         add_action($runAt, function () use ($file, $snippet, $conditionalClass, $loadUrl, $isFooter) {
-                            if (!$conditionalClass->evaluate($snippet['condition'], $snippet['network_sites'] ?? null)) {
+                            if (!$conditionalClass->evaluateSnippet($snippet, $file)) {
                                 return;
                             }
 
@@ -180,7 +180,7 @@ class CodeRunner
                     $isBlockStyle = $this->get($snippet, 'load_in_block_editor', '') === 'yes';
                     if ($isBlockStyle) {
                         add_filter('block_editor_settings_all', function ($settings) use ($snippet, $file) {
-                            if (!FluentSnippetCondition::matchesSiteScope($snippet['network_sites'] ?? null)) {
+                            if (!FluentSnippetCondition::matchesSnippetFile($file, $snippet['network_sites'] ?? null)) {
                                 return $settings;
                             }
                             $code = $this->parseBlock(file_get_contents($file), true);
@@ -218,7 +218,7 @@ class CodeRunner
 
                     if ($isAdminCss) {
                         add_action('enqueue_block_editor_assets', function () use ($file, $snippet, $conditionalClass, $loadUrl) {
-                            if (!$conditionalClass->evaluate($snippet['condition'], $snippet['network_sites'] ?? null)) {
+                            if (!$conditionalClass->evaluateSnippet($snippet, $file)) {
                                 return;
                             }
 
@@ -228,7 +228,7 @@ class CodeRunner
                     }
 
                     add_action($runAt, function () use ($file, $snippet, $conditionalClass, $loadUrl) {
-                        if (!$conditionalClass->evaluate($snippet['condition'], $snippet['network_sites'] ?? null)) {
+                        if (!$conditionalClass->evaluateSnippet($snippet, $file)) {
                             return;
                         }
 
@@ -249,7 +249,7 @@ class CodeRunner
                     $runAt = $snippet['run_at'];
                     if (in_array($runAt, ['wp_footer', 'wp_head', 'wp_body_open'])) {
                         add_action($runAt, function () use ($file, $fileName, $snippet, $conditionalClass) {
-                            if (!$conditionalClass->evaluate($snippet['condition'], $snippet['network_sites'] ?? null)) {
+                            if (!$conditionalClass->evaluateSnippet($snippet, $file)) {
                                 return;
                             }
                             $this->runSnippetFile($file, $fileName);
@@ -264,7 +264,7 @@ class CodeRunner
                                 }
                             }
 
-                            if (!$conditionalClass->evaluate($snippet['condition'], $snippet['network_sites'] ?? null)) {
+                            if (!$conditionalClass->evaluateSnippet($snippet, $file)) {
                                 return $content;
                             }
 
