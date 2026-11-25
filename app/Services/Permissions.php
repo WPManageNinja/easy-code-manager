@@ -105,7 +105,7 @@ class Permissions
     {
         return [
             'title'  => __('Snippets are read-only on this site', 'easy-code-manager'),
-            'reason' => __('wp-config.php has DISALLOW_FILE_MODS set, which tells WordPress that nothing may write to wp-content - and every snippet is a file in there. You can read, search and export your snippets, but not add, change, enable, disable or delete one. Snippets that are already active carry on running exactly as before. Remove that line, or deploy your change through whatever puts files on this server, to edit them here again.', 'easy-code-manager'),
+            'reason' => __('wp-config.php has DISALLOW_FILE_MODS set, which tells WordPress that nothing may write to wp-content - and every snippet is a file in there. You can read, search and export your snippets, but not add, change, enable, disable or delete one. Published PHP runs when the deployed library includes its prepared revision. Remove that line, or deploy your change through whatever puts files on this server, to edit them here again.', 'easy-code-manager'),
         ];
     }
 }

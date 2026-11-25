@@ -170,9 +170,14 @@ class SettingsController
             return new \WP_Error('invalid_config', 'Config file could not be generated');
         }
 
-        $config['meta']['force_disabled'] = 'no';
-
-        if (Helper::saveIndexedConfig($config) === false) {
+        if (($config['meta']['force_disabled'] ?? 'no') === 'yes') {
+            $config['meta']['force_disabled'] = 'no';
+            if (Helper::saveIndexedConfig($config) === false) {
+                return Helper::indexSyncError();
+            }
+        }
+        $marker = Helper::getStorageDir() . '/cached/.fluent-safe-mode';
+        if (is_file($marker) && !@unlink($marker)) {
             return Helper::indexSyncError();
         }
 

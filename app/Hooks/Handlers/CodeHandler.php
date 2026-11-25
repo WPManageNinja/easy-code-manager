@@ -55,14 +55,16 @@ class CodeHandler
         // The action still fires with two arguments from CodeRunner for backwards
         // compatibility with anything hooking it; cacheSnippetIndex() never used either.
         add_action('fluent_snippets/rebuild_index', function () {
-            Helper::cacheSnippetIndex();
+            if (wp_is_file_mod_allowed('fluent_snippets')) {
+                Helper::cacheSnippetIndex();
+            }
         }, 10, 0);
 
     }
 
     public function runSnippets()
     {
-        (new CodeRunner())->runSnippets();
+        (new CodeRunner())->runSnippets(Helper::prepareRuntime());
     }
 
     public function handleShortcode($atts, $content = null)
@@ -84,7 +86,7 @@ class CodeHandler
             return '';
         }
 
-        $config = Helper::getIndexedConfig();
+        $config = Helper::getRuntimeConfig();
 
         if (Arr::get($config, 'meta.force_disabled') == 'yes') {
             return $this->shortCodeError(__('Snippets are disabled', 'easy-code-manager'));
@@ -95,37 +97,24 @@ class CodeHandler
             return $this->shortCodeError(__('Snippet has an error', 'easy-code-manager'));
         }
 
-        $published = $config['published'][$fileName] ?? null;
-        if (is_multisite() || isset($published['revision'])) {
-            if (!$published) {
-                return '';
-            }
-            $file = \FluentSnippets\App\Services\SnippetRevision::resolve(Helper::getStorageDir() . '/' . $fileName, $published, $lease);
-            if (!$file) {
-                return '';
-            }
-            $snippet = ['meta' => $published, 'file' => $file];
-        } else {
-            $snippet = (new Snippet())->findByFileName($fileName);
-            if (is_wp_error($snippet)) {
-                return $this->shortCodeError($snippet->get_error_message());
-            }
-            if (!\FluentSnippets\App\Services\SnippetRevision::resolve($snippet['file'], $snippet['meta'], $lease)) {
-                return '';
-            }
+        $record = $config['published'][$fileName] ?? $config['draft'][$fileName] ?? null;
+        if (!$record) {
+            return $this->shortCodeError(__('File not found.', 'easy-code-manager'));
         }
-
-        if (Arr::get($snippet, 'meta.type') !== 'php_content') {
+        if (Arr::get($record, 'type') !== 'php_content') {
             return $this->shortCodeError(__('Snippet type is not PHP Content', 'easy-code-manager'));
         }
-
-        if (Arr::get($snippet, 'meta.run_at') != 'shortcode') {
+        if (Arr::get($record, 'run_at') !== 'shortcode') {
             return $this->shortCodeError(__('Snippet run at is not shortcode', 'easy-code-manager'));
         }
-
-        if (Arr::get($snippet, 'meta.status') != 'published') {
+        if (Arr::get($record, 'status') !== 'published') {
             return $this->shortCodeError(__('Snippet status is not published', 'easy-code-manager'));
         }
+        $file = \FluentSnippets\App\Services\SnippetRevision::resolve(Helper::getStorageDir() . '/' . $fileName, $record);
+        if (!$file) {
+            return $this->shortCodeError(__('Prepare and deploy a readable PHP revision for this snippet.', 'easy-code-manager'));
+        }
+        $snippet = ['file' => $file, 'meta' => $record];
 
         // check condition
         $conditionalClass = new FluentSnippetCondition();
@@ -212,17 +201,19 @@ class CodeHandler
             return $args;
         }
 
+        if (!$this->isSnippetFile($error['file']) && !CodeRunner::getRunningSnippet()) {
+            return $args;
+        }
         $result = Helper::withSnippetWriteLock(function () use ($args, $error) {
             return $this->recordFatalError($args, $error);
-        }, true);
+        });
         if (is_wp_error($result)) {
-            error_log('FluentSnippets could not open the snippet library to record a failure. Check its filesystem permissions.');
-            return $args;
+            return $this->recordFatalError($args, $error, true);
         }
         return $result;
     }
 
-    private function recordFatalError($args, $error)
+    private function recordFatalError($args, $error, $markerOnly = false)
     {
         $file = $error['file'];
         $config = Helper::getIndexedConfig(false);
@@ -293,8 +284,11 @@ class CodeHandler
 
         $config['error_files'][$fileName] = $message;
 
-        if (Helper::saveIndexedConfig($config, $this->storageDir . '/index.php') === false) {
-            error_log('FluentSnippets could not record a snippet failure. Check the snippet library permissions.');
+        if ($markerOnly || Helper::saveIndexedConfig($config, $this->storageDir . '/index.php') === false) {
+            $revision = $config['published'][$fileName]['revision'] ?? '';
+            if (!preg_match('/^[a-f0-9]{64}$/D', $revision) || !@touch($this->storageDir . '/cached/.fluent-quarantine-' . $revision)) {
+                error_log('FluentSnippets could not record a snippet failure. Check the write permissions of the library cache directory.');
+            }
         }
 
         return $args;
@@ -335,17 +329,10 @@ class CodeHandler
             return true;
         }
 
-        if (isset($_REQUEST['fluent_snippets']) && isset($_REQUEST['snippet_secret'])) {
+        if (isset($_REQUEST['fluent_snippets'], $_REQUEST['snippet_secret']) && is_string($_REQUEST['snippet_secret'])) {
             $config = Helper::getIndexedConfig();
             if ($config && hash_equals($config['meta']['secret_key'], $_REQUEST['snippet_secret'])) {
-                $result = Helper::withSnippetWriteLock(function () {
-                    $current = Helper::getIndexedConfig(false);
-                    if (!$current || !hash_equals($current['meta']['secret_key'], $_REQUEST['snippet_secret'])) {
-                        return false;
-                    }
-                    $current['meta']['force_disabled'] = 'yes';
-                    return Helper::saveIndexedConfig($current) === false ? Helper::indexSyncError() : true;
-                });
+                $result = Helper::enableSafeMode($_REQUEST['snippet_secret']);
                 if (is_wp_error($result)) {
                     wp_die(esc_html($result->get_error_message()), '', ['response' => 503]);
                 }

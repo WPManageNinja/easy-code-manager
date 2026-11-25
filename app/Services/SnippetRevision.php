@@ -136,61 +136,53 @@ class SnippetRevision
         return $result;
     }
 
-    // Keep the handle in the caller's scope until the callback has finished.
-    // An authoring write takes the exclusive lock before replacing this same file.
-    public static function lockSource($file, $operation, &$busy = null)
+    public static function resolve($canonical, &$meta, &$legacyBody = null, $legacyAsset = '')
     {
-        $busy = false;
-        $handle = @fopen($file, 'rb');
-        if (!$handle) {
-            return false;
-        }
-        if (flock($handle, $operation | LOCK_NB, $wouldBlock)) {
-            clearstatcache(true, $file);
-            $opened = fstat($handle);
-            $current = @stat($file);
-            if ($opened && $current && $opened['dev'] === $current['dev'] && $opened['ino'] === $current['ino']) {
-                return $handle;
-            }
-            $busy = true;
-        } else {
-            $busy = (bool) $wouldBlock;
-        }
-        fclose($handle);
-        return false;
-    }
-
-    public static function resolve($canonical, &$meta, &$lease = null, $legacyAsset = '')
-    {
+        $legacyBody = null;
         if (isset($meta['revision'])) {
             if (!is_file($canonical) || !is_string($meta['revision']) || !preg_match('/^[a-f0-9]{64}$/D', $meta['revision'])) {
                 return false;
             }
             $path = self::path($canonical, $meta['revision']);
-            return is_file($path) ? $path : false;
+            return is_file($path) && is_readable($path) ? $path : false;
         }
 
-        $lease = self::lockSource($canonical, LOCK_SH);
-        if (!$lease) {
+        // Old assets remain data. Only a prepared revision may enter PHP's include path.
+        if (!in_array($meta['type'] ?? '', ['js', 'css'], true)) {
             return false;
         }
-        $source = stream_get_contents($lease);
+        $source = @file_get_contents($canonical);
         if ($source === false) {
             return false;
         }
         [$current, $body] = self::parse($source);
-        if (!$current || $current['status'] !== 'published') {
+        if (!$current || $current['status'] !== 'published' || $meta['type'] !== $current['type'] ||
+            $meta['run_at'] !== $current['run_at'] ||
+            ($legacyAsset && is_multisite() && @file_get_contents($legacyAsset) !== $body)) {
             return false;
-        }
-        if ($legacyAsset && is_multisite() && @file_get_contents($legacyAsset) !== $body) {
-            return false;
-        }
-        foreach (['type', 'run_at'] as $key) {
-            if (isset($meta[$key]) && $meta[$key] !== $current[$key]) {
-                return false;
-            }
         }
         $meta = array_merge($meta, $current);
+        $legacyBody = $body;
         return $canonical;
+    }
+
+    public static function recoveryConfig($dir, $config)
+    {
+        if (!$config) {
+            return $config;
+        }
+        if (is_file($dir . '/cached/.fluent-safe-mode')) {
+            $config['meta']['force_disabled'] = 'yes';
+        }
+        $markers = glob($dir . '/cached/.fluent-quarantine-*');
+        if ($markers) {
+            $markers = array_flip(array_map('basename', $markers));
+            foreach ($config['published'] ?? [] as $name => $record) {
+                if (isset($record['revision'], $markers['.fluent-quarantine-' . $record['revision']])) {
+                    $config['error_files'][$name] = $config['error_files'][$name] ?? 'Snippet paused after a PHP error.';
+                }
+            }
+        }
+        return $config;
     }
 }

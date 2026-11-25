@@ -19,7 +19,7 @@ define('FLUENT_SNIPPETS_STORAGE_URL', 'https://example.test/library');
 define('FLUENT_SNIPPETS_PLUGIN_VERSION', 'test');
 register_shutdown_function(function () use ($storage) {
     if (is_dir($storage . '/cached')) {
-        foreach (glob($storage . '/cached/*') as $file) {
+        foreach (array_merge(glob($storage . '/cached/*'), glob($storage . '/cached/.fluent-*')) as $file) {
             unlink($file);
         }
         rmdir($storage . '/cached');
@@ -31,6 +31,7 @@ register_shutdown_function(function () use ($storage) {
 });
 
 function is_multisite() { return $GLOBALS['multisite']; }
+function wp_is_file_mod_allowed($context) { return $GLOBALS['canPrepare'] ?? true; }
 function is_super_admin() { return $GLOBALS['superAdmin']; }
 function get_current_blog_id() { return $GLOBALS['blog']; }
 function get_current_network_id() { return $GLOBALS['network']; }
@@ -52,6 +53,8 @@ function wp_enqueue_script($handle, $url) { $GLOBALS['enqueued'][] = $url; }
 class WP_Error {}
 function is_wp_error($value) { return $value instanceof WP_Error; }
 function is_admin() { return false; }
+function current_user_can($capability) { return $GLOBALS['superAdmin']; }
+function wp_kses_post($text) { return $text; }
 function shortcode_atts($defaults, $args) { return array_merge($defaults, $args); }
 function __($text) { return $text; }
 
@@ -166,6 +169,10 @@ if ($case === 'publication' || $case === 'all') {
     Helper::cacheSnippetIndex();
     clearstatcache(true, $copy);
     expectNetworkResult((fileperms($copy) & 0777) === 0600, 'published source is private after republication');
+    chmod($path, 0640);
+    Helper::cacheSnippetIndex();
+    clearstatcache(true, $copy);
+    expectNetworkResult((fileperms($copy) & 0777) === 0640 && filegroup($copy) === filegroup($path), 'published revision preserves shared-group read access');
     $model->updateSnippet($file, '/* next revision */', $meta + ['network_sites' => $except]);
     Helper::cacheSnippetIndex();
     $next = Helper::getIndexedConfig()['published'][$file];
@@ -175,12 +182,11 @@ if ($case === 'publication' || $case === 'all') {
         $currentFile = $revision::resolve($path, $next);
         expectNetworkResult($revision::parse(file_get_contents($previousFile), true) === '/* first revision */', 'an in-flight request retains its original body');
         expectNetworkResult($revision::parse(file_get_contents($currentFile), true) === '/* next revision */', 'new requests use the new revision');
-        $legacy = ['file_name' => $file];
+        $legacy = ['file_name' => $file, 'type' => 'js', 'run_at' => 'wp_footer'];
         file_put_contents($path, str_replace('@network_sites:', '@network_sites :', file_get_contents($path)));
-        $native = $revision::resolve($path, $legacy, $lease);
+        $native = $revision::resolve($path, $legacy, $body);
         expectNetworkResult($legacy['network_sites'] === $except && $native === $path, 'legacy selection preserves the native source directory');
-        expectNetworkResult(is_wp_error($model->updateSnippet($file, 'busy', $meta)), 'a writer retries while legacy code is using the source');
-        fclose($lease);
+        expectNetworkResult($body === '/* next revision */', 'legacy asset uses the bytes parsed with its site selection');
     }
     $meta['type'] = 'css';
     $meta['load_as_file'] = 'yes';
@@ -250,22 +256,42 @@ if ($case === 'compatibility' || $case === 'all') {
         } finally {
             chmod($storage, 0700);
         }
-        expectNetworkResult($rendered === 'sibling resolved', 'legacy PHP includes its sibling in a read-only library');
+        expectNetworkResult($rendered === '', 'unprepared PHP pauses in a read-only library');
         expectNetworkResult(count($enqueued) === 2 && !array_diff($external, $enqueued), 'legacy CSS and JS retain their external URL');
+        $config['meta']['snippet_revisions'] = false;
+        Helper::saveIndexedConfig($config);
+        $canPrepare = false;
+        Helper::prepareRuntime();
+        expectNetworkResult(Helper::hasUnpreparedPhp(Helper::getIndexedConfig(false)), 'read-only policy leaves legacy PHP paused');
+        $canPrepare = true;
+        Helper::prepareRuntime();
+        expectNetworkResult(!Helper::hasUnpreparedPhp(Helper::getIndexedConfig(false)), 'writable library automatically prepares PHP');
+        $hooks = [];
+        (new $runner())->runSnippets();
+        ob_start();
+        foreach ($hooks['wp_footer'] ?? [] as $callback) $callback();
+        expectNetworkResult(strpos(ob_get_clean(), 'sibling resolved') !== false, 'prepared PHP resolves its sibling from the library directory');
     }
     $multisite = false;
     $handler = new CodeHandler();
     $directory = new ReflectionProperty(CodeHandler::class, 'storageDir');
     $directory->setAccessible(true);
     $directory->setValue($handler, $storage);
-    $config['meta']['snippet_revisions'] = false;
-    $config['meta']['force_disabled'] = 'yes';
+    $draft = $model->createSnippet('draft body', ['name' => 'Draft shortcode', 'type' => 'php_content', 'run_at' => 'shortcode', 'status' => 'draft']);
+    Helper::cacheSnippetIndex();
+    $draftOutput = $handler->handleShortcode(['id' => basename($draft, '.php')]);
+    expectNetworkResult(strpos($draftOutput, 'Snippet status is not published') !== false && strpos($draftOutput, 'draft body') === false, 'administrators see the draft shortcode status');
+    chmod($storage . '/' . $draft, 0000);
+    expectNetworkResult($model->deleteSnippet($draft) === true, 'an unreadable snippet can be removed from a writable directory');
+    $config = Helper::getIndexedConfig(false);
+    $priorIndex = file_get_contents($storage . '/index.php');
     chmod($storage, 0555);
     try {
-        expectNetworkResult(Helper::saveIndexedConfig($config) !== false, 'single-site emergency index remains writable');
-        expectNetworkResult(Helper::getIndexedConfig(false)['meta']['force_disabled'] === 'yes', 'single-site emergency flag persists');
+        expectNetworkResult(Helper::enableSafeMode($config['meta']['secret_key']) === true, 'Safe Mode persists when the index cannot be replaced');
+        expectNetworkResult(Helper::getRuntimeConfig()['meta']['force_disabled'] === 'yes', 'runtime observes the emergency flag');
+        expectNetworkResult(file_get_contents($storage . '/index.php') === $priorIndex, 'emergency recovery preserves the complete index');
         $handler->maybeHandleFatalError(['response' => 500], ['file' => $storage . '/' . $native, 'message' => 'Compatibility check']);
-        expectNetworkResult(isset(Helper::getIndexedConfig(false)['error_files'][$native]), 'single-site quarantine persists with a read-only parent');
+        expectNetworkResult(isset(Helper::getRuntimeConfig()['error_files'][$native]), 'single-site quarantine persists with a read-only parent');
     } finally {
         chmod($storage, 0700);
     }
@@ -292,6 +318,6 @@ if ($case === 'compatibility' || $case === 'all') {
     $handler->maybeHandleFatalError(['response' => 500], ['file' => $currentFile, 'message' => 'Current callback']);
     fclose($pipes[1]);
     proc_close($process);
-    expectNetworkResult(isset(Helper::getIndexedConfig(false)['error_files'][$native]), 'current revision quarantine survives writer contention');
+    expectNetworkResult(isset(Helper::getRuntimeConfig()['error_files'][$native]), 'current revision quarantine survives writer contention');
     echo "ok - compatibility\n";
 }

@@ -153,6 +153,10 @@ if (defined('ABSPATH') && is_multisite()) {
 Use one place to define these constants. Back up the shared library before changing directories. Existing snippets stay in the original directory, so export the snippets each site needs and import them into that site's library. New requests use the library of the site WordPress loaded. A network job that calls `switch_to_blog()` keeps the library selected at the start of that request.
 
 = How do I run a shared snippet on selected sites? =
+On upgrade, a writable installation automatically prepares its published PHP snippets. For a read-only deployment, sync the snippet index on a writable installation first and deploy the whole library, including hidden revision files, before switching versions. WordPress pauses PHP snippets without a readable revision. Keep the published files readable by the account running PHP and the cache directory writable if you rely on Safe Mode and automatic error recovery.
+
+To prepare the library, activate the updated plugin on the writable installation and open its Snippets dashboard. Check that the PHP preparation warning has cleared. For standalone mode, deploy the updated standalone runner together with the prepared library.
+
 As a network Super Admin, open the snippet editor and find Network sites under Where to Run. Choose Only selected sites or All except selected sites, search by site address or ID, and save the snippet. All sites is the default for existing snippets. The site selection works alongside the snippet's normal run location and conditional rules.
 
 PHP snippets are validated by running their code. Save or import a restricted PHP snippet from one of its included sites so that validation runs in the intended context.

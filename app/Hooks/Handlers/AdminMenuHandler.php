@@ -393,6 +393,9 @@ class AdminMenuHandler
     public function render()
     {
         $currentUser = wp_get_current_user();
+        if (Helper::hasUnpreparedPhp(Helper::getIndexedConfig())) {
+            echo '<div class="notice notice-warning"><p>' . esc_html__('Some PHP snippets are paused. Sync the snippet index on a writable installation and deploy the complete library with permissions that allow WordPress to read it.', 'easy-code-manager') . '</p></div>';
+        }
 
         [$tags, $groups] = (new Snippet())->getAllSnippetTagsGroups();
 
@@ -506,7 +509,7 @@ class AdminMenuHandler
 
     public function getSafeModeInfo()
     {
-        $config = Helper::getIndexedConfig();
+        $config = Helper::getRuntimeConfig();
 
         return [
             'is_defined_disabled'  => defined('FLUENT_SNIPPETS_SAFE_MODE') && FLUENT_SNIPPETS_SAFE_MODE,

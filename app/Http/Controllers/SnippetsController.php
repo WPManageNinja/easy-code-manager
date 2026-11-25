@@ -43,6 +43,9 @@ class SnippetsController
      */
     public static function syncIndex(\WP_REST_Request $request)
     {
+        if (!wp_is_file_mod_allowed('fluent_snippets')) {
+            return ['changed' => false];
+        }
         $changed = Helper::syncSnippetIndex();
         return is_wp_error($changed) ? $changed : ['changed' => $changed];
     }
@@ -382,7 +385,7 @@ class SnippetsController
         $snippet['code'] = self::editableCode($snippet);
         $snippet['code_hash'] = self::hashCode($snippet['code']);
 
-        $config = Helper::getIndexedConfig();
+        $config = Helper::getRuntimeConfig();
 
         if (!empty($config['error_files']) && !empty($config['error_files'][$snippet['file_name']])) {
             $snippet['error'] = $config['error_files'][$snippet['file_name']];
