@@ -56,7 +56,7 @@
                           </el-tooltip>
                         </span>
                     </template>
-                    <select-plus :disabled="!canEdit" :create-item="createGroup" :pop_placeholder="$t('Create new group')" :placeholder="$t('Select Snippet Group')" :options="appVars.groups" v-model="snippet.meta.group" />
+                    <select-plus :create-disabled="!canEdit" :create-item="createGroup" :pop_placeholder="$t('Create new group')" :placeholder="$t('Select Snippet Group')" :options="appVars.groups" v-model="snippet.meta.group" />
                     <p v-if="groupError" role="alert">{{ groupError }}</p>
                 </el-form-item>
                 <el-form-item :label="$t('Priority')">

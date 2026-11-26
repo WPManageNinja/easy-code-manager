@@ -19,7 +19,7 @@
         <el-popover v-model:visible="createPop" placement="left" :width="400" trigger="click">
             <template #reference>
                 <!-- "+" is not a name. What it adds is. -->
-                <el-button :disabled="disabled || saving" :aria-label="$t('Create new group')">+</el-button>
+                <el-button :disabled="disabled || createDisabled || saving" :aria-label="$t('Create new group')">+</el-button>
             </template>
             <el-input
                 :aria-label="pop_placeholder"
@@ -35,7 +35,7 @@
 <script type="text/babel">
 export default {
     name: 'SelectPlus',
-    props: ['options', 'modelValue', 'placeholder', 'pop_placeholder', 'createItem', 'disabled'],
+    props: ['options', 'modelValue', 'placeholder', 'pop_placeholder', 'createItem', 'disabled', 'createDisabled'],
     emits: ['update:modelValue', 'itemCreated'],
     data() {
         return {
@@ -48,7 +48,7 @@ export default {
     },
     methods: {
         async addItem() {
-            if (this.disabled || this.saving) return;
+            if (this.disabled || this.createDisabled || this.saving) return;
             const name = this.new_group.trim();
             this.saving = true;
             try {
