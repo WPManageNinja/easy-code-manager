@@ -292,6 +292,7 @@ class SettingsController
             }
             $search = preg_replace('#^https?://#i', '', sanitize_text_field((string) $search));
             $selected = $request->get_param('values');
+            $address = null;
             if (is_array($selected)) {
                 $ids = wp_parse_id_list(array_filter(array_slice($selected, 0, 25), 'is_scalar'));
                 if (!$ids) {
@@ -301,19 +302,30 @@ class SettingsController
             } elseif (ctype_digit($search)) {
                 $args['site__in'] = [(int) $search];
             } elseif (strpos($search, '/') > 0) {
-                // Site queries store the domain and path in separate columns.
-                [$domain, $path] = explode('/', $search, 2);
-                $args['domain'] = $domain;
-                $args['path'] = trailingslashit('/' . $path);
+                $address = explode('/', $search, 2);
             } elseif ($search !== '') {
                 $args['search'] = '*' . $search . '*';
             }
             global $wpdb;
             $before = $wpdb->num_queries;
-            $sites = get_sites($args);
+            if ($address === null) {
+                $sites = get_sites($args);
+            } else {
+                // WP_Site_Query searches either column. A typed address must match both.
+                [$domain, $path] = $address;
+                $sites = $wpdb->get_results($wpdb->prepare(
+                    "SELECT blog_id, domain, path FROM {$wpdb->blogs}
+                     WHERE site_id = %d AND domain LIKE %s AND path LIKE %s
+                     ORDER BY (domain = %s AND path = %s) DESC, blog_id ASC LIMIT %d",
+                    $args['network_id'], '%' . $wpdb->esc_like($domain) . '%', '/' . $wpdb->esc_like($path) . '%',
+                    $domain, trailingslashit('/' . $path), $args['number']
+                ));
+            }
             if ($wpdb->num_queries !== $before && $wpdb->last_error !== '') {
                 // Core can cache an empty ID list after a failed query. Let a retry reach the database.
-                wp_cache_set('last_changed', microtime(), 'sites');
+                if ($address === null) {
+                    wp_cache_set('last_changed', microtime(), 'sites');
+                }
                 return new \WP_Error('network_sites_unavailable', __('WordPress could not load the network sites. Try the search again.', 'easy-code-manager'), ['status' => 503]);
             }
             foreach ($sites as $site) {
