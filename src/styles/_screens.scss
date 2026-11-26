@@ -16,6 +16,21 @@
  * one list, and the stripe was carrying no information anyway.
  */
 .groups_snippets {
+    .fsnip_group, .fsnip_ungrouped {
+        border: 2px solid transparent;
+        border-radius: 8px;
+        padding-inline: 8px;
+    }
+    .fsnip_drop_target {
+        border-color: var(--fsnip-accent);
+        background: var(--fsnip-surface-raised);
+    }
+    .fsnip_empty_group {
+        color: var(--fsnip-text-mid);
+        padding: 12px;
+        margin: 0;
+    }
+    .group_file[draggable="true"] { cursor: grab; }
     .fsnip_group {
         padding: 0 0 16px;
     }
@@ -153,6 +168,15 @@
         opacity: .6;
     }
 }
+
+.fsnip_group_dialog_actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-block-start: 20px;
+}
+
+.fsnip_group_dialog { max-width: calc(100vw - 32px); }
 
 /*
  * The row of actions that appears on hover, and the same row under a title in the table

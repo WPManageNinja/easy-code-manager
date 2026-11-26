@@ -56,7 +56,8 @@
                           </el-tooltip>
                         </span>
                     </template>
-                    <select-plus :pop_placeholder="$t('Create new group')" :placeholder="$t('Select Snippet Group')" :options="appVars.groups" v-model="snippet.meta.group" />
+                    <select-plus :disabled="!canEdit" :create-item="createGroup" :pop_placeholder="$t('Create new group')" :placeholder="$t('Select Snippet Group')" :options="appVars.groups" v-model="snippet.meta.group" />
+                    <p v-if="groupError" role="alert">{{ groupError }}</p>
                 </el-form-item>
                 <el-form-item :label="$t('Priority')">
                     <template #label>
@@ -163,7 +164,9 @@ export default {
     },
     data() {
         return {
-            InfoField: markRaw(InfoFilled)
+            InfoField: markRaw(InfoFilled),
+            groupError: '',
+            groupLoadId: 0
         }
     },
     computed: {
@@ -174,6 +177,18 @@ export default {
             const details = this.errors.get('error_details');
             return (details && details.title) ? details : null;
         }
+    },
+    methods: {
+        async createGroup(name) {
+            ++this.groupLoadId;
+            await this.$post('groups/create', {name});
+            this.groupError = '';
+        }
+    },
+    mounted() {
+        const request = ++this.groupLoadId;
+        this.$get('groups').then(response => { if (request === this.groupLoadId) this.appVars.groups = response.groups; })
+            .catch(error => { if (request === this.groupLoadId) this.groupError = error.message || this.$t('The group list could not be loaded.'); });
     },
     props: ['snippet', 'is_new', 'errors']
 }

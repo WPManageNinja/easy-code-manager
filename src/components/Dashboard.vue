@@ -40,6 +40,7 @@
                             <el-button :icon="SearchIcon" tabindex="-1" aria-hidden="true"/>
                         </template>
                     </el-input>
+                    <el-button v-if="canEdit" ref="createGroupButton" :disabled="groupBusy" @click="openGroupDialog('create')">{{ $t('Create group') }}</el-button>
                     <el-button v-if="canEdit" @click="createSnippet()" type="primary">{{
                             $t('New Snippet')
                         }}
@@ -50,7 +51,7 @@
             <div v-if="loadingFirst" class="box_body">
                 <el-skeleton :rows="10" animated animation="wave"/>
             </div>
-            <div v-else-if="is_empty && !loading" class="box_body">
+            <div v-else-if="is_empty && !appVars.groups.length && !loading" class="box_body">
                 <div class="fsnip_empty">
                     <h1>{{$t('Thanks for installing FluentSnippets')}}</h1>
                     <p>{{$t('The High-Performance Code Snippets Plugin for WordPress')}}</p>
@@ -144,6 +145,8 @@
                     </div>
                 </div>
 
+                <p v-if="groupError" class="fsnip_error_text" role="alert">{{ groupError }}</p>
+                <p v-if="groupNotice" role="status">{{ groupNotice }}</p>
                 <div v-if="!loading">
                     <!--
                         Every column here is one fact about the snippet, and every row is
@@ -231,6 +234,7 @@
                                         precisely what is unavailable here.
                                     -->
                                     <div class="fsnip_row_actions">
+                                        <el-button v-if="canEdit" text size="small" :disabled="groupBusy" @click="openMoveDialog(scope.row)">{{ $t('Move to group') }}</el-button>
                                         <router-link class="fsnip_row_action" :title="$t('Edit')"
                                                      :aria-label="/* translators: %s: snippet name */ $t('Edit %s', scope.row.name)"
                                                      :to="{ name: 'edit_snippet', params: { snippet_name: scope.row.file_name } }">
@@ -338,8 +342,10 @@
                         </el-table-column>
                     </el-table>
                     </div>
-                    <div v-else-if="snippets.length && groupedSnippets" v-loading="loading" class="groups_snippets">
-                        <div v-for="(group, groupName) in groupedSnippets.groups" :key="groupName" class="fsnip_group">
+                    <div v-else-if="groupedSnippets && (snippets.length || appVars.groups.length)" v-loading="loading" class="groups_snippets" :aria-busy="groupBusy">
+                        <div v-for="(group, groupName) in groupedSnippets.groups" :key="group.label" class="fsnip_group"
+                             :class="{'fsnip_drop_target': dragFile && dropGroup === group.label}"
+                             @dragover="dragOver($event, group.label)" @dragleave="dropGroup = null" @drop="dropSnippet($event, group.label)">
                             <!--
                                 One button, not a clickable icon beside a clickable span.
                                 Neither of those was reachable by keyboard at all, so a
@@ -348,20 +354,23 @@
                                 aria-expanded and aria-controls are that missing sentence.
                             -->
                             <h2 class="group_name">
-                                <button type="button" @click="toggleGroupView(groupName)"
-                                        :aria-expanded="groupCollapsed[groupName] ? 'false' : 'true'"
+                                <button type="button" @click="toggleGroupView(group.label)"
+                                        :aria-expanded="groupCollapsed[group.label] ? 'false' : 'true'"
                                         :aria-controls="'fsnip_group_' + groupName">
                                     <el-icon aria-hidden="true">
-                                        <FolderOpened v-if="!groupCollapsed[groupName]"/>
+                                        <FolderOpened v-if="!groupCollapsed[group.label]"/>
                                         <FolderClosed v-else/>
                                     </el-icon>
                                     <span>{{ group.label }}</span>
                                 </button>
+                                <el-button v-if="canEdit" text size="small" :disabled="groupBusy" @click="openGroupDialog('rename', group.label)">{{ $t('Rename group') }}</el-button>
                             </h2>
-                            <ul v-if="!groupCollapsed[groupName]" class="group_files"
+                            <p v-if="!group.snippets.length && !groupCollapsed[group.label]" class="fsnip_empty_group">{{ $t('No snippets shown in this group.') }}</p>
+                            <ul v-if="group.snippets.length && !groupCollapsed[group.label]" class="group_files"
                                 :id="'fsnip_group_' + groupName">
                                 <li v-for="snippet in group.snippets" :class="'fsnip_status_'+snippet.status"
-                                    :key="snippet.file_name" class="group_file">
+                                    :key="snippet.file_name" class="group_file" :draggable="canEdit && !groupBusy"
+                                    @dragstart="startDrag($event, snippet)" @dragend="endDrag">
                                     <!--
                                         A link, not a div that calls $router.push. The row
                                         opens the editor, which is what a link does - and as
@@ -406,6 +415,7 @@
                                     -->
                                     <div class="group_file_meta">
                                         <div class="snippet_actions">
+                                            <el-button v-if="canEdit" text size="small" :disabled="groupBusy" @click="openMoveDialog(snippet)">{{ $t('Move to group') }}</el-button>
                                         <span :title="$t('Updated At:')"><el-icon aria-hidden="true"><Stopwatch/></el-icon>
                                             <span class="fsnip_sr_only">{{ $t('Updated At:') }} </span>{{
                                                 relativeTimeFromUtc(snippet.updated_at)
@@ -441,9 +451,14 @@
                                 </li>
                             </ul>
                         </div>
+                        <div class="fsnip_ungrouped" :class="{'fsnip_drop_target': dragFile && dropGroup === ''}"
+                             @dragover="dragOver($event, '')" @dragleave="dropGroup = null" @drop="dropSnippet($event, '')">
+                        <h2 v-if="canEdit || groupedSnippets.roots.length" class="group_name">{{ $t('Ungrouped') }}</h2>
+                        <p v-if="canEdit && !groupedSnippets.roots.length" class="fsnip_empty_group">{{ $t('Move snippets here to remove their group.') }}</p>
                         <ul v-if="groupedSnippets.roots.length" class="group_files roots_files">
                             <li v-for="snippet in groupedSnippets.roots" :class="'fsnip_status_'+snippet.status"
-                                :key="snippet.file_name" class="group_file">
+                                :key="snippet.file_name" class="group_file" :draggable="canEdit && !groupBusy"
+                                @dragstart="startDrag($event, snippet)" @dragend="endDrag">
                                 <!-- A link, for the same reasons as the grouped rows above. -->
                                 <router-link
                                     :to="{ name: 'edit_snippet', params: { snippet_name: snippet.file_name } }"
@@ -472,6 +487,7 @@
                                 </router-link>
                                 <div class="group_file_meta">
                                     <div class="snippet_actions">
+                                        <el-button v-if="canEdit" text size="small" :disabled="groupBusy" @click="openMoveDialog(snippet)">{{ $t('Move to group') }}</el-button>
                                     <span v-if="!snippet.error"
                                           class="snippet_desc">{{ limitChars(snippet.description, 50) }}</span>
                                         <span :title="$t('Updated At:')"><el-icon aria-hidden="true"><Stopwatch/></el-icon>
@@ -506,6 +522,7 @@
                                 </div>
                             </li>
                         </ul>
+                        </div>
                     </div>
                     <div v-else class="fsnip_empty">
                         <p>{{$t('Sorry, no snippets found based on your filter.')}}</p>
@@ -535,6 +552,24 @@
             </div>
         </div>
 
+        <el-dialog v-model="groupDialog" class="fsnip_group_dialog" :title="groupDialogTitle" width="420px" append-to-body :close-on-click-modal="!groupBusy" :close-on-press-escape="!groupBusy" :show-close="!groupBusy" @closed="restoreGroupFocus">
+            <el-form @submit.prevent="submitGroup">
+                <el-form-item v-if="groupMode !== 'move'" :label="$t('Group name')">
+                    <el-input v-model="groupName" :disabled="groupBusy" :aria-label="$t('Group name')" autofocus />
+                </el-form-item>
+                <el-form-item v-else :label="$t('Destination group')">
+                    <el-select v-model="moveTarget" :disabled="groupBusy" :teleported="false" :aria-label="$t('Destination group')" filterable>
+                        <el-option :label="$t('Ungrouped')" value="" />
+                        <el-option v-for="name in appVars.groups" :key="name" :label="name" :value="name" />
+                    </el-select>
+                </el-form-item>
+                <p v-if="groupDialogError" role="alert" class="fsnip_error_text">{{ groupDialogError }}</p>
+                <div class="fsnip_group_dialog_actions">
+                    <el-button :disabled="groupBusy" @click="groupDialog = false">{{ $t('Cancel') }}</el-button>
+                    <el-button native-type="submit" type="primary" :loading="groupBusy">{{ groupSubmitLabel }}</el-button>
+                </div>
+            </el-form>
+        </el-dialog>
         <el-drawer
             v-model="showImportExport"
             :title="$t('Import / Export Snippets')"
@@ -600,7 +635,21 @@ export default {
             showingPop: false,
             groupCollapsed: {},
             showImportExport: false,
-            loadedDone: false
+            loadedDone: false,
+            groupDialog: false,
+            groupMode: 'create',
+            groupName: '',
+            groupSource: '',
+            groupBusy: false,
+            groupError: '',
+            groupDialogError: '',
+            groupNotice: '',
+            groupRetry: false,
+            moveFile: null,
+            moveTarget: '',
+            dragFile: null,
+            dropGroup: null,
+            listRequest: 0
         }
     },
     components: {
@@ -615,6 +664,81 @@ export default {
         Delete: markRaw(Delete)
     },
     methods: {
+        openGroupDialog(mode, name = '') {
+            this.groupMode = mode;
+            this.groupName = name;
+            this.groupSource = name;
+            this.groupDialogError = '';
+            this.groupRetry = false;
+            this.groupDialog = true;
+            this.groupReturnFocus = document.activeElement;
+        },
+        restoreGroupFocus() {
+            if (this.groupReturnFocus?.isConnected) this.groupReturnFocus.focus();
+            else this.$refs.createGroupButton?.$el.focus();
+        },
+        openMoveDialog(snippet) {
+            this.openGroupDialog('move');
+            this.moveFile = snippet;
+            this.moveTarget = snippet.group || '';
+        },
+        async submitGroup() {
+            if (this.groupBusy) return;
+            let route = 'groups/create';
+            let data = {name: this.groupName};
+            if (this.groupMode === 'rename') {
+                route = 'groups/rename';
+                data = {name: this.groupSource, new_name: this.groupName, retry: this.groupRetry ? 'yes' : 'no'};
+            } else if (this.groupMode === 'move') {
+                route = 'groups/move';
+                data = {file_name: this.moveFile.file_name, group: this.moveTarget, expected_group: this.moveFile.group || ''};
+            }
+            this.groupBusy = true;
+            this.groupDialogError = '';
+            this.groupError = '';
+            this.groupNotice = '';
+            try {
+                const response = await this.$post(route, data);
+                this.groupNotice = response.message;
+                this.groupDialog = false;
+            } catch (error) {
+                this.groupDialogError = error.message || this.$t('The group change could not be saved.');
+                this.groupRetry = !!error.data?.partial;
+            } finally {
+                await this.getSnippets();
+                this.groupBusy = false;
+            }
+        },
+        startDrag(event, snippet) {
+            if (!this.canEdit || this.groupBusy) { event.preventDefault(); return; }
+            this.dragFile = snippet;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', snippet.file_name);
+        },
+        dragOver(event, name) {
+            if (!this.dragFile || !this.canEdit || this.groupBusy) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            this.dropGroup = name;
+        },
+        endDrag() { this.dragFile = null; this.dropGroup = null; },
+        async dropSnippet(event, name) {
+            if (!this.dragFile || !this.canEdit || this.groupBusy) return;
+            event.preventDefault();
+            const snippet = this.dragFile;
+            this.endDrag();
+            this.groupBusy = true;
+            this.groupError = '';
+            try {
+                const response = await this.$post('groups/move', {file_name: snippet.file_name, group: name, expected_group: snippet.group || ''});
+                this.groupNotice = response.message;
+            } catch (error) {
+                this.groupError = error.message || this.$t('The group change could not be saved.');
+            } finally {
+                await this.getSnippets();
+                this.groupBusy = false;
+            }
+        },
         changePage(page) {
             this.paginate.page = page;
             this.getSnippets();
@@ -670,6 +794,7 @@ export default {
                 });
         },
         getSnippets() {
+            const request = ++this.listRequest;
             this.showingPop = false;
             this.loading = true;
             return this.$get('snippets', {
@@ -680,6 +805,7 @@ export default {
                 sort_order: this.sorting.sortType
             })
                 .then(response => {
+                    if (request !== this.listRequest) return;
                     this.rawSnippets = response.snippets.data || [];
                     this.paginate.total = response.snippets.total || 0;
 
@@ -688,14 +814,15 @@ export default {
                         this.appVars.tags = response.tags;
                     }
 
-                    if (response.groups) {
-                        this.appVars.groups = response.groups;
-                    }
+                    return this.$get('groups').then(groups => {
+                        if (request === this.listRequest) { this.appVars.groups = groups.groups; }
+                    }).catch(error => { if (request === this.listRequest) this.groupError = error.message || this.$t('The group list could not be loaded.'); });
                 })
                 .catch((errors) => {
                     this.$handleError(errors);
                 })
                 .finally(() => {
+                    if (request !== this.listRequest) return;
                     this.loading = false;
                     this.loadingFirst = false;
                 });
@@ -786,11 +913,18 @@ export default {
         }
     },
     computed: {
+        groupDialogTitle() {
+            return this.groupMode === 'move' ? this.$t('Move to group') : this.groupMode === 'rename' ? this.$t('Rename group') : this.$t('Create group');
+        },
+        groupSubmitLabel() {
+            return this.groupMode === 'move' ? this.$t('Move snippet') : this.groupRetry ? this.$t('Retry rename') : this.groupMode === 'rename' ? this.$t('Rename group') : this.$t('Create group');
+        },
         groupedSnippets() {
             if (this.viewType == 'table') {
                 return null;
             }
-            const groups = {};
+            const groups = Object.create(null);
+            (this.appVars.groups || []).forEach(label => { groups[label] = {label, snippets: []}; });
 
             const roots = [];
 
@@ -889,6 +1023,9 @@ export default {
             });
         }
     },
+    watch: {
+        groupName() { this.groupRetry = false; }
+    },
     created() {
         this.viewType = this.$getLocalData('view_type', 'grouped');
         this.sorting = this.$getLocalData('snippet_sorting', {
@@ -896,7 +1033,7 @@ export default {
             sortBy: 'created_at'
         });
         this.hideInactive = this.$getLocalData('hide_inactive', 'no');
-        this.groupCollapsed = this.$getLocalData('group_collapsed', {});
+        this.groupCollapsed = Object.assign(Object.create(null), this.$getLocalData('group_collapsed', {}));
 
         this.loadedDone = true;
 

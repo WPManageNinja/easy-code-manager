@@ -231,21 +231,12 @@ class Snippet
     {
         $config = Helper::getIndexedConfig();
 
-        if (!$config || empty($config['meta'])) {
-            return [[], []];
-        }
-
-        if (empty($config['published']) && empty($config['draft'])) {
-            return [[], []];
-        }
-
-        $snippets = array_merge($config['published'], $config['draft']);
-        if (!$snippets) {
-            return [[], []];
-        }
+        $snippets = array_merge($config['published'] ?? [], $config['draft'] ?? []);
 
         $allTags = [];
-        $allGroups = [];
+        $savedGroups = \FluentSnippets\App\Services\SnippetGroups::read();
+        // The management GET surfaces an unreadable registry. Existing snippets still list.
+        $allGroups = is_wp_error($savedGroups) ? [] : $savedGroups;
 
         foreach ($snippets as $snippet) {
             if (!empty($snippet['tags'])) {
@@ -253,7 +244,7 @@ class Snippet
                 $allTags = array_merge($allTags, $tags);
             }
 
-            if (!empty($snippet['group'])) {
+            if (isset($snippet['group']) && (string) $snippet['group'] !== '') {
                 $allGroups[] = trim($snippet['group']);
             }
         }

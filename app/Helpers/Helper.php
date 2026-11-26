@@ -163,7 +163,25 @@ class Helper
      * the JSON the editor is waiting for arrives unparseable — turning "the folder is
      * not writable" into "the server sent back an unexpected response".
      */
-    public static function atomicPut($file, $contents)
+    public static function atomicPut($file, $contents, $expectedContents = null)
+    {
+        // A stable per-file lock serializes replacement with metadata-only writes.
+        // Keep the old fallback for ordinary saves on hosts that cannot create locks.
+        $lock = @fopen(dirname($file) . '/.fluent-snippets-' . sha1(basename($file)) . '.lock', 'c');
+        if (!$lock || !@flock($lock, LOCK_EX)) {
+            if ($lock) fclose($lock);
+            return $expectedContents === null ? self::putFile($file, $contents) : false;
+        }
+        try {
+            if ($expectedContents !== null && @file_get_contents($file) !== $expectedContents) return false;
+            return self::putFile($file, $contents);
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    private static function putFile($file, $contents)
     {
         $dir = dirname($file);
 
