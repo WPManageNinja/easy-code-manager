@@ -154,7 +154,7 @@ export default {
             } else if (this.langType == 'js') {
                 lang = javascript();
             } else {
-                // CodeMirror looks up view plugins by identity when drawing their decorations.
+                // Preserve the identity of CodeMirror's language and parser objects.
                 lang = markRaw(phpEditorLanguage(this.langType === 'PHP'));
             }
 
