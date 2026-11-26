@@ -14,6 +14,9 @@ function closingLine(doc, tokenEnd) {
     if (closer.test(last.text)) {
         return last.from;
     }
+    if (last.number === doc.lines) {
+        return doc.length;
+    }
 
     // The PHP tokenizer can stop at the JS prefix of JSON.stringify. PHP needs
     // a complete identifier. Continue to its real closing line in that case.
