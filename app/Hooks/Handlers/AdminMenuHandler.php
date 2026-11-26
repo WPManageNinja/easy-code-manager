@@ -169,18 +169,24 @@ class AdminMenuHandler
                 continue;
             }
             $fileContent = file_get_contents($snippetFile);
-            [$docBlockArray, $code] = $snippetModel->parseBlock($fileContent);
+            $record = $snippetModel->parseBlock($fileContent);
+            [$docBlockArray, $code] = $record;
 
-            if (empty($docBlockArray) || empty($code)) {
+            if (empty($docBlockArray) || (empty($code) && !isset($record[2]))) {
                 continue;
             }
 
             $base64Code = base64_encode($code);
-            $formattedSnippets[] = [
+            $export = [
                 'code'      => $base64Code,
                 'code_hash' => md5($code),
                 'info'      => $docBlockArray,
             ];
+            if (isset($record[2])) {
+                $export['compiled_css'] = base64_encode($record[2]);
+                $export['compiled_css_hash'] = hash('sha256', $record[2]);
+            }
+            $formattedSnippets[] = $export;
         }
 
         $exportData = [
@@ -285,7 +291,8 @@ class AdminMenuHandler
         }
 
         foreach ($snippets as $snippet) {
-            if (empty($snippet['code'])) {
+            $emptyScss = ($snippet['info']['type'] ?? '') === 'scss' && ($snippet['code'] ?? null) === '';
+            if (empty($snippet['code']) && !$emptyScss) {
                 continue;
             }
 
@@ -354,7 +361,17 @@ class AdminMenuHandler
             }
 
             $snippetModel = new Snippet();
-            $createdSnippet = $snippetModel->createSnippet($code, $meta);
+            $compiledCss = null;
+            if ($meta['type'] === 'scss') {
+                $encoded = $snippet['compiled_css'] ?? null;
+                $compiledCss = is_string($encoded) ? base64_decode($encoded, true) : false;
+                if ($compiledCss === false || ($snippet['compiled_css_hash'] ?? null) !== hash('sha256', $compiledCss)) {
+                    $createdSnippts[] = ['name' => $name, 'is_success' => 'no',
+                        'reason' => __('The compiled stylesheet is missing or damaged.', 'easy-code-manager')];
+                    continue;
+                }
+            }
+            $createdSnippet = $snippetModel->createSnippet($code, $meta, $compiledCss);
 
             if (is_wp_error($createdSnippet)) {
                 $createdSnippts[] = [
@@ -365,6 +382,9 @@ class AdminMenuHandler
                 continue;
             }
 
+            if ($meta['type'] === 'scss') {
+                $existingCodeHashes[] = $codeHash;
+            }
             $createdSnippts[] = [
                 'name'       => $name,
                 'is_success' => 'yes',
@@ -507,7 +527,7 @@ class AdminMenuHandler
 
     public function getSnippetTypes()
     {
-        return apply_filters('fluent_snippets/snippet_types', [
+        $types = [
             'PHP'         => [
                 'label'             => __('Functions', 'easy-code-manager'),
                 'value'             => 'PHP',
@@ -600,7 +620,9 @@ class AdminMenuHandler
                     ]
                 ]
             ],
-        ]);
+        ];
+        $types['scss'] = array_merge($types['css'], ['value' => 'scss', 'inline_tag' => 'SCSS']);
+        return apply_filters('fluent_snippets/snippet_types', $types);
     }
 
     private function getAdvancedConditionOptions()
@@ -917,6 +939,7 @@ class AdminMenuHandler
         $data = [
             'meta'       => $meta,
             'code'       => $code,
+            'compiled_css' => $meta['compiled_css'] ?? null,
             'file_name'  => $fileName,
             'reactivate' => Arr::get($_REQUEST, 'reactivate', '')
         ];
@@ -946,7 +969,8 @@ class AdminMenuHandler
 
         $data = [
             'meta' => $meta,
-            'code' => $code
+            'code' => $code,
+            'compiled_css' => $meta['compiled_css'] ?? null
         ];
 
         $snippet = Helper::createSnippet($data);

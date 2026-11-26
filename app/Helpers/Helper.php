@@ -99,10 +99,8 @@ class Helper
         $dir = self::getStorageDir() . '/cached';
 
         // check if the directory exists
-        if (!is_dir($dir)) {
-            wp_mkdir_p($dir);
-            // add an empty index.php file to that dir
-            file_put_contents($dir.'/index.php', '<?php // silence is golden');
+        if (!is_dir($dir) && wp_mkdir_p($dir)) {
+            self::atomicPut($dir . '/index.php', '<?php // silence is golden', true);
         }
 
         return $dir;
@@ -163,7 +161,7 @@ class Helper
      * the JSON the editor is waiting for arrives unparseable — turning "the folder is
      * not writable" into "the server sent back an unexpected response".
      */
-    public static function atomicPut($file, $contents)
+    public static function atomicPut($file, $contents, $requireAtomic = false)
     {
         $dir = dirname($file);
 
@@ -172,16 +170,16 @@ class Helper
         // tempnam() silently falls back to the system temp dir when $dir is not
         // writable, and a cross-device rename() is not atomic. Only take the atomic
         // path when the temp file really landed next to the target.
-        if ($tmpFile === false || dirname($tmpFile) !== $dir) {
+        if ($tmpFile === false || (dirname($tmpFile) !== $dir && realpath(dirname($tmpFile)) !== realpath($dir))) {
             if ($tmpFile !== false) {
                 @unlink($tmpFile);
             }
-            return @file_put_contents($file, $contents);
+            return $requireAtomic ? false : @file_put_contents($file, $contents);
         }
 
         $bytesWritten = @file_put_contents($tmpFile, $contents);
 
-        if ($bytesWritten === false) {
+        if ($bytesWritten !== strlen($contents)) {
             @unlink($tmpFile);
             return false;
         }
@@ -192,13 +190,13 @@ class Helper
         @chmod($tmpFile, $perms ? $perms : 0644);
 
         // rename() cannot overwrite an existing file on Windows.
-        if (DIRECTORY_SEPARATOR === '\\' && is_file($file)) {
+        if (!$requireAtomic && DIRECTORY_SEPARATOR === '\\' && is_file($file)) {
             @unlink($file);
         }
 
         if (!@rename($tmpFile, $file)) {
             @unlink($tmpFile);
-            return @file_put_contents($file, $contents);
+            return $requireAtomic ? false : @file_put_contents($file, $contents);
         }
 
         return $bytesWritten;
@@ -442,6 +440,9 @@ class Helper
 
         foreach ($snippets as $snippet) {
             $meta = Arr::only($snippet['meta'], $metaKeys);
+            if ($meta['type'] === 'scss' && isset($snippet['compiled_css'])) {
+                $meta['css_hash'] = hash('sha256', $snippet['compiled_css']);
+            }
             $fileName = basename($snippet['file']);
 
             // remove new line from $meta['description'] and limit to it 101 chars
@@ -459,7 +460,8 @@ class Helper
             $meta['file_name'] = $fileName;
             $meta['status'] = $snippet['status'];
 
-            if ($meta['status'] == 'published') {
+            // Keep unpaired SCSS visible to authors so they can open and save it.
+            if ($meta['status'] == 'published' && ($meta['type'] !== 'scss' || isset($meta['css_hash']))) {
                 $runningHook = self::getRunAtHook($meta);
                 if (empty($data['hooks'][$runningHook])) {
                     $data['hooks'][$runningHook] = [];
@@ -898,7 +900,7 @@ PHP;
 
         // check if the $code which is a php snippet is valid or not
         $snippetModel = new Snippet();
-        $snippet = $snippetModel->updateSnippet($fileName, $code, $meta);
+        $snippet = $snippetModel->updateSnippet($fileName, $code, $meta, $data['compiled_css'] ?? null);
 
         if (is_wp_error($snippet)) {
             return $snippet;
@@ -945,7 +947,7 @@ PHP;
 
         // check if the $code which is a php snippet is valid or not
         $snippetModel = new Snippet();
-        $snippet = $snippetModel->createSnippet($code, $meta);
+        $snippet = $snippetModel->createSnippet($code, $meta, $data['compiled_css'] ?? null);
 
         if (is_wp_error($snippet)) {
             return $snippet;

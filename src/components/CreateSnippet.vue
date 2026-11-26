@@ -50,9 +50,11 @@
 import SnippetForm from './_SnippetForm.vue'
 import CodeEditor from './_CodeEditor.vue'
 import Errors from '../Bits/Errors.js'
+import scssAuthoring from '../Bits/scssAuthoring.js'
 
 export default {
     name: 'CreateSnippet',
+    mixins: [scssAuthoring],
     components: {
         SnippetForm,
         CodeEditor
@@ -78,10 +80,10 @@ export default {
         }
     },
     methods: {
-        saveCode() {
+        async saveCode() {
             // Same reasoning as SnippetEditView.saveCode(): the button is gone, the
             // keyboard shortcut and the confirm dialog are not.
-            if (!this.canEdit) {
+            if (!this.canEdit || this.saving) {
                 return;
             }
 
@@ -115,8 +117,13 @@ export default {
             this.errors.clear();
 
             this.saving = true;
+            const meta = await this.prepareSaveMeta();
+            if (!meta) {
+                this.saving = false;
+                return;
+            }
             this.$ajax('post', 'fluent_snippet_create', {
-                meta: JSON.stringify({...this.snippet.meta, code: this.snippet.code})
+                meta: JSON.stringify(meta)
             })
                 .then(response => {
                     this.$notify.success(response.message);
@@ -153,7 +160,7 @@ export default {
                 this.snippet.meta.run_at = 'all';
             } else if (type == 'php_content') {
                 this.snippet.meta.run_at = '';
-            } else if (type == 'css') {
+            } else if (type === 'css' || type === 'scss') {
                 this.snippet.meta.run_at = 'wp_head';
             } else if (type == 'js') {
                 this.snippet.meta.run_at = 'wp_footer';

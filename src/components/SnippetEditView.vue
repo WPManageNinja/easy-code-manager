@@ -52,9 +52,11 @@
 <script type="text/babel">
 import SnippetForm from './_SnippetForm.vue'
 import Errors from '../Bits/Errors.js'
+import scssAuthoring from '../Bits/scssAuthoring.js'
 
 export default {
     name: 'SnippetEditView',
+    mixins: [scssAuthoring],
     props: ['snippet_name'],
     components: {
         SnippetForm
@@ -75,6 +77,7 @@ export default {
          * name is a new screen: drop what was loaded and fetch again.
          */
         snippet_name() {
+            this.cancelScssSave?.();
             this.snippet = null;
             this.errors.clear();
             this.$eventBus.emit("server_error", null);
@@ -115,13 +118,13 @@ export default {
                     }
                 });
         },
-        saveCode(reactivate = false) {
+        async saveCode(reactivate = false, status = null) {
             /*
              * The buttons that call this are not rendered on a read-only screen, but
              * Cmd/Ctrl+S is still bound and toggleStatus() still routes through here. One
              * guard at the single choke point beats remembering every entrance.
              */
-            if (!this.canEdit) {
+            if (!this.canEdit || this.saving) {
                 return;
             }
 
@@ -142,14 +145,26 @@ export default {
             this.errors.clear();
 
             this.saving = true;
+            const meta = await this.prepareSaveMeta();
+            if (!meta) {
+                this.saving = false;
+                return;
+            }
+            if (status) {
+                meta.status = status;
+            }
+            const savedSnippet = this.snippet;
             this.$ajax('post', 'fluent_snippet_update', {
                 // The file this code was loaded from, not the name in the address. Whatever
                 // the address says, a save can only ever write a snippet back to itself.
                 fluent_saving_snippet_name: this.snippet.file_name,
-                meta: JSON.stringify({...this.snippet.meta, code: this.snippet.code}),
+                meta: JSON.stringify(meta),
                 reactivate: reactivate
             })
                 .then(response => {
+                    if (status && this.snippet === savedSnippet) {
+                        this.snippet.meta.status = status;
+                    }
                     this.$notify.success(this.$t('Snippet has been updated successfully'));
                     if(reactivate) {
                         this.fetchSnippet();
@@ -181,8 +196,8 @@ export default {
                 });
         },
         toggleStatus() {
-            this.snippet.meta.status = (this.snippet.meta.status == 'published') ? 'draft' : 'published';
-            this.saveCode();
+            const status = this.snippet.meta.status === 'published' ? 'draft' : 'published';
+            this.saveCode(false, status);
         },
         maybeKeyboardSave(e) {
             if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) && e.keyCode == 83) {

@@ -9,6 +9,8 @@ use FluentSnippets\App\Services\SnippetErrors;
 class Snippet
 {
 
+    const MAX_CODE_BYTES = 1048576;
+
     private $args = [];
 
     public function __construct($args = [])
@@ -35,7 +37,8 @@ class Snippet
         $formattedFiles = [];
         foreach ($files as $file) {
             $fileContent = file_get_contents($file);
-            [$docBlockArray, $code] = $this->parseBlock($fileContent);
+            $record = $this->parseBlock($fileContent);
+            [$docBlockArray, $code] = $record;
 
             if (!$docBlockArray) {
                 continue;
@@ -47,7 +50,7 @@ class Snippet
                 }
             }
 
-            $formattedFiles[] = [
+            $formattedFiles[] = (isset($record[2]) ? ['compiled_css' => $record[2]] : []) + [
                 'meta'   => $docBlockArray,
                 'code'   => $code,
                 'file'   => $file,
@@ -275,9 +278,13 @@ class Snippet
         }
 
         $fileContent = file_get_contents($snippetDir . '/' . $fileName);
-        [$docBlockArray, $code] = $this->parseBlock($fileContent);
+        $record = $this->parseBlock($fileContent);
+        [$docBlockArray, $code] = $record;
+        if (!$docBlockArray && strpos($fileContent, '<?php // SCSS-1 ') === 0) {
+            return SnippetErrors::fileMissing($fileName);
+        }
 
-        return [
+        return (isset($record[2]) ? ['compiled_css' => $record[2]] : []) + [
             'meta'   => $docBlockArray,
             'code'   => $code,
             'file'   => $file,
@@ -285,7 +292,7 @@ class Snippet
         ];
     }
 
-    public function updateSnippet($fileName, $code, $metaData)
+    public function updateSnippet($fileName, $code, $metaData, $compiledCss = null)
     {
         $metaData['updated_at'] = date('Y-m-d H:i:s');
 
@@ -293,6 +300,10 @@ class Snippet
 
         if (!is_file($file)) {
             return SnippetErrors::fileMissing($fileName);
+        }
+
+        if (($metaData['type'] ?? '') === 'scss') {
+            return $this->writeScss($fileName, $code, $compiledCss, $metaData);
         }
 
         $docBlockString = $this->parseInputMeta($metaData, true);
@@ -316,7 +327,7 @@ class Snippet
         return $fileName;
     }
 
-    public function createSnippet($code, $metaData)
+    public function createSnippet($code, $metaData, $compiledCss = null)
     {
         $storageDir = Helper::getStorageDir();
         $fileCount = count(glob($storageDir . '/*.php'));
@@ -354,6 +365,10 @@ class Snippet
             ]);
         }
 
+        if (($metaData['type'] ?? '') === 'scss') {
+            return $this->writeScss($fileName, $code, $compiledCss, $metaData);
+        }
+
         $docBlockString = $this->parseInputMeta($metaData, true);
 
         $fullCode = $docBlockString . $code;
@@ -367,6 +382,70 @@ class Snippet
         $this->maybeCacheCssJs($fileName, $metaData, $code);
 
         return $fileName;
+    }
+
+    private function writeScss($fileName, $source, $css, $meta)
+    {
+        if (!is_string($source) || !is_string($css) || strlen($source) > self::MAX_CODE_BYTES || strlen($css) > self::MAX_CODE_BYTES
+            || strpos($css, '<?') !== false || stripos($css, '</style') !== false) {
+            return SnippetErrors::make('invalid_scss_pair', [
+                'title' => __('Invalid SCSS source or compiled CSS', 'easy-code-manager'),
+                'fix' => __('Send source and compiled CSS together, each within 1 MB, with no PHP or style tags in the stylesheet.', 'easy-code-manager')
+            ]);
+        }
+        $wrapping = Helper::detectWrappingTag($css);
+        if ($wrapping) {
+            return $wrapping;
+        }
+
+        // Keep original source in a PHP comment. One rename publishes it and the CSS body together.
+        $header = $this->parseInputMeta($meta, true);
+        $record = '<?php // SCSS-1 ' . base64_encode($source) . substr($header, 5) . $css;
+        $file = Helper::getStorageDir() . '/' . $fileName;
+        $previousCache = '';
+        if (is_file($file)) {
+            $previous = $this->findByFileName($fileName);
+            if (!is_wp_error($previous) && isset($previous['compiled_css']) && ($previous['meta']['load_as_file'] ?? '') === 'yes') {
+                $previousCache = $this->scssCachePath(dirname($file) . '/cached', $fileName, $previous['compiled_css']);
+            }
+        }
+        if (Helper::atomicPut($file, $record, true) === false) {
+            return SnippetErrors::writeFailed($file);
+        }
+        Helper::invalidateOpcache($file);
+        // A missing derivative is safe: playback reads the compiled body from the committed record.
+        $cached = '';
+        if (($meta['load_as_file'] ?? '') === 'yes' && ($meta['status'] ?? '') === 'published') {
+            $cached = $this->scssCachePath(Helper::getCachedDir(), $fileName, $css);
+            Helper::atomicPut($cached, $css, true);
+        }
+        if ($previousCache && $previousCache !== $cached && is_file($previousCache)) {
+            // Begin the retention period when this revision stops being published.
+            touch($previousCache);
+        }
+        $this->cleanScssCache($fileName, $cached);
+        return $fileName;
+    }
+
+    private function scssCachePath($directory, $fileName, $css)
+    {
+        return $directory . '/' . basename($fileName, '.php') . '-scss-' . hash('sha256', $css) . '.css';
+    }
+
+    private function cleanScssCache($fileName, $keep = '')
+    {
+        $dir = Helper::getStorageDir();
+        $prefix = $dir . '/cached/' . basename($fileName, '.php') . '-scss-';
+        $deleted = !is_file($dir . '/' . $fileName);
+        foreach (glob($prefix . '*.css') ?: [] as $path) {
+            if ($path === $keep || !preg_match('/^[a-f0-9]{64}\\.css$/D', substr($path, strlen($prefix)))) {
+                continue;
+            }
+            // Published pages or concurrent writers may still refer to a recent revision.
+            if ($deleted || filemtime($path) < time() - 86400) {
+                @unlink($path);
+            }
+        }
     }
 
     public function deleteSnippet($fileName)
@@ -384,6 +463,7 @@ class Snippet
         }
 
         unlink($file);
+        $this->cleanScssCache($fileName);
 
         Helper::invalidateOpcache($file);
 
@@ -392,6 +472,21 @@ class Snippet
 
     public function parseBlock($fileContent, $codeOnly = false)
     {
+        if (strpos($fileContent, '<?php // SCSS-1 ') === 0) {
+            $parts = preg_split('~^<\?php if \(!defined\("ABSPATH"\)\) \{ return;\} // <Internal Doc End> \?>\r?\n~m', $fileContent, 2);
+            if (count($parts) !== 2 || !preg_match('~^<\?php // SCSS-1 ([A-Za-z0-9+/=]*)\r?\n~', $parts[0], $matches)) {
+                return $codeOnly ? '' : [null, null];
+            }
+            if ($codeOnly) {
+                return $parts[1];
+            }
+            $source = base64_decode($matches[1], true);
+            $meta = $this->parseMetadata(substr($parts[0], strlen($matches[0])));
+            if ($source === false || ($meta['type'] ?? '') !== 'scss') {
+                return [null, null];
+            }
+            return [$meta, $source, $parts[1]];
+        }
         // get content from // <Internal Doc Start> to // <Internal Doc End>
         $fileContent = explode('// <Internal Doc Start>', $fileContent);
 
@@ -433,6 +528,11 @@ class Snippet
             return $code;
         }
 
+        return [$this->parseMetadata($docBlock), $code];
+    }
+
+    private function parseMetadata($docBlock)
+    {
         $docBlock = explode('*', $docBlock);
         // Explode by : and get the key and value
         $docBlockArray = [
@@ -489,7 +589,7 @@ class Snippet
             ];
         }
 
-        return [$docBlockArray, $code];
+        return $docBlockArray;
     }
 
     private function parseInputMeta($metaData, $convertString = false)

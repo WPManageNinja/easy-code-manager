@@ -230,7 +230,7 @@ done
 require_tool unzip
 archive_list=$(unzip -l "$ZIP_FILE")
 
-for required in "$PLUGIN_SLUG/dist/app.js" "$PLUGIN_SLUG/dist/app.css" "$PLUGIN_SLUG/$PLUGIN_SLUG.php"; do
+for required in "$PLUGIN_SLUG/dist/app.js" "$PLUGIN_SLUG/dist/app.css" "$PLUGIN_SLUG/dist/scss-compiler.js" "$PLUGIN_SLUG/dist/scss-licenses.txt" "$PLUGIN_SLUG/$PLUGIN_SLUG.php"; do
     contains "$archive_list" "$required" || fail "$required is missing from the archive."
 done
 

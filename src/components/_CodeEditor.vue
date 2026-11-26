@@ -45,6 +45,7 @@
 import {Codemirror} from 'vue-codemirror'
 import {php} from '@codemirror/lang-php'
 import {css} from '@codemirror/lang-css'
+import {sass} from '@codemirror/lang-sass'
 import { EditorView } from "@codemirror/view";
 import {javascript} from '@codemirror/lang-javascript'
 import {oneDark} from '@codemirror/theme-one-dark'
@@ -134,6 +135,9 @@ export default {
                 return this.$t('CSS code editor');
             }
 
+            if (this.langType === 'scss') {
+                return this.$t('SCSS code editor');
+            }
             return this.$t('PHP code editor');
         },
         /*
@@ -150,6 +154,8 @@ export default {
 
             if (this.langType == 'css') {
                 lang = css();
+            } else if (this.langType === 'scss') {
+                lang = sass();
             } else if (this.langType == 'js') {
                 lang = javascript();
             } else {

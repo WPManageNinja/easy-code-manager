@@ -56,7 +56,7 @@ $GLOBALS['fs_test'] = [
 
 function untrailingslashit($string) { return rtrim($string, '/\\'); }
 function wp_parse_args($args, $defaults = []) { return array_merge($defaults, (array)$args); }
-function wp_mkdir_p($dir) { return is_dir($dir) || mkdir($dir, 0777, true); }
+function wp_mkdir_p($dir) { return file_exists($dir) ? is_dir($dir) : mkdir($dir, 0777, true); }
 function site_url() { return 'https://example.test'; }
 function content_url($path = '') { return 'https://example.test/wp-content' . $path; }
 function wp_upload_dir() { return ['basedir' => '/tmp/uploads', 'baseurl' => 'https://example.test/uploads']; }
@@ -239,6 +239,79 @@ $legacyCreate = SnippetsController::createSnippet(new WP_REST_Request([
     'meta' => json_encode(['name' => 'Legacy Probe', 'type' => 'PHP', 'run_at' => 'wp', 'status' => 'draft', 'code' => "add_action('init', '__return_true');"]),
 ]));
 check('pre-10.56 create (code inside a meta JSON string) still works', !is_wp_error($legacyCreate), describe($legacyCreate));
+
+// Written by the base version's file model before compiled pairs existed.
+$legacyName = '91-legacy-stylesheet.php';
+copy(__DIR__ . '/fixtures/legacy-scss-draft.txt', $storage . '/' . $legacyName);
+Helper::cacheSnippetIndex();
+$index = Helper::getIndexedConfig(false);
+$legacy = SnippetsController::findSnippet(new WP_REST_Request(['snippet_name' => $legacyName]));
+check('unpaired legacy draft stays listed and editable', isset($index['draft'][$legacyName])
+    && !is_wp_error($legacy) && trim($legacy['snippet']['code']) === '$measure: 12px;');
+check('unpaired draft has no published stylesheet', !isset($index['draft'][$legacyName]['css_hash']) && !isset($index['published'][$legacyName]));
+
+$scssMeta = ['name' => 'SCSS Probe', 'type' => 'scss', 'run_at' => 'wp_head'];
+$source = '$accent: red;' . "\r\n" . '.card { color: $accent }';
+$css = '.card{color:red}';
+$pair = ['meta' => $scssMeta, 'code' => $source, 'compiled_css' => $css];
+$scss = SnippetsController::createSnippet(new WP_REST_Request($pair));
+check('SCSS authoring returns exact source and compiled CSS', !is_wp_error($scss)
+    && $scss['snippet']['code'] === $source && ($scss['snippet']['compiled_css'] ?? null) === $css, describe($scss));
+$missing = SnippetsController::createSnippet(new WP_REST_Request(['meta' => $scssMeta, 'code' => $source]));
+check('SCSS source-only create is refused', is_wp_error($missing));
+if (!is_wp_error($scss)) {
+    $scssName = $scss['snippet']['file_name'];
+    $savedPair = readFile_($scssName);
+    $changeType = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $scssName, 'meta' => ['type' => 'css']]));
+    check('SCSS type changes require explicit replacement code', is_wp_error($changeType) && $changeType->get_error_code() === 'missing_code' && readFile_($scssName) === $savedPair);
+    $incomplete = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $scssName, 'code' => '$other: green;']));
+    check('incomplete SCSS edit preserves the saved revision', is_wp_error($incomplete) && readFile_($scssName) === $savedPair);
+    $status = SnippetsController::updateSnippetStatus(new WP_REST_Request(['fluent_saving_snippet_name' => $scssName, 'status' => 'published']));
+    $foundScss = SnippetsController::findSnippet(new WP_REST_Request(['snippet_name' => $scssName]));
+    check('status change retains the compiled revision', !is_wp_error($status) && $foundScss['snippet']['status'] === 'published'
+        && $foundScss['snippet']['code'] === $source && $foundScss['snippet']['compiled_css'] === $css);
+    $draft = SnippetsController::updateSnippetStatus(new WP_REST_Request(['fluent_saving_snippet_name' => $scssName, 'status' => 'draft']));
+    $foundScss = SnippetsController::findSnippet(new WP_REST_Request(['snippet_name' => $scssName]));
+    check('returning to draft retains source and output', !is_wp_error($draft) && $foundScss['snippet']['status'] === 'draft'
+        && $foundScss['snippet']['code'] === $source && $foundScss['snippet']['compiled_css'] === $css);
+    $empty = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $scssName, 'code' => '$unused: 1;', 'compiled_css' => '']));
+    check('SCSS declarations can compile to empty CSS', !is_wp_error($empty) && ($empty['snippet']['compiled_css'] ?? null) === '');
+}
+
+// A blocked optional cache must leave the author with one successful, readable response.
+$cacheDir = $storage . '/cached';
+$hadCache = is_dir($cacheDir);
+if ($hadCache) {
+    rename($cacheDir, $cacheDir . '-previous');
+}
+file_put_contents($cacheDir, 'occupied');
+$warnings = [];
+set_error_handler(function ($number, $message) use (&$warnings) {
+    if (error_reporting() & $number) {
+        $warnings[] = $message;
+    }
+    return true;
+});
+try {
+    $optional = SnippetsController::createSnippet(new WP_REST_Request([
+        'meta' => ['name' => 'Optional cache', 'type' => 'scss', 'run_at' => 'wp_head', 'load_as_file' => 'yes', 'status' => 'published'],
+        'code' => $source, 'compiled_css' => $css,
+    ]));
+    if (!is_wp_error($optional)) {
+        $optional = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $optional['snippet']['file_name'], 'meta' => ['status' => 'published']]));
+    }
+    $response = json_decode(json_encode($optional), true);
+    check('unavailable cache directory keeps save response and compiled record readable', !$warnings && !is_wp_error($optional)
+        && $response['snippet']['compiled_css'] === $css && $response['snippet']['status'] === 'published'
+        && strpos(readFile_($response['snippet']['file_name']), $css) !== false
+        && count(glob($storage . '/*-optional-cache.php')) === 1, implode(', ', $warnings));
+} finally {
+    restore_error_handler();
+    unlink($cacheDir);
+    if ($hadCache) {
+        rename($cacheDir . '-previous', $cacheDir);
+    }
+}
 
 echo "\nUpdating\n";
 
