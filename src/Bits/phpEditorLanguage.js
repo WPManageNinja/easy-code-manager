@@ -1,10 +1,20 @@
-import {php} from '@codemirror/lang-php';
-import {javascriptLanguage} from '@codemirror/lang-javascript';
-import {LanguageSupport} from '@codemirror/language';
+import {php, phpLanguage} from '@codemirror/lang-php';
+import {LanguageSupport, indentNodeProp, languageDataProp} from '@codemirror/language';
 import {parseMixed} from '@lezer/common';
+import {parser as javascriptParser} from '@lezer/javascript';
 
 const opener = /^<<<[ \t]*(['"]?)JS\1(?:\r\n?|\n)/;
 const substitution = /(?:^|[^\\])(?:\\\\)*\$(?:[a-zA-Z_\u0080-\uFFFF]|\{)/;
+
+// Only the token colors change. Editing commands inside the nested syntax
+// tree still use PHP's bracket, completion and indentation rules.
+const inheritIndent = context => context.continue();
+const heredocParser = javascriptParser.configure({
+    props: [
+        languageDataProp.add(type => type.isTop ? phpLanguage.data : undefined),
+        indentNodeProp.add(() => inheritIndent)
+    ]
+});
 
 const javascriptHeredocs = parseMixed((node, input) => {
     if (node.name !== 'HeredocString') return null;
@@ -20,7 +30,7 @@ const javascriptHeredocs = parseMixed((node, input) => {
     if (opening[1] !== "'" && substitution.test(text.slice(from, to))) return null;
 
     return {
-        parser: javascriptLanguage.parser,
+        parser: heredocParser,
         overlay: [{from: node.from + from, to: node.from + to}]
     };
 });
