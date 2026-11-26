@@ -483,20 +483,24 @@ class SettingsController
         // Core includes registered query variables in its cache key.
         $query->query_var_defaults['fluent_snippets_address'] = null;
         $args['fluent_snippets_address'] = $address;
-        $matchAddress = static function ($clauses, $current) use ($query) {
+        $networkId = $args['network_id'];
+        $matchAddress = static function ($clauses, $current) use ($query, $networkId) {
             if ($current !== $query) {
                 return $clauses;
             }
             global $wpdb;
             [$domain, $path] = $current->query_vars['fluent_snippets_address'];
             $table = $wpdb->blogs;
-            $where = $wpdb->prepare(
-                "$table.domain LIKE %s AND $table.path LIKE %s",
-                '%' . $wpdb->esc_like($domain) . '%', '/' . $wpdb->esc_like($path) . '%'
+            $match = $wpdb->prepare(
+                "$table.site_id = %d AND $table.domain LIKE %s AND $table.path LIKE %s",
+                $networkId, '%' . $wpdb->esc_like($domain) . '%', '/' . $wpdb->esc_like($path) . '%'
             );
-            $clauses['where'] .= ($clauses['where'] === '' ? '' : ' AND ') . $where;
+            // Earlier plugins can omit clauses or supply a top-level OR.
+            $where = trim($clauses['where'] ?? '');
+            $clauses['where'] = $where === '' ? $match : "($where) AND $match";
             $exact = $wpdb->prepare("($table.domain = %s AND $table.path = %s) DESC", $domain, trailingslashit('/' . $path));
-            $clauses['orderby'] = $exact . ($clauses['orderby'] === '' ? '' : ', ' . $clauses['orderby']);
+            $order = trim($clauses['orderby'] ?? '');
+            $clauses['orderby'] = $exact . ', ' . ($order === '' ? "$table.blog_id ASC" : $order);
             return $clauses;
         };
         add_filter('sites_clauses', $matchAddress, 10, 2);
