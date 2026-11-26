@@ -9,6 +9,8 @@ class SnippetGroups
 {
     const HEADER = "<?php exit; ?>\n";
     private static $mutating = false;
+    private static $writes = [];
+    private static $notifying = [];
 
     private static function path()
     {
@@ -94,6 +96,7 @@ class SnippetGroups
         }
         try {
             self::$mutating = true;
+            self::$writes = [];
             if (fstat($handle)['size'] === 0 && @fwrite($handle, self::HEADER) !== strlen(self::HEADER)) return self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
             $exists = file_exists($path);
             $names = $exists ? self::decode(@file_get_contents($path)) : [];
@@ -102,10 +105,34 @@ class SnippetGroups
             if (!$exists && !self::save($handle, $names)) return self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
             return $callback($handle, $names);
         } finally {
-            self::$mutating = false;
-            flock($handle, LOCK_UN);
-            fclose($handle);
+            try {
+                self::notifyUpdates();
+            } finally {
+                self::$writes = [];
+                self::$mutating = false;
+                flock($handle, LOCK_UN);
+                fclose($handle);
+            }
         }
+    }
+
+    private static function notifyUpdates()
+    {
+        self::$notifying = self::$writes;
+        try {
+            foreach (self::$notifying as $file => $hash) {
+                do_action('fluent_snippets/snippet_updated', $file);
+            }
+        } finally {
+            self::$notifying = [];
+        }
+    }
+
+    /** The index was already attempted for this exact write; later edits still rebuild. */
+    public static function isNotifyingWrite($file)
+    {
+        return is_string($file) && isset(self::$notifying[$file]) &&
+            @hash_file('sha256', Helper::getStorageDir() . '/' . $file) === self::$notifying[$file];
     }
 
     private static function indexed()
@@ -157,9 +184,11 @@ class SnippetGroups
         }
         $header = preg_replace_callback('/(^[ \t]*\*[ \t]*@updated_at:[ \t]*)[^\r\n]*/m', function ($match) { return $match[1] . gmdate('Y-m-d H:i:s'); }, $header);
         // Compare while holding the same replacement lock ordinary editor saves use.
-        $result = Helper::atomicPut($entry['path'], $header . substr($entry['raw'], strlen($entry['header'])), $entry['raw']);
+        $updated = $header . substr($entry['raw'], strlen($entry['header']));
+        $result = Helper::atomicPut($entry['path'], $updated, $entry['raw']);
         if ($result === false) return false;
         Helper::invalidateOpcache($entry['path']);
+        self::$writes[basename($entry['path'])] = hash('sha256', $updated);
         return true;
     }
 

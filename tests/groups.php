@@ -19,8 +19,13 @@ function wp_mkdir_p($p) { return is_dir($p) || @mkdir($p, 0777, true); }
 function site_url() { return 'http://groups.test'; }
 function content_url($p = '') { return 'http://groups.test/wp-content' . $p; }
 function wp_upload_dir() { return ['basedir'=>'/tmp/uploads','baseurl'=>'http://groups.test/uploads']; }
-function apply_filters($tag, $v) { return $v; }
-function do_action() {}
+function apply_filters($tag, $v) { if ($tag==='fluent_snippets/protect_storage_dir') $GLOBALS['rebuilds']=($GLOBALS['rebuilds']??0)+1; return $v; }
+function do_action($tag, ...$args) {
+    if ($tag!=='fluent_snippets/snippet_updated') return;
+    $GLOBALS['update_events'][]=$args[0];
+    if (isset($GLOBALS['on_update'])) ($GLOBALS['on_update'])($args[0]);
+    (new \FluentSnippets\App\Hooks\Handlers\CodeHandler())->rebuildCache($args[0]);
+}
 function is_wp_error($v) { return $v instanceof WP_Error; }
 function sanitize_file_name($v) { return preg_replace('/[^a-zA-Z0-9._-]/', '', $v); }
 function sanitize_title($v) { return strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $v)); }
@@ -52,11 +57,15 @@ function check($label, $ok) {
 }
 $service = $base . 'app/Services/SnippetGroups.php';
 if (is_file($service)) require $service;
+require $base . 'app/Hooks/Handlers/CodeHandler.php';
 $legacyModel = new \FluentSnippets\App\Model\Snippet();
 $legacyFile=$legacyModel->createSnippet('/* legacy organization */', ['name'=>'Legacy fixture','type'=>'PHP','status'=>'draft','group'=>'Legacy','tags'=>'legacy-tag']);
 \FluentSnippets\App\Helpers\Helper::cacheSnippetIndex();
 $legacy = $legacyModel->getAllSnippetTagsGroups();
 check('legacy labels remain visible', $legacy[1] === ['Legacy'] && $legacy[0] === ['legacy-tag']);
+$GLOBALS['rebuilds']=0;
+do_action('fluent_snippets/snippet_updated',$legacyFile);
+check('ordinary update listener still rebuilds index', $GLOBALS['rebuilds']===1);
 if (!is_file($service)) {
     if (getenv('GROUPS_LEGACY_ONLY')) exit($failures ? 1 : 0);
     check('group organization persists without a snippet', false);
@@ -89,7 +98,10 @@ check('legacy derived source group remains visible', in_array('Source', names(),
 $before=[];
 foreach ($files as $file) $before[$file]=$model->findByFileName($file);
 foreach ($files as $file) {
+    $GLOBALS['update_events']=[]; $GLOBALS['rebuilds']=0;
     check('move ' . $file, !is_wp_error(request('move', ['file_name'=>$file,'group'=>'Empty','expected_group'=>'Source'])));
+    check('move notifies existing update hook ' . $file, $GLOBALS['update_events']===[$file]);
+    check('move rebuilds index once ' . $file, $GLOBALS['rebuilds']===1);
     $after=$model->findByFileName($file);
     check('body preserved ' . $file, $after['code']===$before[$file]['code']);
     foreach (['type','status','priority','run_at','condition','created_at','created_by'] as $key) check('preserve ' . $key . ' ' . $file, $after['meta'][$key]===$before[$file]['meta'][$key]);
@@ -99,7 +111,10 @@ check('same destination is harmless', !is_wp_error(request('move', ['file_name'=
 check('missing expected source refused', is_wp_error(request('move', ['file_name'=>$files[0],'group'=>'Source'])));
 foreach (['../index.php','index.php','groups/index.php','missing.php'] as $file) check('non-snippet refused ' . $file, is_wp_error(request('move', ['file_name'=>$file,'group'=>'Empty','expected_group'=>''])));
 check('rename duplicate refused', is_wp_error(request('rename', ['name'=>'Empty','new_name'=>'constructor'])));
+$GLOBALS['update_events']=[]; $GLOBALS['rebuilds']=0;
 check('rename group', !is_wp_error(request('rename', ['name'=>'Empty','new_name'=>'Renamed'])));
+check('rename notifies every changed snippet', count($GLOBALS['update_events'])===4 && count(array_unique($GLOBALS['update_events']))===4);
+check('rename rebuilds index once', $GLOBALS['rebuilds']===1);
 foreach ($files as $file) check('rename reaches every type ' . $file, $model->findByFileName($file)['meta']['group']==='Renamed');
 check('old rename name removed', !in_array('Empty', names(), true));
 check('rename empty group', !is_wp_error(request('rename', ['name'=>'constructor','new_name'=>'Renamed empty'])));
@@ -181,4 +196,14 @@ $renameData=is_wp_error($renameFailure)?$renameFailure->get_error_data():[];
 check('rename index failure retains recovery names', !empty($renameData['partial']) && ($renameData['failed']??null)===0 && in_array('All pages',names(),true) && in_array('Index recovery',names(),true));
 chmod($storage,0755); chmod($storage.'/index.php',0644); Helper::cacheSnippetIndex();
 check('rename index failure can retry after repair', !is_wp_error(request('rename',['name'=>'All pages','new_name'=>'Index recovery','retry'=>'yes'])) && !in_array('All pages',names(),true));
+$GLOBALS['on_update']=function($file) use($storage) {
+    check('update callback can read retained groups', is_array(SnippetGroups::read()));
+    $path=$storage.'/'.$file;
+    Helper::atomicPut($path,str_replace('* @group: Legacy','* @group: Hook override',file_get_contents($path)));
+};
+$GLOBALS['rebuilds']=0;
+check('move with extension callback succeeds', !is_wp_error(request('move',['file_name'=>$files[0],'group'=>'Legacy','expected_group'=>'Index recovery'])));
+$index=Helper::getIndexedConfig(false);
+check('extension file change still rebuilds index', ($index['draft'][$files[0]]['group']??'')==='Hook override' && $GLOBALS['rebuilds']===2);
+unset($GLOBALS['on_update']);
 exit($failures ? 1 : 0);

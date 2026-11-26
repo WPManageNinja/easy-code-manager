@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-26T16:58:38+00:00\n"
+"POT-Creation-Date: 2026-11-26T17:09:07+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: easy-code-manager\n"
@@ -467,39 +467,39 @@ msgstr ""
 msgid "Snippet created successfully."
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:90
+#: app/Hooks/Handlers/CodeHandler.php:91
 msgid "Snippets are disabled"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:95
+#: app/Hooks/Handlers/CodeHandler.php:96
 msgid "Snippet has an error"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:105
+#: app/Hooks/Handlers/CodeHandler.php:106
 msgid "Snippet type is not PHP Content"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:109
+#: app/Hooks/Handlers/CodeHandler.php:110
 msgid "Snippet run at is not shortcode"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:113
+#: app/Hooks/Handlers/CodeHandler.php:114
 msgid "Snippet status is not published"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:119
+#: app/Hooks/Handlers/CodeHandler.php:120
 msgid "Snippet condition is not valid"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:144
+#: app/Hooks/Handlers/CodeHandler.php:145
 msgid "Return Data is not valid. Return data need to be string or number"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:155
+#: app/Hooks/Handlers/CodeHandler.php:156
 msgid "Shortcode could not be rendered"
 msgstr ""
 
-#: app/Hooks/Handlers/CodeHandler.php:157
+#: app/Hooks/Handlers/CodeHandler.php:158
 msgid "This message is only visible to site admin role"
 msgstr ""
 
@@ -818,95 +818,95 @@ msgstr ""
 msgid "Copy your code somewhere safe, go back to the snippet list and create it again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:26
-#: app/Services/SnippetGroups.php:48
+#: app/Services/SnippetGroups.php:28
+#: app/Services/SnippetGroups.php:50
 msgid "The group list could not be opened. Check the snippet storage permissions."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:29
+#: app/Services/SnippetGroups.php:31
 msgid "The saved group list cannot be read. Restore the group metadata file from a backup before changing groups."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:33
+#: app/Services/SnippetGroups.php:35
 msgid "The saved group list is invalid. Restore the group metadata file from a backup before changing groups."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:61
+#: app/Services/SnippetGroups.php:63
 msgid "Enter a group name as plain text."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:65
+#: app/Services/SnippetGroups.php:67
 msgid "Use a nonempty group name without markup, asterisks or line breaks."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:84
+#: app/Services/SnippetGroups.php:86
 msgid "Another group change is already in progress."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:87
-#: app/Services/SnippetGroups.php:93
-#: app/Services/SnippetGroups.php:97
-#: app/Services/SnippetGroups.php:102
-#: app/Services/SnippetGroups.php:133
-#: app/Services/SnippetGroups.php:179
-#: app/Services/SnippetGroups.php:198
+#: app/Services/SnippetGroups.php:89
+#: app/Services/SnippetGroups.php:95
+#: app/Services/SnippetGroups.php:100
+#: app/Services/SnippetGroups.php:105
+#: app/Services/SnippetGroups.php:160
+#: app/Services/SnippetGroups.php:208
+#: app/Services/SnippetGroups.php:227
 msgid "The group list could not be saved. Check the snippet storage permissions."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:131
-#: app/Services/SnippetGroups.php:196
+#: app/Services/SnippetGroups.php:158
+#: app/Services/SnippetGroups.php:225
 msgid "A group with this name already exists."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:133
+#: app/Services/SnippetGroups.php:160
 msgid "Group created."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:170
+#: app/Services/SnippetGroups.php:199
 msgid "The current group is required. Reload the snippet list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:173
+#: app/Services/SnippetGroups.php:202
 msgid "The snippet file could not be read. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:174
+#: app/Services/SnippetGroups.php:203
 msgid "This snippet has changed groups. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:176
+#: app/Services/SnippetGroups.php:205
 msgid "The destination group no longer exists. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:177
-#: app/Services/SnippetGroups.php:182
+#: app/Services/SnippetGroups.php:206
+#: app/Services/SnippetGroups.php:211
 msgid "Snippet moved."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:180
+#: app/Services/SnippetGroups.php:209
 msgid "The snippet could not be moved. Check permissions, reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:181
+#: app/Services/SnippetGroups.php:210
 msgid "The snippet file changed, but its index could not be updated. Reload the list and retry the index sync."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:194
+#: app/Services/SnippetGroups.php:223
 msgid "The source group no longer exists. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:195
-#: app/Services/SnippetGroups.php:221
+#: app/Services/SnippetGroups.php:224
+#: app/Services/SnippetGroups.php:250
 msgid "Group renamed."
 msgstr ""
 
 #. translators: 1: changed snippet count, 2: failed snippet count
-#: app/Services/SnippetGroups.php:216
+#: app/Services/SnippetGroups.php:245
 #, php-format
 msgid "Group rename is incomplete: %1$d snippets changed, %2$d failed. Both group names were kept. Check storage permissions, reload the list and retry the rename."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:220
+#: app/Services/SnippetGroups.php:249
 msgid "The snippets were renamed, but the old group could not be removed. Reload and retry the rename."
 msgstr ""
 
