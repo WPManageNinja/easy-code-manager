@@ -198,10 +198,11 @@ $renameData=is_wp_error($renameFailure)?$renameFailure->get_error_data():[];
 check('rename index failure retains recovery names', !empty($renameData['partial']) && ($renameData['failed']??null)===0 && in_array('All pages',names(),true) && in_array('Index recovery',names(),true));
 chmod($storage,0755); chmod($storage.'/index.php',0644); Helper::cacheSnippetIndex();
 check('rename index failure can retry after repair', !is_wp_error(request('rename',['name'=>'All pages','new_name'=>'Index recovery','retry'=>'yes'])) && !in_array('All pages',names(),true));
-$GLOBALS['on_update']=function($file) use($storage) {
+$GLOBALS['on_update']=function($file) use($model) {
     check('update callback can read retained groups', is_array(SnippetGroups::read()));
-    $path=$storage.'/'.$file;
-    Helper::atomicPut($path,str_replace('* @group: Legacy','* @group: Hook override',file_get_contents($path)));
+    $snippet=$model->findByFileName($file);
+    $snippet['meta']['group']='Hook override';
+    check('extension model update during notification succeeds', !is_wp_error($model->updateSnippet($file,$snippet['code'],$snippet['meta'])));
 };
 $GLOBALS['rebuilds']=0;
 check('move with extension callback succeeds', !is_wp_error(request('move',['file_name'=>$files[0],'group'=>'Legacy','expected_group'=>'Index recovery'])));
@@ -225,4 +226,35 @@ chmod($snippetLock,0000);
 check('unavailable snippet mutex refuses conditional writes', is_wp_error(request('move',['file_name'=>$files[0],'group'=>'Renamed empty','expected_group'=>'Legacy'])) && file_get_contents($storage.'/'.$files[0])===$savedSnippet);
 check('ordinary writer fallback survives an unavailable mutex', Helper::atomicPut($storage.'/'.$files[0],$savedSnippet)!==false);
 chmod($snippetLock,0644);
+$savedState = file_get_contents($groupFile);
+$flat = "<?php exit; ?>\n" . json_encode(['Flat legacy group']);
+file_put_contents($groupFile,$flat);
+$flatRead = SnippetGroups::read() === ['Flat legacy group'] && file_get_contents($groupFile) === $flat;
+$flatCreate = request('create',['name'=>'After flat registry']);
+check('flat group registry remains compatible', $flatRead && !is_wp_error($flatCreate) && in_array('Flat legacy group',names(),true) && in_array('After flat registry',names(),true));
+file_put_contents($groupFile,$savedState);
+if (method_exists(SnippetGroups::class,'state')) {
+    $pendingFiles=[];
+    foreach (['one','two'] as $part) $pendingFiles[]=$model->createSnippet('/* pending lifecycle */',['name'=>'Pending '.$part,'type'=>'js','status'=>'draft','group'=>'Pending source']);
+    Helper::cacheSnippetIndex();
+    chmod($storage.'/'.$pendingFiles[1],0444); chmod($storage,0555);
+    $partial=request('rename',['name'=>'Pending source','new_name'=>'Pending destination']);
+    chmod($storage,0755); chmod($storage.'/'.$pendingFiles[1],0644);
+    $state=SnippetGroups::state();
+    $recorded=is_wp_error($partial) && ($partial->get_error_data()['partial']??false) && in_array(['from'=>'Pending source','to'=>'Pending destination'],$state['renames'],true);
+    $wrong=request('rename',['name'=>'Pending source','new_name'=>'Legacy','retry'=>'yes']);
+    $wrongRefused=is_wp_error($wrong);
+    $renamed=request('rename',['name'=>'Pending destination','new_name'=>'Pending later']);
+    $stale=request('rename',['name'=>'Pending source','new_name'=>'Pending destination','retry'=>'yes']);
+    $state=SnippetGroups::state();
+    $staleRefused=!is_wp_error($renamed) && is_wp_error($stale) && $model->findByFileName($pendingFiles[0])['meta']['group']==='Pending later' && $model->findByFileName($pendingFiles[1])['meta']['group']==='Pending source' && $state['renames']===[];
+    $savedState=file_get_contents($groupFile);
+    $bad="<?php exit; ?>\n" . json_encode(['version'=>1,'groups'=>['A','B','C'],'renames'=>[['from'=>'A','to'=>'B'],['from'=>'C','to'=>'B']]]);
+    file_put_contents($groupFile,$bad);
+    $badProtected=is_wp_error(SnippetGroups::read()) && is_wp_error(request('create',['name'=>'Must not repair ambiguous state'])) && file_get_contents($groupFile)===$bad;
+    file_put_contents($groupFile,$savedState);
+    check('pending rename lifetimes are verified', $recorded && $wrongRefused && $staleRefused && $badProtected);
+} else {
+    check('pending rename lifetimes are verified', false);
+}
 exit($failures ? 1 : 0);

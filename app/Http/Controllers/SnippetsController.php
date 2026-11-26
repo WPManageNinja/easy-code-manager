@@ -310,7 +310,8 @@ class SnippetsController
             return $snippet;
         }
 
-        $snippetModel->deleteSnippet($fileName);
+        $deleted = $snippetModel->deleteSnippet($fileName);
+        if (is_wp_error($deleted)) return $deleted;
 
         do_action('fluent_snippets/snippet_deleted', $fileName);
 

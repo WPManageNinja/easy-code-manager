@@ -365,7 +365,7 @@
                                     </el-icon>
                                     <span>{{ group.label }}</span>
                                 </button>
-                                <el-button v-if="canEdit" text size="small" :disabled="groupBusy" @click="openGroupDialog('rename', group.label)">{{ $t('Rename group') }}</el-button>
+                                <el-button v-if="canEdit" text size="small" :disabled="groupBusy || loading" @click="openGroupDialog('rename', group.label)">{{ $t('Rename group') }}</el-button>
                             </h2>
                             <div v-show="!groupCollapsed[groupName]" :id="'fsnip_group_' + groupName">
                             <p v-if="!group.snippets.length" class="fsnip_empty_group">{{ $t('No snippets shown in this group.') }}</p>
@@ -647,7 +647,7 @@ export default {
             groupError: '',
             groupDialogError: '',
             groupNotice: '',
-            groupRetry: false,
+            groupRenames: [],
             moveFile: null,
             moveTarget: '',
             dragFile: null,
@@ -670,10 +670,10 @@ export default {
     methods: {
         openGroupDialog(mode, name = '') {
             this.groupMode = mode;
-            this.groupName = name;
             this.groupSource = name;
+            const pending = mode === 'rename' ? this.groupRenames.find(rename => rename.from === name) : null;
+            this.groupName = pending ? pending.to : name;
             this.groupDialogError = '';
-            this.groupRetry = false;
             this.groupDialog = true;
             this.groupReturnFocus = document.activeElement;
         },
@@ -714,7 +714,6 @@ export default {
                 this.groupDialog = false;
             } catch (error) {
                 this.groupDialogError = error.message || this.$t('The group change could not be saved.');
-                this.groupRetry = !!error.data?.partial;
             } finally {
                 await this.getSnippets();
                 this.groupBusy = false;
@@ -827,7 +826,10 @@ export default {
                     }
 
                     return this.$get('groups').then(groups => {
-                        if (request === this.listRequest) { this.appVars.groups = groups.groups; }
+                        if (request === this.listRequest) {
+                            this.appVars.groups = groups.groups;
+                            this.groupRenames = groups.renames || [];
+                        }
                     }).catch(error => { if (request === this.listRequest) this.groupError = error.message || this.$t('The group list could not be loaded.'); });
                 })
                 .catch((errors) => {
@@ -925,6 +927,9 @@ export default {
         }
     },
     computed: {
+        groupRetry() {
+            return this.groupMode === 'rename' && this.groupRenames.some(rename => rename.from === this.groupSource && rename.to === this.groupName.trim());
+        },
         groupDialogTitle() {
             return this.groupMode === 'move' ? this.$t('Move to group') : this.groupMode === 'rename' ? this.$t('Rename group') : this.$t('Create group');
         },
@@ -1034,9 +1039,6 @@ export default {
                 return snippet.item;
             });
         }
-    },
-    watch: {
-        groupName() { this.groupRetry = false; }
     },
     beforeUnmount() {
         this.listActive = false;

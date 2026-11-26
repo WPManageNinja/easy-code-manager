@@ -3,7 +3,7 @@
  * Build first; activate the plugin and provide the wpmn_administrator test user with
  * install_plugins and unfiltered_html. WP-CLI and installed Chromium are required.
  * FSNIP_WP_ROOT=/path/to/disposable/wordpress node --test tests/browser/groups.js
- * Creates/reuses one synthetic WPMN draft and creates groups retained for inspection.
+ * Creates/reuses A, seeds two synthetic retry drafts, and retains test data for inspection.
  * Existing matching legacy data is reused without saving its body. Never use a live site.
  */
 const {test} = require('node:test');
@@ -42,6 +42,8 @@ test('empty groups, keyboard moves, drag/drop and rename persist', async () => {
         page.on('pageerror', err => errors.push(err.message));
         await page.goto(url.origin + '/wp-admin/admin.php?page=fluent-snippets#/');
         await page.getByRole('button', {name: 'Create group', exact: true}).waitFor({timeout: 5000});
+        await page.waitForLoadState('networkidle');
+        const retry = JSON.parse(execFileSync('wp', ['--path=' + root, '--user=wpmn_administrator', 'eval-file', path.join(__dirname,'fixtures/group-retry.php')], {encoding:'utf8'}).trim());
         const noNonce = await page.evaluate(async () => (await fetch('/wp-json/fluent-snippets/groups/create', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'WPMN must not create without nonce'})})).status);
         assert.ok([401,403].includes(noNonce),'cookie-authenticated group writes require a REST nonce');
         const invalidNonce = await page.evaluate(async () => (await fetch('/wp-json/fluent-snippets/groups/create', {method:'POST',headers:{'Content-Type':'application/json','X-WP-Nonce':'invalid'},body:JSON.stringify({name:'WPMN must not create with invalid nonce'})})).status);
@@ -215,6 +217,35 @@ test('empty groups, keyboard moves, drag/drop and rename persist', async () => {
         await narrowDialog.getByRole('button',{name:'Cancel',exact:true}).click();
         await narrowDialog.waitFor({state:'hidden'});
         assert.notEqual(await page.evaluate(()=>document.activeElement.tagName),'BODY','dialog restores keyboard focus');
+        // A real partial rename is recoverable after the client state is discarded.
+        await page.setViewportSize({width:1440,height:900});
+        await page.reload();
+        const retrySource = page.locator('.fsnip_group').filter({has: page.getByRole('button',{name:retry.source,exact:true})});
+        await retrySource.getByRole('button',{name:'Rename group',exact:true}).click();
+        dialog = page.getByRole('dialog');
+        assert.equal(await dialog.getByRole('textbox',{name:'Group name',exact:true}).inputValue(),retry.target,'recorded retry target survives reload');
+        await dialog.getByRole('button',{name:'Retry rename',exact:true}).click();
+        await dialog.waitFor({state:'hidden'});
+        await retrySource.waitFor({state:'hidden'});
+        for (const retryFile of retry.files) {
+            const item = JSON.parse(wp('echo wp_json_encode((new \\FluentSnippets\\App\\Model\\Snippet())->findByFileName(' + JSON.stringify(retryFile) + '));'));
+            assert.equal(item.meta.group,retry.target);
+            assert.equal(item.code,'/* WPMN 13596 retry fixture */');
+            assert.equal(item.status,'draft');
+        }
+        await page.reload();
+        const retryTarget = page.locator('.fsnip_group').filter({has: page.getByRole('button',{name:retry.target,exact:true})});
+        const retryState = await page.evaluate(async () => {
+            const response = await fetch('/wp-json/fluent-snippets/groups',{headers:{'X-WP-Nonce':window.fluentSnippetAdmin.rest.nonce}});
+            return {status:response.status,data:await response.json()};
+        });
+        assert.equal(retryState.status,200);
+        assert.equal(retryState.data.renames.some(rename=>rename.from===retry.source),false,'successful retry removes its saved operation');
+        await retryTarget.getByRole('button',{name:'Rename group',exact:true}).click();
+        dialog = page.getByRole('dialog');
+        await dialog.getByRole('button',{name:'Rename group',exact:true}).waitFor();
+        assert.equal(await dialog.getByRole('button',{name:'Retry rename',exact:true}).count(),0,'completed retry record is removed');
+        await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
         // Inject the controller's read-error shape with no snippets/groups at bootstrap.
         // This checks UI error handling without corrupting the fixture's saved registry.
         await page.addInitScript(() => {

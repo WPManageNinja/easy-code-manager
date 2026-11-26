@@ -11,9 +11,9 @@ class GroupsController
     public static function index(\WP_REST_Request $request)
     {
         if (!Permissions::canView()) return new \WP_Error('rest_forbidden', __('You cannot view snippet groups.', 'easy-code-manager'), ['status' => 403]);
-        $names = SnippetGroups::read();
-        if (is_wp_error($names)) return $names;
-        return ['groups' => (new Snippet())->getAllSnippetTagsGroups()[1]];
+        $state = SnippetGroups::state();
+        if (is_wp_error($state)) return $state;
+        return ['groups' => (new Snippet())->getAllSnippetTagsGroups()[1], 'renames' => $state['renames']];
     }
 
     private static function guard()

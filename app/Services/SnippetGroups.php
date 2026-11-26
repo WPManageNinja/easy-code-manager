@@ -24,24 +24,40 @@ class SnippetGroups
 
     private static function decode($raw)
     {
-        if (!is_string($raw)) {
-            return self::error(__('The group list could not be opened. Check the snippet storage permissions.', 'easy-code-manager'), 500);
+        if (!is_string($raw)) return self::error(__('The group list could not be opened. Check the snippet storage permissions.', 'easy-code-manager'), 500);
+        if (strpos($raw, self::HEADER) !== 0) return self::error(__('The saved group list cannot be read. Restore the group metadata file from a backup before changing groups.', 'easy-code-manager'), 500);
+        $data = json_decode(substr($raw, strlen(self::HEADER)), true);
+        $isNames = function ($names) {
+            return is_array($names) && array_values($names) === $names && count(array_filter($names, 'is_string')) === count($names);
+        };
+        // Accept the initial flat registry without a migration on read.
+        if ($isNames($data)) return ['groups' => $data, 'renames' => []];
+        $valid = is_array($data) && count($data) === 3 && ($data['version'] ?? null) === 1
+            && $isNames($data['groups'] ?? null) && isset($data['renames']) && is_array($data['renames'])
+            && array_values($data['renames']) === $data['renames'];
+        if ($valid) {
+            $pendingNames = [];
+            foreach ($data['renames'] as $rename) {
+                if (!is_array($rename) || count($rename) !== 2 || !isset($rename['from'], $rename['to'])
+                    || !is_string($rename['from']) || !is_string($rename['to']) || $rename['from'] === '' || $rename['to'] === '' || $rename['from'] === $rename['to']
+                    || trim($rename['from']) !== $rename['from'] || trim($rename['to']) !== $rename['to']
+                    || (string) Helper::sanitizeMetaValue($rename['from']) !== $rename['from'] || (string) Helper::sanitizeMetaValue($rename['to']) !== $rename['to']
+                    || !in_array($rename['from'], $data['groups'], true) || !in_array($rename['to'], $data['groups'], true)
+                    || in_array($rename['from'], $pendingNames, true) || in_array($rename['to'], $pendingNames, true)) {
+                    $valid = false;
+                    break;
+                }
+                $pendingNames[] = $rename['from'];
+                $pendingNames[] = $rename['to'];
+            }
         }
-        if (strpos($raw, self::HEADER) !== 0) {
-            return self::error(__('The saved group list cannot be read. Restore the group metadata file from a backup before changing groups.', 'easy-code-manager'), 500);
-        }
-        $names = json_decode(substr($raw, strlen(self::HEADER)), true);
-        if (!is_array($names) || array_values($names) !== $names || count(array_filter($names, 'is_string')) !== count($names)) {
-            return self::error(__('The saved group list is invalid. Restore the group metadata file from a backup before changing groups.', 'easy-code-manager'), 500);
-        }
-        return $names;
+        if (!$valid) return self::error(__('The saved group list is invalid. Restore the group metadata file from a backup before changing groups.', 'easy-code-manager'), 500);
+        return ['groups' => $data['groups'], 'renames' => $data['renames']];
     }
 
-    public static function read()
+    public static function state()
     {
-        if (!file_exists(self::path())) {
-            return [];
-        }
+        if (!file_exists(self::path())) return ['groups' => [], 'renames' => []];
         // A storage-protection filter may read groups while an index is rebuilt.
         if (self::$mutating) return self::decode(@file_get_contents(self::path()));
         $handle = @fopen(dirname(self::path()) . '/.lock.php', 'rb');
@@ -55,6 +71,12 @@ class SnippetGroups
             flock($handle, LOCK_UN);
             fclose($handle);
         }
+    }
+
+    public static function read()
+    {
+        $state = self::state();
+        return is_wp_error($state) ? $state : $state['groups'];
     }
 
     private static function name($value, $allowEmpty = false, $existingIdentity = false)
@@ -71,16 +93,19 @@ class SnippetGroups
         return $name;
     }
 
-    private static function save($handle, $names)
+    private static function save($handle, $names, $renames = [])
     {
         $names = array_values(array_unique(array_filter($names, function ($name) { return $name !== ''; })));
         sort($names, SORT_STRING);
-        $json = json_encode($names, JSON_UNESCAPED_UNICODE);
-        if ($json === false) {
-            return false;
-        }
-        $data = self::HEADER . $json;
-        return Helper::atomicPut(self::path(), $data) !== false;
+        $json = json_encode(['version' => 1, 'groups' => $names, 'renames' => array_values($renames)], JSON_UNESCAPED_UNICODE);
+        return $json !== false && Helper::atomicPut(self::path(), self::HEADER . $json) !== false;
+    }
+
+    private static function withoutRenames($renames, $names)
+    {
+        return array_values(array_filter($renames, function ($rename) use ($names) {
+            return !in_array($rename['from'], $names, true) && !in_array($rename['to'], $names, true);
+        }));
     }
 
     private static function mutate($callback)
@@ -102,11 +127,11 @@ class SnippetGroups
             self::$writes = [];
             if (fstat($handle)['size'] === 0 && @fwrite($handle, self::HEADER) !== strlen(self::HEADER)) return self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
             $exists = file_exists($path);
-            $names = $exists ? self::decode(@file_get_contents($path)) : [];
-            if (is_wp_error($names)) return $names;
+            $state = $exists ? self::decode(@file_get_contents($path)) : ['groups' => [], 'renames' => []];
+            if (is_wp_error($state)) return $state;
             // Initialize before any mutation, so even a failed operation leaves a guarded file.
-            if (!$exists && !self::save($handle, $names)) return self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
-            return $callback($handle, $names);
+            if (!$exists && !self::save($handle, $state['groups'], $state['renames'])) return self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
+            return $callback($handle, $state);
         } finally {
             try {
                 self::notifyUpdates();
@@ -152,15 +177,32 @@ class SnippetGroups
         return array_values(array_unique($names));
     }
 
+    /** Retain a stored label before an existing writer removes its membership. */
+    public static function retain($value)
+    {
+        $name = self::name($value, false, true);
+        if (is_wp_error($name)) return $name;
+        $known = self::read();
+        if (is_wp_error($known)) return $known;
+        // Also permits ordinary update listeners during an organization notification:
+        // that batch already retained its source and destination before writing.
+        if (in_array($name, $known, true)) return true;
+        return self::mutate(function ($handle, $state) use ($name) {
+            $names = self::allNames($state['groups']);
+            $names[] = $name;
+            return self::save($handle, $names, $state['renames']) ? true : self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
+        });
+    }
+
     public static function create($value)
     {
         $name = self::name($value);
         if (is_wp_error($name)) return $name;
-        return self::mutate(function ($handle, $names) use ($name) {
-            $names = self::allNames($names);
+        return self::mutate(function ($handle, $state) use ($name) {
+            $names = self::allNames($state['groups']);
             if (in_array($name, $names, true)) return self::error(__('A group with this name already exists.', 'easy-code-manager'), 409);
             $names[] = $name;
-            return self::save($handle, $names) ? ['message' => __('Group created.', 'easy-code-manager')] : self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
+            return self::save($handle, $names, $state['renames']) ? ['message' => __('Group created.', 'easy-code-manager')] : self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
         });
     }
 
@@ -200,15 +242,15 @@ class SnippetGroups
         $name = self::name($value, true, true);
         if (is_wp_error($name)) return $name;
         if (!is_string($expected)) return self::error(__('The current group is required. Reload the snippet list and try again.', 'easy-code-manager'), 409);
-        return self::mutate(function ($handle, $names) use ($file, $name, $expected) {
+        return self::mutate(function ($handle, $state) use ($file, $name, $expected) {
             $entry = self::envelope($file);
             if (!$entry) return self::error(__('The snippet file could not be read. Reload the list and try again.', 'easy-code-manager'), 404);
             if ($entry['group'] !== $expected) return self::error(__('This snippet has changed groups. Reload the list and try again.', 'easy-code-manager'), 409);
-            $names = self::allNames($names);
+            $names = self::allNames($state['groups']);
             if ($name !== '' && !in_array($name, $names, true)) return self::error(__('The destination group no longer exists. Reload the list and try again.', 'easy-code-manager'), 409);
             if ($entry['group'] === $name) return ['message' => __('Snippet moved.', 'easy-code-manager')];
             $names[] = $entry['group'];
-            if (!self::save($handle, $names)) return self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
+            if (!self::save($handle, $names, $state['renames'])) return self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
             if (!self::change($entry, $name)) return self::error(__('The snippet could not be moved. Check permissions, reload the list and try again.', 'easy-code-manager'), 409);
             if (Helper::cacheSnippetIndex() === false) return self::error(__('The snippet file changed, but its index could not be updated. Reload the list and retry the index sync.', 'easy-code-manager'), 500);
             return ['message' => __('Snippet moved.', 'easy-code-manager')];
@@ -221,13 +263,21 @@ class SnippetGroups
         if (is_wp_error($from)) return $from;
         $to = is_string($newValue) && trim($newValue) === $from ? $from : self::name($newValue);
         if (is_wp_error($to)) return $to;
-        return self::mutate(function ($handle, $names) use ($from, $to, $retry) {
-            $names = self::allNames($names);
+        return self::mutate(function ($handle, $state) use ($from, $to, $retry) {
+            $names = self::allNames($state['groups']);
             if (!in_array($from, $names, true)) return self::error(__('The source group no longer exists. Reload the list and try again.', 'easy-code-manager'), 409);
             if ($from === $to) return ['message' => __('Group renamed.', 'easy-code-manager')];
+            $recorded = false;
+            foreach ($state['renames'] as $rename) {
+                if ($rename['from'] === $from && $rename['to'] === $to) $recorded = true;
+            }
+            if ($retry && !$recorded) return self::error(__('This group rename has no incomplete operation to retry. Reload the snippet list and try again.', 'easy-code-manager'), 409);
             if (!$retry && in_array($to, $names, true)) return self::error(__('A group with this name already exists.', 'easy-code-manager'), 409);
+            // Starting a different rename invalidates retries involving either label.
+            $renames = self::withoutRenames($state['renames'], [$from, $to]);
+            $renames[] = ['from' => $from, 'to' => $to];
             $names[] = $to;
-            if (!self::save($handle, $names)) return self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
+            if (!self::save($handle, $names, $renames)) return self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
             $indexed = self::indexed();
             $files = array_unique(array_merge(array_keys($indexed), array_map('basename', glob(Helper::getStorageDir() . '/*.php') ?: [])));
             $changed = 0;
@@ -249,7 +299,8 @@ class SnippetGroups
                 ), 409, ['partial' => true, 'changed' => $changed, 'failed' => $failed]);
             }
             $names = array_values(array_diff($names, [$from]));
-            if (!self::save($handle, $names)) return self::error(__('The snippets were renamed, but the old group could not be removed. Reload and retry the rename.', 'easy-code-manager'), 500, ['partial' => true]);
+            $renames = self::withoutRenames($renames, [$from, $to]);
+            if (!self::save($handle, $names, $renames)) return self::error(__('The snippets were renamed, but the old group could not be removed. Reload and retry the rename.', 'easy-code-manager'), 500, ['partial' => true]);
             return ['message' => __('Group renamed.', 'easy-code-manager')];
         });
     }
