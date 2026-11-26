@@ -167,7 +167,8 @@ class Helper
     {
         // A stable per-file lock serializes replacement with metadata-only writes.
         // Keep the old fallback for ordinary saves on hosts that cannot create locks.
-        $lock = @fopen(dirname($file) . '/.fluent-snippets-' . sha1(basename($file)) . '.lock', 'c');
+        $lockPath = dirname($file) . '/.fluent-snippets-' . sha1(basename($file)) . '.lock';
+        $lock = @fopen($lockPath, 'c') ?: @fopen($lockPath, 'r');
         if (!$lock || !@flock($lock, LOCK_EX)) {
             if ($lock) fclose($lock);
             return $expectedContents === null ? self::putFile($file, $contents) : false;

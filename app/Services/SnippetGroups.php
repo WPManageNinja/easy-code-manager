@@ -89,7 +89,8 @@ class SnippetGroups
             return self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);
         }
         // The stable, guarded lock stays separate from atomically replaced metadata.
-        $handle = @fopen(dirname($path) . '/.lock.php', 'c+b');
+        $lockPath = dirname($path) . '/.lock.php';
+        $handle = @fopen($lockPath, 'c+b') ?: @fopen($lockPath, 'rb');
         if (!$handle || !@flock($handle, LOCK_EX)) {
             if ($handle) fclose($handle);
             return self::error(__('The group list could not be saved. Check the snippet storage permissions.', 'easy-code-manager'), 500);

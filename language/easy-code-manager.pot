@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-26T17:09:07+00:00\n"
+"POT-Creation-Date: 2026-11-26T17:19:19+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: easy-code-manager\n"
@@ -32,71 +32,71 @@ msgstr ""
 msgid "Super Fast File Based Native Code Snippets (header / footer codes) Manager for WordPress"
 msgstr ""
 
-#: app/Helpers/Helper.php:673
+#: app/Helpers/Helper.php:674
 msgid "The snippet index could not be read, so a new Safe Mode URL could not be issued."
 msgstr ""
 
 #. translators: %s: script or style
-#: app/Helpers/Helper.php:878
+#: app/Helpers/Helper.php:879
 #, php-format
 msgid "Remove the wrapping <%s> tag"
 msgstr ""
 
 #. translators: 1: script or style, 2: script or style
-#: app/Helpers/Helper.php:883
+#: app/Helpers/Helper.php:884
 #, php-format
 msgid "FluentSnippets outputs the <%1$s> element for you and puts this snippet inside it. A second <%2$s> tag in the code ends up printed as literal text on the page, and the snippet does nothing."
 msgstr ""
 
 #. translators: 1: opening tag, 2: closing tag
-#: app/Helpers/Helper.php:889
+#: app/Helpers/Helper.php:890
 #, php-format
 msgid "Delete the opening %1$s and its matching %2$s, and keep only what was between them."
 msgstr ""
 
-#: app/Helpers/Helper.php:996
+#: app/Helpers/Helper.php:997
 msgid "Remove the opening <?php tag"
 msgstr ""
 
-#: app/Helpers/Helper.php:997
+#: app/Helpers/Helper.php:998
 msgid "FluentSnippets writes the opening PHP tag itself when it saves the file, so a second one in your code would be printed onto the page as text."
 msgstr ""
 
-#: app/Helpers/Helper.php:998
+#: app/Helpers/Helper.php:999
 msgid "Delete the <?php line at the very top of the snippet and keep the rest as it is."
 msgstr ""
 
-#: app/Helpers/Helper.php:1028
+#: app/Helpers/Helper.php:1029
 #: app/Services/Trans.php:243
 msgid "Snippet Name"
 msgstr ""
 
-#: app/Helpers/Helper.php:1029
+#: app/Helpers/Helper.php:1030
 #: app/Services/Trans.php:258
 msgid "Status"
 msgstr ""
 
-#: app/Helpers/Helper.php:1030
+#: app/Helpers/Helper.php:1031
 #: app/Services/Trans.php:245
 msgid "Snippet Type"
 msgstr ""
 
-#: app/Helpers/Helper.php:1031
+#: app/Helpers/Helper.php:1032
 msgid "Where to run"
 msgstr ""
 
 #. translators: %s: name of the field that was left empty
-#: app/Helpers/Helper.php:1040
+#: app/Helpers/Helper.php:1041
 #, php-format
 msgid "%s is required"
 msgstr ""
 
-#: app/Helpers/Helper.php:1046
+#: app/Helpers/Helper.php:1047
 msgid "A snippet cannot be stored without this. It is written into the file header and is what tells FluentSnippets when and how to run your code."
 msgstr ""
 
 #. translators: %s: name of the field that was left empty
-#: app/Helpers/Helper.php:1049
+#: app/Helpers/Helper.php:1050
 #, php-format
 msgid "Fill in the %s field on the right and save again."
 msgstr ""
@@ -844,69 +844,69 @@ msgid "Another group change is already in progress."
 msgstr ""
 
 #: app/Services/SnippetGroups.php:89
-#: app/Services/SnippetGroups.php:95
-#: app/Services/SnippetGroups.php:100
-#: app/Services/SnippetGroups.php:105
-#: app/Services/SnippetGroups.php:160
-#: app/Services/SnippetGroups.php:208
-#: app/Services/SnippetGroups.php:227
+#: app/Services/SnippetGroups.php:96
+#: app/Services/SnippetGroups.php:101
+#: app/Services/SnippetGroups.php:106
+#: app/Services/SnippetGroups.php:161
+#: app/Services/SnippetGroups.php:209
+#: app/Services/SnippetGroups.php:228
 msgid "The group list could not be saved. Check the snippet storage permissions."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:158
-#: app/Services/SnippetGroups.php:225
+#: app/Services/SnippetGroups.php:159
+#: app/Services/SnippetGroups.php:226
 msgid "A group with this name already exists."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:160
+#: app/Services/SnippetGroups.php:161
 msgid "Group created."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:199
+#: app/Services/SnippetGroups.php:200
 msgid "The current group is required. Reload the snippet list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:202
+#: app/Services/SnippetGroups.php:203
 msgid "The snippet file could not be read. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:203
+#: app/Services/SnippetGroups.php:204
 msgid "This snippet has changed groups. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:205
+#: app/Services/SnippetGroups.php:206
 msgid "The destination group no longer exists. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:206
-#: app/Services/SnippetGroups.php:211
+#: app/Services/SnippetGroups.php:207
+#: app/Services/SnippetGroups.php:212
 msgid "Snippet moved."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:209
+#: app/Services/SnippetGroups.php:210
 msgid "The snippet could not be moved. Check permissions, reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:210
+#: app/Services/SnippetGroups.php:211
 msgid "The snippet file changed, but its index could not be updated. Reload the list and retry the index sync."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:223
+#: app/Services/SnippetGroups.php:224
 msgid "The source group no longer exists. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:224
-#: app/Services/SnippetGroups.php:250
+#: app/Services/SnippetGroups.php:225
+#: app/Services/SnippetGroups.php:251
 msgid "Group renamed."
 msgstr ""
 
 #. translators: 1: changed snippet count, 2: failed snippet count
-#: app/Services/SnippetGroups.php:245
+#: app/Services/SnippetGroups.php:246
 #, php-format
 msgid "Group rename is incomplete: %1$d snippets changed, %2$d failed. Both group names were kept. Check storage permissions, reload the list and retry the rename."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:249
+#: app/Services/SnippetGroups.php:250
 msgid "The snippets were renamed, but the old group could not be removed. Reload and retry the rename."
 msgstr ""
 

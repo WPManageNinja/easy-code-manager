@@ -206,4 +206,12 @@ check('move with extension callback succeeds', !is_wp_error(request('move',['fil
 $index=Helper::getIndexedConfig(false);
 check('extension file change still rebuilds index', ($index['draft'][$files[0]]['group']??'')==='Hook override' && $GLOBALS['rebuilds']===2);
 unset($GLOBALS['on_update']);
+$registryLock=$storage.'/groups/.lock.php';
+chmod($registryLock,0444);
+check('readable registry mutex permits a group write', !is_wp_error(request('create',['name'=>'Readable mutex'])));
+chmod($registryLock,0644);
+$snippetLock=$storage.'/.fluent-snippets-'.sha1($files[0]).'.lock';
+chmod($snippetLock,0444);
+check('readable snippet mutex permits a conditional write', !is_wp_error(request('move',['file_name'=>$files[0],'group'=>'Legacy','expected_group'=>'Hook override'])));
+chmod($snippetLock,0644);
 exit($failures ? 1 : 0);
