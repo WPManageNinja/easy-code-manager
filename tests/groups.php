@@ -29,7 +29,9 @@ function do_action($tag, ...$args) {
 function is_wp_error($v) { return $v instanceof WP_Error; }
 function sanitize_file_name($v) { return preg_replace('/[^a-zA-Z0-9._-]/', '', $v); }
 function sanitize_title($v) { return strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $v)); }
-function sanitize_text_field($v) { return trim(strip_tags($v)); }
+// Core also collapses whitespace/removes percent octets; real-core coverage lives
+// in browser/fixtures/group-legacy-labels.php rather than relying on this subset.
+function sanitize_text_field($v) { return trim(preg_replace('/%[a-f0-9]{2}/i', '', preg_replace('/[\r\n\t ]+/', ' ', strip_tags($v)))); }
 function current_time($v) { return date('Y-m-d H:i:s'); }
 function get_current_user_id() { return 1; }
 function __($s, $domain = '') { return $s; }

@@ -57,13 +57,15 @@ class SnippetGroups
         }
     }
 
-    private static function name($value, $allowEmpty = false)
+    private static function name($value, $allowEmpty = false, $existingIdentity = false)
     {
         if (!is_string($value)) {
             return self::error(__('Enter a group name as plain text.', 'easy-code-manager'));
         }
         $name = trim($value);
-        if ((!$allowEmpty && $name === '') || $name !== sanitize_text_field($name) || $name !== (string) Helper::sanitizeMetaValue($name)) {
+        // Existing identities are checked against stored names under the mutation
+        // lock. Core's new-name sanitizer also removes valid legacy percent octets.
+        if ((!$allowEmpty && $name === '') || (!$existingIdentity && $name !== sanitize_text_field($name)) || $name !== (string) Helper::sanitizeMetaValue($name)) {
             return self::error(__('Use a nonempty group name without markup, asterisks or line breaks.', 'easy-code-manager'));
         }
         return $name;
@@ -195,7 +197,7 @@ class SnippetGroups
 
     public static function move($file, $value, $expected)
     {
-        $name = self::name($value, true);
+        $name = self::name($value, true, true);
         if (is_wp_error($name)) return $name;
         if (!is_string($expected)) return self::error(__('The current group is required. Reload the snippet list and try again.', 'easy-code-manager'), 409);
         return self::mutate(function ($handle, $names) use ($file, $name, $expected) {
@@ -215,9 +217,9 @@ class SnippetGroups
 
     public static function rename($value, $newValue, $retry = false)
     {
-        $from = self::name($value);
-        $to = self::name($newValue);
+        $from = self::name($value, false, true);
         if (is_wp_error($from)) return $from;
+        $to = is_string($newValue) && trim($newValue) === $from ? $from : self::name($newValue);
         if (is_wp_error($to)) return $to;
         return self::mutate(function ($handle, $names) use ($from, $to, $retry) {
             $names = self::allNames($names);
