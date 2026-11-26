@@ -354,20 +354,20 @@
                                 aria-expanded and aria-controls are that missing sentence.
                             -->
                             <h2 class="group_name">
-                                <button type="button" @click="toggleGroupView(group.label)"
-                                        :aria-expanded="groupCollapsed[group.label] ? 'false' : 'true'"
+                                <button type="button" @click="toggleGroupView(groupName)"
+                                        :aria-expanded="groupCollapsed[groupName] ? 'false' : 'true'"
                                         :aria-controls="'fsnip_group_' + groupName">
                                     <el-icon aria-hidden="true">
-                                        <FolderOpened v-if="!groupCollapsed[group.label]"/>
+                                        <FolderOpened v-if="!groupCollapsed[groupName]"/>
                                         <FolderClosed v-else/>
                                     </el-icon>
                                     <span>{{ group.label }}</span>
                                 </button>
                                 <el-button v-if="canEdit" text size="small" :disabled="groupBusy" @click="openGroupDialog('rename', group.label)">{{ $t('Rename group') }}</el-button>
                             </h2>
-                            <p v-if="!group.snippets.length && !groupCollapsed[group.label]" class="fsnip_empty_group">{{ $t('No snippets shown in this group.') }}</p>
-                            <ul v-if="group.snippets.length && !groupCollapsed[group.label]" class="group_files"
-                                :id="'fsnip_group_' + groupName">
+                            <div v-show="!groupCollapsed[groupName]" :id="'fsnip_group_' + groupName">
+                            <p v-if="!group.snippets.length" class="fsnip_empty_group">{{ $t('No snippets shown in this group.') }}</p>
+                            <ul v-if="group.snippets.length" class="group_files">
                                 <li v-for="snippet in group.snippets" :class="'fsnip_status_'+snippet.status"
                                     :key="snippet.file_name" class="group_file" :draggable="canEdit && !groupBusy"
                                     @dragstart="startDrag($event, snippet)" @dragend="endDrag">
@@ -450,6 +450,7 @@
                                     </div>
                                 </li>
                             </ul>
+                            </div>
                         </div>
                         <div class="fsnip_ungrouped" :class="{'fsnip_drop_target': dragFile && dropGroup === ''}"
                              @dragover="dragOver($event, '')" @dragleave="dropGroup = null" @drop="dropSnippet($event, '')">
