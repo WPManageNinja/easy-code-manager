@@ -8,7 +8,8 @@
     "build": "vite build",
     "translate": "node i18n.node.js && node tests/lint/translation-map.js",
     "translate:check": "node tests/lint/translation-map.js",
-    "test:browser": "node tests/browser/smoke.js"
+    "test:browser": "node tests/browser/smoke.js && npm run test:heredoc",
+    "test:heredoc": "node --test tests/browser/heredoc-highlighting.js"
   },
   "keywords": [],
   "author": "",
@@ -28,10 +29,12 @@
     "@codemirror/lang-html": "^6.4.9",
     "@codemirror/lang-javascript": "^6.2.3",
     "@codemirror/lang-php": "^6.0.1",
+    "@codemirror/language": "^6.13.1",
     "@codemirror/state": "^6.7.6",
     "@codemirror/theme-one-dark": "^6.1.2",
     "@codemirror/view": "^6.36.6",
     "@element-plus/icons-vue": "^2.3.1",
+    "@lezer/highlight": "^1.2.5",
     "codemirror": "^6.0.1",
     "dayjs": "^1.11.13",
     "element-plus": "^2.9.9",

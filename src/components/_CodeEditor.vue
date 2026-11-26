@@ -43,7 +43,8 @@
 
 <script type="text/babel">
 import {Codemirror} from 'vue-codemirror'
-import {php} from '@codemirror/lang-php'
+import {markRaw} from 'vue'
+import phpEditorLanguage from '../Bits/phpEditorLanguage'
 import {css} from '@codemirror/lang-css'
 import { EditorView } from "@codemirror/view";
 import {javascript} from '@codemirror/lang-javascript'
@@ -153,9 +154,8 @@ export default {
             } else if (this.langType == 'js') {
                 lang = javascript();
             } else {
-                lang = php({
-                    plain: this.langType === 'PHP'
-                });
+                // CodeMirror looks up view plugins by identity when drawing their decorations.
+                lang = markRaw(phpEditorLanguage(this.langType === 'PHP'));
             }
 
             return [
