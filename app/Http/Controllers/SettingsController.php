@@ -308,24 +308,10 @@ class SettingsController
             }
             global $wpdb;
             $before = $wpdb->num_queries;
-            if ($address === null) {
-                $sites = get_sites($args);
-            } else {
-                // WP_Site_Query searches either column. A typed address must match both.
-                [$domain, $path] = $address;
-                $sites = $wpdb->get_results($wpdb->prepare(
-                    "SELECT blog_id, domain, path FROM {$wpdb->blogs}
-                     WHERE site_id = %d AND domain LIKE %s AND path LIKE %s
-                     ORDER BY (domain = %s AND path = %s) DESC, blog_id ASC LIMIT %d",
-                    $args['network_id'], '%' . $wpdb->esc_like($domain) . '%', '/' . $wpdb->esc_like($path) . '%',
-                    $domain, trailingslashit('/' . $path), $args['number']
-                ));
-            }
+            $sites = $address === null ? get_sites($args) : self::findSitesByAddress($args, $address);
             if ($wpdb->num_queries !== $before && $wpdb->last_error !== '') {
                 // Core can cache an empty ID list after a failed query. Let a retry reach the database.
-                if ($address === null) {
-                    wp_cache_set('last_changed', microtime(), 'sites');
-                }
+                wp_cache_set('last_changed', microtime(), 'sites');
                 return new \WP_Error('network_sites_unavailable', __('WordPress could not load the network sites. Try the search again.', 'easy-code-manager'), ['status' => 503]);
             }
             foreach ($sites as $site) {
@@ -489,5 +475,35 @@ class SettingsController
             'options' => $options
         ];
 
+    }
+
+    private static function findSitesByAddress($args, $address)
+    {
+        $query = new \WP_Site_Query();
+        // Core includes registered query variables in its cache key.
+        $query->query_var_defaults['fluent_snippets_address'] = null;
+        $args['fluent_snippets_address'] = $address;
+        $matchAddress = static function ($clauses, $current) use ($query) {
+            if ($current !== $query) {
+                return $clauses;
+            }
+            global $wpdb;
+            [$domain, $path] = $current->query_vars['fluent_snippets_address'];
+            $table = $wpdb->blogs;
+            $where = $wpdb->prepare(
+                "$table.domain LIKE %s AND $table.path LIKE %s",
+                '%' . $wpdb->esc_like($domain) . '%', '/' . $wpdb->esc_like($path) . '%'
+            );
+            $clauses['where'] .= ($clauses['where'] === '' ? '' : ' AND ') . $where;
+            $exact = $wpdb->prepare("($table.domain = %s AND $table.path = %s) DESC", $domain, trailingslashit('/' . $path));
+            $clauses['orderby'] = $exact . ($clauses['orderby'] === '' ? '' : ', ' . $clauses['orderby']);
+            return $clauses;
+        };
+        add_filter('sites_clauses', $matchAddress, 10, 2);
+        try {
+            return $query->query($args);
+        } finally {
+            remove_filter('sites_clauses', $matchAddress);
+        }
     }
 }
