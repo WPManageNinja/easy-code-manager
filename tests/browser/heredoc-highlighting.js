@@ -63,7 +63,9 @@ test('edit screen language highlighting', async t => {
         for (const type of ['PHP', 'php_content']) {
             const mixed = type === 'php_content';
             const offset = mixed ? 1 : 0;
-            const document = mixed ? '<?php\n' + php + '\n?>\n<script>' + sample + '\n</script>' : php;
+            // Authors can pause at EOF after typing a prefix of the closing label.
+            // Earlier complete blocks must still be highlighted in that state.
+            const document = mixed ? '<?php\n' + php + '\n?>\n<script>' + sample + '\n</script>' : php + '\n$unfinished = <<<JS\nJSON';
             const lines = await open(type, document);
             const ordinary = await color(lines.nth(offset + 11), 'const');
             controls.push({
