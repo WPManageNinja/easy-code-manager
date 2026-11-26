@@ -13,7 +13,7 @@ class SnippetsController
      * Well past any real snippet. Here so a runaway request is refused with a reason
      * instead of being test-run and written to wp-content.
      */
-    const MAX_CODE_BYTES = 1048576;
+    const MAX_CODE_BYTES = Snippet::MAX_CODE_BYTES;
 
     /**
      * The meta a REST caller may set. Authorship and timestamps are not on it: those come
@@ -134,7 +134,8 @@ class SnippetsController
 
         $fileName = Helper::createSnippet([
             'meta' => $meta,
-            'code' => $code
+            'code' => $code,
+            'compiled_css' => $request->get_param('compiled_css')
         ]);
 
         if (is_wp_error($fileName)) {
@@ -218,7 +219,15 @@ class SnippetsController
             ]);
         }
 
+        $compiledCss = $request->get_param('compiled_css');
         if ($code === null) {
+            if (($existing['meta']['type'] ?? '') === 'scss' && isset($meta['type']) && $meta['type'] !== 'scss') {
+                return new \WP_Error('missing_code', __('Provide replacement code to change the snippet type.', 'easy-code-manager'), ['status' => 400]);
+            }
+            if ($compiledCss !== null && ($existing['meta']['type'] ?? '') === 'scss') {
+                return new \WP_Error('missing_code', __('Send SCSS source with compiled CSS.', 'easy-code-manager'), ['status' => 400]);
+            }
+            $compiledCss = $existing['compiled_css'] ?? null;
             $code = $currentCode;
         } else if ($tooLarge = self::refuseOversizedCode($code)) {
             return $tooLarge;
@@ -244,6 +253,7 @@ class SnippetsController
             'meta'       => $meta,
             'code'       => $code,
             'file_name'  => $fileName,
+            'compiled_css' => $compiledCss,
             'reactivate' => $request->get_param('reactivate')
         ]);
 
@@ -284,7 +294,10 @@ class SnippetsController
 
         $snippet['meta']['status'] = $status;
 
-        $snippetName = $snippetModel->updateSnippet($fileName, $snippet['code'], $snippet['meta']);
+        $snippetName = $snippetModel->updateSnippet($fileName, $snippet['code'], $snippet['meta'], $snippet['compiled_css'] ?? null);
+        if (is_wp_error($snippetName)) {
+            return $snippetName;
+        }
 
         do_action('fluent_snippets/snippet_status_updated', $snippetName);
         do_action('fluent_snippets/snippet_updated', $snippetName);

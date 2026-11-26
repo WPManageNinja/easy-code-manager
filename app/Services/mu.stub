@@ -632,13 +632,18 @@ class CodeRunner
                         }, $this->get($snippet, 'priority', 10));
                     }
                     break;
+                case 'scss':
+                    if (empty($snippet['css_hash'])) {
+                        break;
+                    }
+                    // Paired SCSS shares the CSS delivery controls.
                 case 'css':
                     $runAt = $this->get($snippet, 'run_at', 'wp_head');
 
                     $isBlockStyle = $this->get($snippet, 'load_in_block_editor', '') === 'yes';
                     if ($isBlockStyle) {
                         add_filter('block_editor_settings_all', function ($settings) use ($snippet, $file) {
-                            $code = $this->parseBlock(file_get_contents($file), true);
+                            $code = $this->parseBlock(file_get_contents($file), true, $snippet['type'] === 'scss');
                             if ($code) {
                                 $settings['styles'][] = array(
                                     'css'            => $code,
@@ -665,6 +670,9 @@ class CodeRunner
                     $loadUrl = '';
                     if ($this->get($snippet, 'load_as_file') == 'yes') {
                         $cachedFile = str_replace('.php', '.css', $fileName);
+                        if ($snippet['type'] === 'scss') {
+                            $cachedFile = basename($fileName, '.php') . '-scss-' . $this->get($snippet, 'css_hash', '') . '.css';
+                        }
                         $loadUrl = $this->getCachedFileUrl($cachedFile);
                         if ($loadUrl) {
                             $runAt = ($runAt == 'admin_head') ? 'admin_enqueue_scripts' : 'wp_enqueue_scripts';
@@ -677,7 +685,7 @@ class CodeRunner
                                 return;
                             }
 
-                            $code = $this->parseBlock(file_get_contents($file), true);
+                            $code = $this->parseBlock(file_get_contents($file), true, $snippet['type'] === 'scss');
                             wp_add_inline_style('wp-edit-blocks', $code);
                         });
                     }
@@ -691,7 +699,7 @@ class CodeRunner
                             $snippetScriptName = str_replace('.php', '', $snippet['file_name']);
                             wp_enqueue_style('fluent_snippet_' . $snippetScriptName, $loadUrl, [], strtotime($snippet['updated_at']));
                         } else {
-                            $code = $this->parseBlock(file_get_contents($file), true);
+                            $code = $this->parseBlock(file_get_contents($file), true, $snippet['type'] === 'scss');
                             ?>
                             <style><?php echo $this->escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></style>
                             <?php
@@ -784,8 +792,15 @@ class CodeRunner
         return $default;
     }
 
-    private function parseBlock($fileContent, $codeOnly = false)
+    private function parseBlock($fileContent, $codeOnly = false, $requireScss = false)
     {
+        if ($codeOnly && strpos($fileContent, '<?php // SCSS-1 ') === 0) {
+            $parts = preg_split('~^<\?php if \(!defined\("ABSPATH"\)\) \{ return;\} // <Internal Doc End> \?>\r?\n~m', $fileContent, 2);
+            return $parts[1] ?? '';
+        }
+        if ($requireScss) {
+            return '';
+        }
         // get content from // <Internal Doc Start> to // <Internal Doc End>
         $fileContent = explode('// <Internal Doc Start>', $fileContent);
 
@@ -865,7 +880,7 @@ class CodeRunner
     {
         $file = $this->storageDir . '/cached/' . $fileName;
 
-        if (!file_exists($file)) {
+        if (!is_file($file)) {
             return false;
         }
 

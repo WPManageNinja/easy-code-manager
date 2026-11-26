@@ -5,9 +5,11 @@ import Components from 'unplugin-vue-components/vite';
 import {ElementPlusResolver} from 'unplugin-vue-components/resolvers';
 import autoprefixer from 'autoprefixer';
 import path from 'path';
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
 
 /*
- * One classic script and one stylesheet (plus the index.php guard below), nothing else.
+ * The admin page loads a classic script and a stylesheet. SCSS saves load a separate worker.
  *
  * AdminMenuHandler enqueues dist/app.js as an ordinary <script> that depends on jQuery and
  * reads window.fluentSnippetAdmin from wp_localize_script, and dist/app.css next to it.
@@ -26,6 +28,11 @@ const silenceIndex = {
     name: 'fluent-snippets-silence-index',
     generateBundle() {
         this.emitFile({type: 'asset', fileName: 'index.php', source: '<?php\n// Silence is golden.\n'});
+        const require = createRequire(import.meta.url);
+        const compiler = require.resolve('sass');
+        const immutable = createRequire(compiler).resolve('immutable/package.json');
+        const licenses = [compiler, immutable].map(file => readFileSync(path.join(path.dirname(file), 'LICENSE'), 'utf8'));
+        this.emitFile({type: 'asset', fileName: 'scss-licenses.txt', source: licenses.join('\n\n')});
     }
 };
 
@@ -46,6 +53,16 @@ export default defineConfig(({mode}) => {
             silenceIndex
         ],
 
+        experimental: {
+            renderBuiltUrl(filename, {hostType}) {
+                if (filename === 'scss-compiler.js' && hostType === 'js') {
+                    return {runtime: "window.fluentSnippetAdmin.asset_url + 'scss-compiler.js'"};
+                }
+            }
+        },
+        worker: {
+            rolldownOptions: {output: {entryFileNames: 'scss-compiler.js'}}
+        },
         resolve: {
             alias: {
                 '@': path.resolve(import.meta.dirname, 'src')

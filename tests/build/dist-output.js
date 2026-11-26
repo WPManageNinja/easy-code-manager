@@ -7,7 +7,7 @@
  * screen would then load blank with nothing failing until someone opened it. What has to
  * hold:
  *
- *   - dist/ holds app.js, app.css and the index.php directory guard, and nothing else:
+ *   - dist/ holds app.js, app.css and the index.php directory guard, plus the SCSS worker and its licenses:
  *     no chunks, no source maps
  *   - app.js is a classic script: it parses outside a module, with no import, export or
  *     import.meta in it
@@ -56,8 +56,9 @@ console.log(`\ndist/ holds the two files PHP loads (${path.relative(repo, dist) 
 
 const files = fs.existsSync(dist) ? fs.readdirSync(dist).filter(f => f !== '.DS_Store').sort() : [];
 check('dist/ exists', fs.existsSync(dist));
-check('it holds app.css, app.js and index.php and nothing else', JSON.stringify(files) === '["app.css","app.js","index.php"]',
+check('it holds the admin assets, guard and dedicated worker', JSON.stringify(files) === '["app.css","app.js","index.php","scss-compiler.js","scss-licenses.txt"]',
     'found: ' + (files.join(', ') || 'nothing') + (files.some(f => f.endsWith('.map')) ? ' (a development build: run npm run build)' : ''));
+check('the SCSS editor can load its dedicated compiler worker', files.includes('scss-compiler.js'));
 check('index.php is the "silence is golden" guard every plugin folder has', /^<\?php\s*\n\/\/ Silence is golden\.\s*$/.test(read('index.php') || ''),
     JSON.stringify((read('index.php') || '(missing)').slice(0, 60)));
 

@@ -91,7 +91,7 @@
                     <tag-creator v-model="snippet.meta.tags" />
                 </el-form-item>
 
-                <template v-if="snippet.meta.type == 'css' || snippet.meta.type == 'js'">
+                <template v-if="['css', 'scss', 'js'].includes(snippet.meta.type)">
                     <el-form-item  class="snippet_loading_method">
                         <template #label>
                         <span>
@@ -112,7 +112,7 @@
                         </el-checkbox>
                     </el-form-item>
 
-                    <el-form-item v-if="snippet.meta.type == 'css'" class="snippet_block_editor">
+                    <el-form-item v-if="['css', 'scss'].includes(snippet.meta.type)" class="snippet_block_editor">
                         <template #label>
                             <span>
                                 {{$t('Block Editor Styles?')}} <el-tooltip

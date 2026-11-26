@@ -7,7 +7,7 @@
 
 ### Features
 - File-based Snippets (0 Database Query) 🚀
-- Custom Code Snippets (PHP/HTML/CSS/JS)
+- Custom Code Snippets (PHP/HTML/CSS/SCSS/JS)
 - Advanced Conditional Logic
 - Automatic Error Handling
 - Custom Shortcode
@@ -22,6 +22,12 @@ Long story short, we manage many websites for our products and these are mostly 
 You see, the design is super simple and this is what it should be! FluentSnippets stores the code snippets in the flat file and uses code blocks in each snippet file to add metadata like a description, title, conditional logic, snippet type, and other things. We also parse these data once and cache these into index.php so we don’t have to parse these code blocks in every request. Then on runtime, it just includes those files to your selected action hook. In the whole process, FluentSnippets runs 0 database queries. In fact, we don’t have any Database query in the whole plugin runtime.
 
 With this native design, FluentSnippets is native, secure by design, and the most performant code snippets in this category.
+
+### SCSS stylesheets
+
+Select **Styles – SCSS** and save a self-contained stylesheet. The editor compiles it with a local Dart Sass worker. Variables, nested selectors, mixins and built-in Sass modules are supported. Compilation errors include the source location and leave the saved stylesheet intact. The generated CSS uses the same locations and inline or file delivery settings as plain CSS.
+
+The editor and export retain the original source. An SCSS REST create or code update accepts `code` and `compiled_css` together; `compiled_css` may be empty when the source contains declarations alone. A metadata-only update reuses the stored pair. Each field is limited to 1 MiB. Exports carry both values for draft import. Filesystem and remote Sass imports are unavailable.
 
 ### The code editor
 The code editor of FluentSnippets is simple. We have used codemirror javascript library to add the code editor. It does not have advanced features like auto-complete.
