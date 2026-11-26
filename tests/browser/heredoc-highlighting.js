@@ -31,6 +31,27 @@ async function color(line, token) {
     }, token);
 }
 
+test('heredoc typing uses the PHP editor rules', async () => {
+    const {EditorState} = await import('@codemirror/state');
+    const {getIndentation} = await import('@codemirror/language');
+    const {default: phpEditorLanguage} = await import('../../src/Bits/phpEditorLanguage.js');
+    for (const plain of [true, false]) {
+        const fixture = label => (plain ? '' : '<?php\n') + '$js = <<<' + label +
+            '\nconst example = 42;\nconst template = ;\nexam\nconst values = [\n1,\n];\n' + label + ';';
+        function typingRules(label) {
+            const doc = fixture(label);
+            const pos = doc.indexOf(' = ;') + 3;
+            const state = EditorState.create({doc, selection: {anchor: pos}, extensions: phpEditorLanguage(plain)});
+            return {
+                closingIndent: getIndentation(state, doc.indexOf('];')),
+                completion: state.languageDataAt('autocomplete', doc.indexOf('\nexam\n') + 5),
+                brackets: state.languageDataAt('closeBrackets', pos)
+            };
+        }
+        assert.deepEqual(typingRules('JS'), typingRules('TEXT'), 'heredoc input must retain PHP editing rules');
+    }
+});
+
 test('edit screen language highlighting', async t => {
     const {browser, context, auth} = await openAdminSession();
     try {
