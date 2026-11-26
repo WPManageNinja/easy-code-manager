@@ -29,11 +29,34 @@ const silenceIndex = {
     }
 };
 
+// @lezer/php 1.0.6 only accepts single-quoted labels and ends a heredoc
+// on a label prefix (e.g. JS in JSON.stringify). Correct the host token
+// before CodeMirror nests JavaScript or resumes parsing the following PHP.
+const phpHeredocLabels = {
+    name: 'fluent-snippets-php-heredoc-labels',
+    enforce: 'pre',
+    transform(code, id) {
+        if (!id.endsWith('/@lezer/php/dist/index.js')) return;
+        const corrections = [
+            ['let quoted = input.next == 39;', 'let quoted = (input.next == 39 || input.next == 34) && input.next;'],
+            ['if (input.next != 39) return', 'if (input.next != quoted) return'],
+            ['if (match) return input.acceptToken(HeredocString)',
+                'if (match && !isIdentifierStart(input.next) && !(input.next >= 48 && input.next <= 57)) return input.acceptToken(HeredocString)']
+        ];
+        for (const [before, after] of corrections) {
+            if (!code.includes(before)) this.error('Recheck the heredoc tokenizer fix against the installed @lezer/php.');
+            code = code.replace(before, after);
+        }
+        return code;
+    }
+};
+
 export default defineConfig(({mode}) => {
     const production = mode === 'production';
 
     return {
         plugins: [
+            phpHeredocLabels,
             vue(),
             AutoImport({
                 resolvers: [ElementPlusResolver()]
