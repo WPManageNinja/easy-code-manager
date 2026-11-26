@@ -36,12 +36,13 @@ test('edit screen language highlighting', async t => {
     try {
         const page = await context.newPage();
         let draft;
+        let draftNumber = 0;
         await page.route(url => decodeURIComponent(url.href).includes('/snippets/find'), route =>
             route.fulfill({json: {snippet: draft}})
         );
         async function open(type, code) {
             draft = {code, meta: {name: 'Highlighting example', type, status: 'draft', condition: {}}};
-            const file = 'highlight-' + type + '.php';
+            const file = 'highlight-' + type + '-' + (++draftNumber) + '.php';
             await page.goto(auth.adminUrl + 'admin.php?page=fluent-snippets#/snippets/' + file, {waitUntil: 'commit', timeout: 90000});
             await page.waitForFunction(expected =>
                 Array.from(document.querySelectorAll('.cm-content .cm-line'), line => line.textContent).join('\n') === expected,
@@ -75,7 +76,13 @@ test('edit screen language highlighting', async t => {
                 script: mixed ? await colors(lines.filter({hasText: /^<script>/})) : null
             });
             for (const index of [1, 4, 7]) bodies.push(await colors(lines.nth(offset + index)));
-            prefixes.push([await prefixColors(lines.nth(offset + 18)), await colors(lines.nth(offset + 19))]);
+            const identifier = await prefixColors(lines.nth(offset + 18));
+            const afterIdentifier = await colors(lines.nth(offset + 19));
+            const consecutive = ['$one = <<<JS', prefix, "const quote = /'/;", 'JS;',
+                '$two = <<<"JS"', sample, 'JS;', '$tail = 42;'].join('\n');
+            const next = await open(type, mixed ? '<?php\n' + consecutive + '\n?>\n<script>' + sample + '</script>' : consecutive);
+            prefixes.push([identifier, afterIdentifier, await colors(next.nth(offset + 5)),
+                await color(next.nth(offset + 7), '42'), mixed ? await colors(next.last()) : null]);
         }
         await t.test('ordinary PHP and inline scripts keep their colors', () => {
             for (const {ordinary, interpolated, followingNumber, script} of controls) {
@@ -91,9 +98,12 @@ test('edit screen language highlighting', async t => {
             }
         });
         await t.test('a longer identifier does not close the heredoc', () => {
-            for (const [identifier, next] of prefixes) {
+            for (const [identifier, next, secondBlock, tail, script] of prefixes) {
                 assert.deepEqual(identifier, prefixReference, 'JSON.stringify must retain JavaScript colors');
                 assert.deepEqual(next, reference, 'the line after JSON.stringify is still JavaScript');
+                assert.deepEqual(secondBlock, reference, 'a regex in the first block must not change the second block');
+                assert.equal(tail, controls[0].followingNumber, 'PHP resumes after both heredocs');
+                if (script) assert.deepEqual(script, reference, 'HTML scripts resume after PHP');
             }
         });
     } finally {
