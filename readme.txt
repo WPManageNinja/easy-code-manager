@@ -174,6 +174,9 @@ Quite the opposite. Unlike other code snippets plugins, FluentSnippets does not 
 
 == Changelog ==
 
+= 10.59 - Unreleased =
+* Create empty snippet groups, rename groups and move snippets using drag and drop or the Move to group action.
+
 = 10.58 - Oct 23, 2026 =
 - Fixed a bug where, after moving from one snippet's edit page to another without reloading (by changing the address, or with back/forward), saving wrote the first snippet over the second. The edit page now loads the snippet in the address, and saving always writes back to the snippet that was loaded
 

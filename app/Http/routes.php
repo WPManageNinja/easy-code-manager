@@ -47,6 +47,10 @@ $authoringArgs = [
 ];
 
 $router->get('snippets', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'getSnippets'], $read)
+    ->get('groups', ['\FluentSnippets\App\Http\Controllers\GroupsController', 'index'], $read)
+    ->post('groups/create', ['\FluentSnippets\App\Http\Controllers\GroupsController', 'create'], $write)
+    ->post('groups/move', ['\FluentSnippets\App\Http\Controllers\GroupsController', 'move'], $write)
+    ->post('groups/rename', ['\FluentSnippets\App\Http\Controllers\GroupsController', 'rename'], $write)
     ->get('snippets/find', ['\FluentSnippets\App\Http\Controllers\SnippetsController', 'findSnippet'], $read)
     /*
      * A POST, but a read as far as this distinction goes: syncSnippetIndex() rewrites the

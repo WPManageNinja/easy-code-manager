@@ -7,6 +7,7 @@ use FluentSnippets\App\Helpers\Helper;
 use FluentSnippets\App\Model\Snippet;
 use FluentSnippets\App\Services\CodeRunner;
 use FluentSnippets\App\Services\FluentSnippetCondition;
+use FluentSnippets\App\Services\SnippetGroups;
 
 class CodeHandler
 {
@@ -161,6 +162,9 @@ class CodeHandler
 
     public function rebuildCache($snippetFile)
     {
+        if (SnippetGroups::isNotifyingWrite($snippetFile)) {
+            return;
+        }
         Helper::cacheSnippetIndex();
     }
 

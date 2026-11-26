@@ -231,21 +231,12 @@ class Snippet
     {
         $config = Helper::getIndexedConfig();
 
-        if (!$config || empty($config['meta'])) {
-            return [[], []];
-        }
-
-        if (empty($config['published']) && empty($config['draft'])) {
-            return [[], []];
-        }
-
-        $snippets = array_merge($config['published'], $config['draft']);
-        if (!$snippets) {
-            return [[], []];
-        }
+        $snippets = array_merge($config['published'] ?? [], $config['draft'] ?? []);
 
         $allTags = [];
-        $allGroups = [];
+        $savedGroups = \FluentSnippets\App\Services\SnippetGroups::read();
+        // The management GET surfaces an unreadable registry. Existing snippets still list.
+        $allGroups = is_wp_error($savedGroups) ? [] : $savedGroups;
 
         foreach ($snippets as $snippet) {
             if (!empty($snippet['tags'])) {
@@ -253,7 +244,7 @@ class Snippet
                 $allTags = array_merge($allTags, $tags);
             }
 
-            if (!empty($snippet['group'])) {
+            if (isset($snippet['group']) && (string) $snippet['group'] !== '') {
                 $allGroups[] = trim($snippet['group']);
             }
         }
@@ -285,6 +276,27 @@ class Snippet
         ];
     }
 
+    private function retainPreviousGroup($file, $newGroup = null)
+    {
+        $raw = @file_get_contents($file);
+        $meta = null;
+        if (is_string($raw)) {
+            list($meta) = $this->parseBlock($raw);
+        }
+        if (is_array($meta) && array_key_exists('group', $meta)) {
+            $group = $meta['group'] ?? '';
+        } else {
+            // Keep recovery of write-only or damaged files working from the index.
+            $config = Helper::getIndexedConfig();
+            $name = basename($file);
+            $group = $config['published'][$name]['group'] ?? $config['draft'][$name]['group'] ?? '';
+        }
+        $group = trim((string) $group);
+        $destination = is_scalar($newGroup) ? trim((string) Helper::sanitizeMetaValue($newGroup)) : '';
+        if ($group === '' || ($newGroup !== null && $group === $destination)) return true;
+        return \FluentSnippets\App\Services\SnippetGroups::retain($group);
+    }
+
     public function updateSnippet($fileName, $code, $metaData)
     {
         $metaData['updated_at'] = date('Y-m-d H:i:s');
@@ -294,6 +306,9 @@ class Snippet
         if (!is_file($file)) {
             return SnippetErrors::fileMissing($fileName);
         }
+
+        $retained = $this->retainPreviousGroup($file, $metaData['group'] ?? '');
+        if (is_wp_error($retained)) return $retained;
 
         $docBlockString = $this->parseInputMeta($metaData, true);
         $fullCode = $docBlockString . $code;
@@ -383,7 +398,9 @@ class Snippet
             return new \WP_Error('file_not_found', 'File not found');
         }
 
-        unlink($file);
+        $retained = $this->retainPreviousGroup($file);
+        if (is_wp_error($retained)) return $retained;
+        if (!@unlink($file)) return new \WP_Error('file_delete_failed', __('The snippet could not be deleted. Check storage permissions and try again.', 'easy-code-manager'), ['status' => 500]);
 
         Helper::invalidateOpcache($file);
 
