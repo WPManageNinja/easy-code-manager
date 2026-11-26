@@ -1,7 +1,15 @@
-/** Group organization through the real admin app. Requires a writable LOCAL fixture. */
+/**
+ * Group organization through the real admin app, on a writable LOCAL fixture only.
+ * Build first; activate the plugin and provide the wpmn_administrator test user with
+ * install_plugins and unfiltered_html. WP-CLI and installed Chromium are required.
+ * FSNIP_WP_ROOT=/path/to/disposable/wordpress node --test tests/browser/groups.js
+ * Creates/reuses one synthetic WPMN draft and creates groups retained for inspection.
+ * Existing matching legacy data is reused without saving its body. Never use a live site.
+ */
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {execFileSync} = require('node:child_process');
+const path = require('node:path');
 const {chromium} = require('playwright');
 
 test('empty groups, keyboard moves, drag/drop and rename persist', async () => {
@@ -10,7 +18,7 @@ test('empty groups, keyboard moves, drag/drop and rename persist', async () => {
     const wp = code => execFileSync('wp', ['--path=' + root, '--user=wpmn_administrator', 'eval', code], {encoding: 'utf8'}).trim();
     const auth = JSON.parse(wp(`
         $end=time()+600; $id=get_current_user_id(); $token=WP_Session_Tokens::get_instance($id)->create($end);
-        echo wp_json_encode(['url'=>home_url(), 'edit'=>current_user_can('install_plugins'), 'cookies'=>[
+        echo wp_json_encode(['url'=>home_url(), 'edit'=>current_user_can('install_plugins'), 'author'=>current_user_can('unfiltered_html'), 'cookies'=>[
             ['name'=>AUTH_COOKIE,'value'=>wp_generate_auth_cookie($id,$end,'auth',$token)],
             ['name'=>SECURE_AUTH_COOKIE,'value'=>wp_generate_auth_cookie($id,$end,'secure_auth',$token)],
             ['name'=>LOGGED_IN_COOKIE,'value'=>wp_generate_auth_cookie($id,$end,'logged_in',$token)]
@@ -19,6 +27,9 @@ test('empty groups, keyboard moves, drag/drop and rename persist', async () => {
     const url = new URL(auth.url);
     assert.ok(url.hostname.endsWith('.test') || ['localhost', '127.0.0.1'].includes(url.hostname), 'Local site only');
     assert.equal(auth.edit, true, 'Writable fixture required; do not weaken site policy');
+    assert.equal(auth.author, true, 'Fixture authoring capability required');
+    const fixture = JSON.parse(execFileSync('wp', ['--path=' + root, '--user=wpmn_administrator', 'eval-file', path.join(__dirname,'fixtures/group-organization.php')], {encoding:'utf8'}).trim());
+    const file = fixture.file;
     const mapping = process.env.FSNIP_GROUPS_MAP;
     const browser = await chromium.launch({args: mapping ? ['--no-proxy-server', '--host-resolver-rules=MAP ' + url.hostname + ' ' + mapping] : []});
     let page;
@@ -48,8 +59,7 @@ test('empty groups, keyboard moves, drag/drop and rename persist', async () => {
         let group = page.locator('.fsnip_group').filter({has: page.getByRole('button', {name: unique, exact: true})});
         await group.waitFor();
         assert.equal(await group.locator('.group_file').count(), 0);
-        const row = page.locator('.group_file').filter({has: page.getByRole('link', {name: /WPMN 13596 A/})});
-        const file = (await row.locator('a.group_file_name').getAttribute('href')).split('/').pop();
+        const row = page.locator('.group_file').filter({has: page.locator('a.group_file_name[href$="/' + file + '"]')});
         const read = () => JSON.parse(wp('echo wp_json_encode((new \\FluentSnippets\\App\\Model\\Snippet())->findByFileName(' + JSON.stringify(file) + '));'));
         const before = read();
         await row.locator('a.group_file_name').focus();
@@ -60,7 +70,7 @@ test('empty groups, keyboard moves, drag/drop and rename persist', async () => {
         await page.getByRole('option', {name: unique, exact: true}).click();
         await dialog.getByRole('button', {name: 'Move snippet', exact: true}).click();
         await dialog.waitFor({state: 'hidden'});
-        await group.getByRole('link', {name: /WPMN 13596 A/}).waitFor();
+        await group.locator('a.group_file_name[href$="/' + file + '"]').waitFor();
         let after = read();
         assert.equal(after.meta.group, unique);
         assert.equal(after.code, before.code);
@@ -74,10 +84,10 @@ test('empty groups, keyboard moves, drag/drop and rename persist', async () => {
         assert.equal(read().meta.group, unique + ' renamed');
         const second = unique + ' empty';
         await createGroup(second);
-        const source = page.locator('.group_file').filter({has: page.getByRole('link', {name: /WPMN 13596 A/})});
+        const source = page.locator('.group_file').filter({has: page.locator('a.group_file_name[href$="/' + file + '"]')});
         const target = page.locator('.fsnip_group').filter({has: page.getByRole('button', {name: second, exact: true})});
         await source.dragTo(target.locator('.group_name'));
-        await target.getByRole('link', {name: /WPMN 13596 A/}).waitFor();
+        await target.locator('a.group_file_name[href$="/' + file + '"]').waitFor();
         assert.equal(read().meta.group, second);
         assert.equal(read().code, before.code);
         const protectedResponse = await page.evaluate(async () => { const response = await fetch('/wp-content/fluent-snippet-storage/groups/index.php'); return {status:response.status,body:await response.text()}; });
