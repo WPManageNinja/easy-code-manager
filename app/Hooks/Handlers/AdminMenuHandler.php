@@ -273,7 +273,17 @@ class AdminMenuHandler
         }
 
         $snippets = Arr::get($fileData, 'snippets', []);
+        $result = Helper::withSnippetWriteLock(function () use ($snippets) {
+            return $this->importLibrarySnippets($snippets);
+        });
+        if (is_wp_error($result)) {
+            $this->sendError($result);
+        }
+        wp_send_json(['snippets' => $result]);
+    }
 
+    private function importLibrarySnippets($snippets)
+    {
         $createdSnippts = [];
 
         $existingSnippets = (new Snippet)->get();
@@ -342,7 +352,7 @@ class AdminMenuHandler
                 }
             }
 
-            $validated = Helper::validateCode($meta['type'], $code);
+            $validated = Helper::validateCode($meta['type'], $code, $meta['network_sites'] ?? null);
 
             if (is_wp_error($validated)) {
                 $createdSnippts[] = [
@@ -374,11 +384,10 @@ class AdminMenuHandler
             ];
         }
 
-        Helper::cacheSnippetIndex();
-
-        wp_send_json([
-            'snippets' => $createdSnippts
-        ]);
+        if (Helper::cacheSnippetIndex() === false) {
+            return Helper::indexWriteError();
+        }
+        return $createdSnippts;
     }
 
     public function render()
@@ -480,7 +489,12 @@ class AdminMenuHandler
              * for itself, and has to, because nothing stops someone calling them directly.
              */
             'can_edit'                   => Permissions::canEdit(),
+            'network_id'                 => is_multisite() && is_super_admin() ? get_current_network_id() : 0,
             'read_only_notice'           => Permissions::isReadOnly() ? Permissions::readOnlyNotice() : null,
+            'preparation_notice'         => Helper::hasUnpreparedPhp($indexConfig) ? [
+                'title'  => __('Some PHP snippets are paused', 'easy-code-manager'),
+                'reason' => __('Sync the snippet index on a writable installation and deploy the complete library with permissions that allow WordPress to read it.', 'easy-code-manager')
+            ] : null,
             /*
              * Localised as 'has_line_wrap' until 2026-08-11, but _CodeEditor.vue reads
              * appVars.enable_line_wrap — so the editor never saw this value on page load.
@@ -496,7 +510,7 @@ class AdminMenuHandler
 
     public function getSafeModeInfo()
     {
-        $config = Helper::getIndexedConfig();
+        $config = Helper::getRuntimeConfig();
 
         return [
             'is_defined_disabled'  => defined('FLUENT_SNIPPETS_SAFE_MODE') && FLUENT_SNIPPETS_SAFE_MODE,

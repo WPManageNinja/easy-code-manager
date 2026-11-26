@@ -55,14 +55,16 @@ class CodeHandler
         // The action still fires with two arguments from CodeRunner for backwards
         // compatibility with anything hooking it; cacheSnippetIndex() never used either.
         add_action('fluent_snippets/rebuild_index', function () {
-            Helper::cacheSnippetIndex();
+            if (wp_is_file_mod_allowed('fluent_snippets')) {
+                Helper::cacheSnippetIndex();
+            }
         }, 10, 0);
 
     }
 
     public function runSnippets()
     {
-        (new CodeRunner())->runSnippets();
+        (new CodeRunner())->runSnippets(Helper::prepareRuntime());
     }
 
     public function handleShortcode($atts, $content = null)
@@ -84,37 +86,41 @@ class CodeHandler
             return '';
         }
 
-        $config = Helper::getIndexedConfig();
+        $fileName = sanitize_file_name($fileName . '.php');
+        $config = Helper::getRuntimeConfig($fileName);
 
         if (Arr::get($config, 'meta.force_disabled') == 'yes') {
             return $this->shortCodeError(__('Snippets are disabled', 'easy-code-manager'));
         }
 
-        $fileName = sanitize_file_name($fileName . '.php');
         if (isset($config['error_files'][$fileName])) {
             return $this->shortCodeError(__('Snippet has an error', 'easy-code-manager'));
         }
 
-        $snippet = (new Snippet())->findByFileName($fileName);
-
-        if (is_wp_error($snippet)) {
-            return $this->shortCodeError($snippet->get_error_message());
+        $record = $config['published'][$fileName] ?? $config['draft'][$fileName] ?? null;
+        if (!$record) {
+            return $this->shortCodeError(__('File not found.', 'easy-code-manager'));
         }
-
-        if (Arr::get($snippet, 'meta.type') !== 'php_content') {
+        if (Arr::get($record, 'type') !== 'php_content') {
             return $this->shortCodeError(__('Snippet type is not PHP Content', 'easy-code-manager'));
         }
-
-        if (Arr::get($snippet, 'meta.run_at') != 'shortcode') {
+        if (Arr::get($record, 'run_at') !== 'shortcode') {
             return $this->shortCodeError(__('Snippet run at is not shortcode', 'easy-code-manager'));
         }
-
-        if (Arr::get($snippet, 'meta.status') != 'published') {
+        if (Arr::get($record, 'status') !== 'published') {
             return $this->shortCodeError(__('Snippet status is not published', 'easy-code-manager'));
         }
+        $file = \FluentSnippets\App\Services\SnippetRevision::resolve(Helper::getStorageDir() . '/' . $fileName, $record);
+        if (!$file) {
+            return $this->shortCodeError(__('Prepare and deploy a readable PHP revision for this snippet.', 'easy-code-manager'));
+        }
+        $snippet = ['file' => $file, 'meta' => $record];
 
         // check condition
         $conditionalClass = new FluentSnippetCondition();
+        if (!FluentSnippetCondition::matchesSiteScope(Arr::get($snippet, 'meta.network_sites'))) {
+            return '';
+        }
         if (!$conditionalClass->evaluate(Arr::get($snippet, 'condition', []))) {
             return $this->shortCodeError(__('Snippet condition is not valid', 'easy-code-manager'));
         }
@@ -123,7 +129,7 @@ class CodeHandler
 
         // Tracked like the hook-run snippets, so a shortcode snippet that fatals inside a
         // function it calls is attributed to the snippet rather than to that function.
-        CodeRunner::pushRunningSnippet($fileName);
+        CodeRunner::pushRunningSnippet($fileName, $snippet['file']);
 
         try {
             $maybeReturn = include $snippet['file'];
@@ -195,12 +201,31 @@ class CodeHandler
             return $args;
         }
 
+        if (!$this->isSnippetFile($error['file']) && !CodeRunner::getRunningSnippet()) {
+            return $args;
+        }
+        $result = Helper::withSnippetWriteLock(function () use ($args, $error) {
+            return $this->recordFatalError($args, $error);
+        });
+        if (is_wp_error($result)) {
+            return $this->recordFatalError($args, $error, true);
+        }
+        return $result;
+    }
+
+    private function recordFatalError($args, $error, $markerOnly = false)
+    {
         $file = $error['file'];
+        $config = Helper::getIndexedConfig(false);
 
         $isSnippetFile = $this->isSnippetFile($file);
 
         if ($isSnippetFile) {
             $fileName = basename($file);
+            if (preg_match('/^\.fluent-rev-([a-f0-9]{64})\.php$/D', $fileName, $match)) {
+                $published = $config['published'] ?? [];
+                $fileName = array_search($match[1], array_column($published, 'revision', 'file_name'), true);
+            }
         } else {
             /*
              * The fatal surfaced outside the storage directory, so $error['file'] is of
@@ -213,14 +238,16 @@ class CodeHandler
              * fatal does not unwind. That snippet is the one that led here.
              */
             $fileName = CodeRunner::getRunningSnippet();
+            $runningFile = basename(CodeRunner::getRunningFile());
+            if (preg_match('/^\.fluent-rev-([a-f0-9]{64})\.php$/D', $runningFile, $match) &&
+                ($config['published'][$fileName]['revision'] ?? '') !== $match[1]) {
+                return $args;
+            }
         }
 
         if (!$fileName) {
             return $args;
         }
-
-        // let's get the indexed config
-        $config = Helper::getIndexedConfig();
 
         if (empty($config)) {
             return $args;
@@ -257,7 +284,12 @@ class CodeHandler
 
         $config['error_files'][$fileName] = $message;
 
-        Helper::saveIndexedConfig($config, $this->storageDir . '/index.php');
+        if ($markerOnly || Helper::saveIndexedConfig($config, $this->storageDir . '/index.php') === false) {
+            $revision = $config['published'][$fileName]['revision'] ?? '';
+            if (!preg_match('/^[a-f0-9]{64}$/D', $revision) || !@touch($this->storageDir . '/cached/.fluent-quarantine-' . $revision)) {
+                error_log('FluentSnippets could not record a snippet failure. Check the write permissions of the library cache directory.');
+            }
+        }
 
         return $args;
     }
@@ -297,11 +329,16 @@ class CodeHandler
             return true;
         }
 
-        if (isset($_REQUEST['fluent_snippets']) && isset($_REQUEST['snippet_secret'])) {
+        if (isset($_REQUEST['fluent_snippets'], $_REQUEST['snippet_secret']) && is_string($_REQUEST['snippet_secret'])) {
             $config = Helper::getIndexedConfig();
             if ($config && hash_equals($config['meta']['secret_key'], $_REQUEST['snippet_secret'])) {
-                $config['meta']['force_disabled'] = 'yes';
-                Helper::saveIndexedConfig($config);
+                $result = Helper::enableSafeMode($_REQUEST['snippet_secret']);
+                if (is_wp_error($result)) {
+                    wp_die(esc_html($result->get_error_message()), '', ['response' => 503]);
+                }
+                if (!$result) {
+                    return false;
+                }
                 header('Location: ' . admin_url('admin.php?page=fluent-snippets'));
                 die();
             }

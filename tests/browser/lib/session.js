@@ -105,6 +105,7 @@ function mintAdminContext() {
             "domain"     => parse_url(home_url(), PHP_URL_HOST),
             "adminUrl"   => admin_url(),
             "version"    => FLUENT_SNIPPETS_PLUGIN_VERSION,
+            "networkAdmin" => is_multisite() && is_super_admin($user->ID),
             "storageDir" => $dir,
             "snippet"    => $snippet,
             "settings"   => $config && isset($config["meta"]) ? $config["meta"] : null,

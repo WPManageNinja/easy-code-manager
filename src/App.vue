@@ -92,11 +92,11 @@
                     finds the Create button missing needs the reason before they go looking
                     for it in Settings.
                 -->
-                <div v-if="readOnlyNotice" class="fsnip_read_only" role="note">
+                <div v-for="notice in libraryNotices" :key="notice.title" class="fsnip_read_only" role="note">
                     <span class="dashicons dashicons-lock" aria-hidden="true"></span>
                     <div>
-                        <strong>{{ readOnlyNotice.title }}</strong>
-                        <p>{{ readOnlyNotice.reason }}</p>
+                        <strong>{{ notice.title }}</strong>
+                        <p>{{ notice.reason }}</p>
                     </div>
                 </div>
 
@@ -118,7 +118,7 @@
                     </div>
                 </div>
 
-                <router-view></router-view>
+                <router-view @library-prepared="libraryPrepared = true"></router-view>
             </div>
         </main>
     </div>
@@ -159,14 +159,15 @@ export default {
                 }
             ],
             hasServerError: false,
+            libraryPrepared: false,
             announcement: ''
         }
     },
     computed: {
         // Built server-side, because the reason is a fact about wp-config.php that the
         // browser has no way of knowing. Null unless the screen really is read-only.
-        readOnlyNotice() {
-            return this.appVars.read_only_notice || null;
+        libraryNotices() {
+            return [this.appVars.read_only_notice, !this.libraryPrepared && this.appVars.preparation_notice].filter(Boolean);
         }
     },
     methods: {

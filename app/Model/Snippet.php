@@ -34,6 +34,9 @@ class Snippet
 
         $formattedFiles = [];
         foreach ($files as $file) {
+            if (basename($file) === 'index.php' || !is_file($file)) {
+                continue;
+            }
             $fileContent = file_get_contents($file);
             [$docBlockArray, $code] = $this->parseBlock($fileContent);
 
@@ -47,12 +50,16 @@ class Snippet
                 }
             }
 
-            $formattedFiles[] = [
+            $row = [
                 'meta'   => $docBlockArray,
                 'code'   => $code,
                 'file'   => $file,
                 'status' => (!empty($docBlockArray['status'])) ? $docBlockArray['status'] : 'draft'
             ];
+            if (!empty($args['include_source'])) {
+                $row['source'] = $fileContent;
+            }
+            $formattedFiles[] = $row;
         }
         return $formattedFiles;
     }
@@ -94,7 +101,7 @@ class Snippet
 
     public function getIndexedSnippets($perPage = null, $page = null)
     {
-        $config = Helper::getIndexedConfig();
+        $config = Helper::getRuntimeConfig();
 
         if (!$config || empty($config['meta'])) {
             return $this->emptyIndexedSnippets($perPage, $page);
@@ -270,12 +277,18 @@ class Snippet
         $snippetDir = Helper::getStorageDir();
         $file = $snippetDir . '/' . $fileName;
 
-        if (!is_file($file) || $fileName === 'index.php') {
+        if (!$this->isAuthoringFileName($fileName) || !is_file($file)) {
             return SnippetErrors::fileMissing($fileName);
         }
 
-        $fileContent = file_get_contents($snippetDir . '/' . $fileName);
+        $fileContent = @file_get_contents($file);
+        if ($fileContent === false) {
+            return new \WP_Error('snippet_unreadable', __('WordPress could not read the saved snippet. Check its file permissions and retry.', 'easy-code-manager'), ['status' => 503]);
+        }
         [$docBlockArray, $code] = $this->parseBlock($fileContent);
+        if ($docBlockArray === null) {
+            return new \WP_Error('snippet_header_unreadable', __('The saved snippet header could not be read. Restore it from a backup before editing.', 'easy-code-manager'), ['status' => 422]);
+        }
 
         return [
             'meta'   => $docBlockArray,
@@ -291,10 +304,22 @@ class Snippet
 
         $file = Helper::getStorageDir() . '/' . $fileName;
 
-        if (!is_file($file)) {
+        if (!$this->isAuthoringFileName($fileName) || !is_file($file)) {
             return SnippetErrors::fileMissing($fileName);
         }
 
+
+        // Older clients can edit a shared snippet without sending this field. Only
+        // an explicit null clears a restriction already present in its file.
+        if (!array_key_exists('network_sites', $metaData)) {
+            $previous = $this->findByFileName($fileName);
+            if (is_wp_error($previous)) {
+                return $previous;
+            }
+            if (isset($previous['meta']['network_sites'])) {
+                $metaData['network_sites'] = $previous['meta']['network_sites'];
+            }
+        }
         $docBlockString = $this->parseInputMeta($metaData, true);
         $fullCode = $docBlockString . $code;
 
@@ -374,16 +399,15 @@ class Snippet
         $snippetDir = Helper::getStorageDir();
         $file = $snippetDir . '/' . $fileName;
 
-        // `&&` here meant the guard never fired for the files it names: index.php exists,
-        // so !is_file() was false and the whole condition collapsed to false, falling
-        // through to unlink(). Unreachable in practice — the only caller runs
-        // findByFileName() first, which rejects index.php — but the protection this reads
-        // as providing was not there at all.
-        if (!is_file($file) || $fileName === 'index.php' || $fileName === 'cached') {
-            return new \WP_Error('file_not_found', 'File not found');
+        // Removing a damaged snippet does not require parsing its header. Keep
+        // library infrastructure outside the set of deletable files.
+        if (!$this->isAuthoringFileName($fileName) || !is_file($file)) {
+            return new \WP_Error('file_not_found', __('File not found.', 'easy-code-manager'), ['status' => 404]);
         }
 
-        unlink($file);
+        if (!@unlink($file)) {
+            return new \WP_Error('delete_failed', __('WordPress could not remove the snippet file. Check its file permissions and retry.', 'easy-code-manager'), ['status' => 503]);
+        }
 
         Helper::invalidateOpcache($file);
 
@@ -392,104 +416,13 @@ class Snippet
 
     public function parseBlock($fileContent, $codeOnly = false)
     {
-        // get content from // <Internal Doc Start> to // <Internal Doc End>
-        $fileContent = explode('// <Internal Doc Start>', $fileContent);
+        return \FluentSnippets\App\Services\SnippetRevision::parse($fileContent, $codeOnly);
+    }
 
-        if (count($fileContent) < 2) {
-            if ($codeOnly) {
-                return '';
-            }
-            return [null, null];
-        }
-
-        // Try different possible formats of the end marker
-        $endMarkers = [
-            '// <Internal Doc End> ?>' . PHP_EOL,
-            '// <Internal Doc End> ?>',
-            '<?php if (!defined("ABSPATH")) { return;} // <Internal Doc End> ?>' . PHP_EOL,
-            '<?php if (!defined("ABSPATH")) { return;} // <Internal Doc End> ?>'
-        ];
-
-        $docBlock = null;
-        $code = null;
-
-        foreach ($endMarkers as $marker) {
-            $parts = explode($marker, $fileContent[1]);
-            if (count($parts) > 1) {
-                $docBlock = $parts[0];
-                $code = $parts[1];
-                break;
-            }
-        }
-
-        if (!$docBlock || !$code) {
-            if ($codeOnly) {
-                return '';
-            }
-            return [null, null];
-        }
-
-        if ($codeOnly) {
-            return $code;
-        }
-
-        $docBlock = explode('*', $docBlock);
-        // Explode by : and get the key and value
-        $docBlockArray = [
-            'name'         => '',
-            'status'       => '',
-            'tags'         => '',
-            'description'  => '',
-            'type'         => '',
-            'run_at'       => '',
-            'group'        => '',
-            // Defaulted because a hand-edited or legacy snippet file may have no
-            // @priority line, and cacheSnippetIndex() sorts on it — a missing key warned
-            // on every rebuild under PHP 8. Matches getMetaData()'s own default.
-            'priority'     => 10,
-            'condition'    => '',
-            'load_as_file' => '',
-            'load_in_block_editor' => ''
-        ];
-
-        foreach ($docBlock as $key => $value) {
-            $value = trim($value);
-            $arr = explode(':', $value);
-            if (count($arr) < 2) {
-                continue;
-            }
-
-            // get the first item from the array and remove it from $arr
-            $key = array_shift($arr);
-            $key = trim(str_replace('@', '', $key));
-            if (!$key) {
-                continue;
-            }
-            $docBlockArray[$key] = trim(implode(':', $arr));
-        }
-
-        if (!empty($docBlockArray['condition'])) {
-            $data = json_decode($docBlockArray['condition'], true);
-            if ($data && is_array($data)) {
-                $docBlockArray['condition'] = $data;
-            }
-        } else {
-            $docBlockArray['condition'] = [
-                'status' => 'no',
-                'run_if' => 'assertive',
-                'items'  => [[]]
-            ];
-        }
-
-        if (empty($docBlockArray['condition'])) {
-            $docBlockArray['condition'] = [
-                'status' => 'no',
-                'run_if' => 'assertive',
-                'items'  => [[]]
-            ];
-        }
-
-        return [$docBlockArray, $code];
+    private function isAuthoringFileName($name)
+    {
+        return is_string($name) && $name !== '' && $name[0] !== '.' && $name !== 'index.php'
+            && basename($name) === $name && substr($name, -4) === '.php';
     }
 
     private function parseInputMeta($metaData, $convertString = false)
@@ -510,6 +443,7 @@ class Snippet
             'run_at'       => '',
             'load_as_file' => '',
             'load_in_block_editor' => '',
+            'network_sites' => null,
             'condition'    => [
                 'status' => 'no',
                 'run_if' => 'assertive',
@@ -528,6 +462,11 @@ class Snippet
             return $metaData;
         }
 
+        if ($metaData['network_sites'] === null) {
+            unset($metaData['network_sites']);
+        } else {
+            $metaData['network_sites'] = json_encode($metaData['network_sites']);
+        }
         $metaData['condition'] = json_encode($metaData['condition']);
 
         // Helper::sanitizeMetaValue() has to neutralise `*` in every meta value, because
@@ -549,6 +488,11 @@ class Snippet
 
     private function maybeCacheCssJs($fileName, $metaData = [], $code = '')
     {
+        // Network pages keep their original asset URL until they are reloaded.
+        // publishRevision() writes the content-addressed asset for the next index.
+        if (is_multisite() || isset($metaData['network_sites'])) {
+            return false;
+        }
         // type
         $type = Arr::get($metaData, 'type');
         if ($type == 'css' || $type == 'js') {

@@ -557,6 +557,7 @@ import Fuse from 'fuse.js'
 import ImportExportChoice from "./ExportImport/ImportExportChoice.vue";
 
 export default {
+    emits: ['library-prepared'],
     name: 'Dashboard',
     data() {
         return {
@@ -654,8 +655,11 @@ export default {
             // deploy, a migration, a deleted index.php. Fired once per app boot and
             // deliberately not awaited, so the list still renders from the existing
             // index straight away.
-            this.$post('snippets/sync-index')
+            this.$post('snippets/sync-index', {check_preparation: this.appVars.preparation_notice ? 1 : 0})
                 .then(response => {
+                    if (response.prepared) {
+                        this.$emit('library-prepared');
+                    }
                     if (!response.changed) {
                         return;
                     }

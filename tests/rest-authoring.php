@@ -61,7 +61,12 @@ function site_url() { return 'https://example.test'; }
 function content_url($path = '') { return 'https://example.test/wp-content' . $path; }
 function wp_upload_dir() { return ['basedir' => '/tmp/uploads', 'baseurl' => 'https://example.test/uploads']; }
 function apply_filters($tag, $value) { return $value; }
-function do_action($tag, ...$args) { $GLOBALS['fs_test']['actions'][] = [$tag, $args]; }
+function do_action($tag, ...$args) {
+    $GLOBALS['fs_test']['actions'][] = [$tag, $args];
+    if (isset($GLOBALS['fs_test']['listener'][$tag])) {
+        $GLOBALS['fs_test']['listener'][$tag](...$args);
+    }
+}
 function add_action() {}
 function is_wp_error($thing) { return $thing instanceof \WP_Error; }
 function sanitize_file_name($name) { return preg_replace('/[^a-zA-Z0-9._-]/', '', $name); }
@@ -71,6 +76,10 @@ function get_current_user_id() { return 7; }
 function __($text, $domain = '') { return $text; }
 function is_user_logged_in() { return $GLOBALS['fs_test']['logged_in']; }
 function current_user_can($cap) { return !empty($GLOBALS['fs_test']['caps'][$cap]); }
+function is_multisite() { return !empty($GLOBALS['fs_test']['network']); }
+function is_super_admin() { return !empty($GLOBALS['fs_test']['super_admin']); }
+function get_site() { return (object) ['network_id' => 1]; }
+function get_current_blog_id() { return $GLOBALS['fs_test']['site_id'] ?? 3; }
 function wp_is_file_mod_allowed($context) { return $GLOBALS['fs_test']['file_mods']; }
 function rest_authorization_required_code() { return 403; }
 function rest_get_authenticated_app_password() { return array_key_exists('app_password', $GLOBALS['fs_test']) ? $GLOBALS['fs_test']['app_password'] : 'app-pass-uuid'; }
@@ -122,6 +131,7 @@ class WP_REST_Server
     const CREATABLE = 'POST';
 }
 
+require $base . 'app/Services/SnippetRevision.php';
 require $base . 'app/Helpers/Arr.php';
 require $base . 'app/Helpers/Helper.php';
 require $base . 'app/Model/Snippet.php';
@@ -129,6 +139,7 @@ require $base . 'app/Services/PhpValidator.php';
 require $base . 'app/Services/SnippetErrors.php';
 require $base . 'app/Services/Permissions.php';
 require $base . 'app/Services/RestAuthoring.php';
+require $base . 'app/Services/FluentSnippetCondition.php';
 require $base . 'app/Services/Router.php';
 require $base . 'app/Http/Controllers/SnippetsController.php';
 require $base . 'app/Http/Controllers/SettingsController.php';
@@ -288,6 +299,99 @@ check('pre-10.56 update (full meta JSON, code inside) still works', !is_wp_error
 check('created_by cannot be set from the request', strpos(readFile_($fileName), '@created_by: 999') === false);
 check('updated_by is whoever is authenticated', strpos(readFile_($fileName), '@updated_by: 7') !== false);
 
+$GLOBALS['fs_test']['network'] = $GLOBALS['fs_test']['super_admin'] = true;
+$scope = ['mode' => 'only', 'network' => 1, 'sites' => [3]];
+$lock = fopen($storage . '/.fluent-snippets-write.lock', 'c');
+flock($lock, LOCK_EX);
+$busy = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $fileName, 'meta' => ['description' => 'Competing edit']]));
+check('a competing edit is refused before reading and merging', errorStatus($busy) === 409, describe($busy));
+$previousCaps = $GLOBALS['fs_test']['caps'];
+$GLOBALS['fs_test']['caps']['manage_options'] = true;
+$busySettings = SettingsController::saveSettings(new WP_REST_Request(['settings' => ['auto_publish' => 'no']]));
+$GLOBALS['fs_test']['caps'] = $previousCaps;
+check('network settings share the publication lock', errorStatus($busySettings) === 409, describe($busySettings));
+$busySync = SnippetsController::syncIndex(new WP_REST_Request([]));
+// A clean sync is allowed to return unchanged without acquiring a lock.
+check('a concurrent sync either needs no write or reports contention', is_wp_error($busySync) ? errorStatus($busySync) === 409 : $busySync['changed'] === false);
+fclose($lock);
+$GLOBALS['fs_test']['site_id'] = 1;
+$refused = SnippetsController::updateSnippet(new WP_REST_Request([
+    'file_name' => $fileName, 'meta' => ['network_sites' => $scope], 'code' => '/* scope check */',
+]));
+check('restricted PHP explains where to save', is_wp_error($refused) && strpos($refused->get_error_message(), 'included') !== false, describe($refused));
+$GLOBALS['fs_test']['site_id'] = 3;
+foreach ([['network_sites' => $scope], ['description' => 'Partial update'], ['network_sites' => null]] as $patch) {
+    $response = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $fileName, 'meta' => $patch]));
+    $expected = $patch === ['network_sites' => null] ? null : $scope;
+    check('REST preserves or explicitly clears site scope: ' . json_encode($patch),
+        !is_wp_error($response) && ($response['snippet']['meta']['network_sites'] ?? null) === $expected, describe($response));
+}
+$GLOBALS['fs_test']['network'] = $GLOBALS['fs_test']['super_admin'] = false;
+
+$createData = ['code' => '/* publication retry */', 'meta' => ['name' => 'Publication retry', 'type' => 'js', 'run_at' => 'wp_footer', 'status' => 'draft']];
+$prior = Helper::getIndexedConfig(false);
+$prior['error_files'][$fileName] = 'Paused by fixture';
+Helper::saveIndexedConfig($prior);
+$GLOBALS['fs_test']['listener']['fluent_snippets/snippet_updated'] = function () use ($fileName, $storage) {
+    check('the old revision remains paused while the replacement is pending', isset(Helper::getRuntimeConfig()['error_files'][$fileName]));
+    rename($storage . '/index.php', $storage . '/prior-index');
+    mkdir($storage . '/index.php');
+};
+$reactivate = ['file_name' => $fileName, 'reactivate' => true, 'code' => '/* updated fixture */'];
+$failedUpdate = SnippetsController::updateSnippet(new WP_REST_Request($reactivate));
+unset($GLOBALS['fs_test']['listener']['fluent_snippets/snippet_updated']);
+rmdir($storage . '/index.php');
+rename($storage . '/prior-index', $storage . '/index.php');
+check('a failed reactivation leaves the published revision paused', errorStatus($failedUpdate) === 503 && isset(Helper::getIndexedConfig(false)['error_files'][$fileName]));
+$restored = SnippetsController::updateSnippet(new WP_REST_Request($reactivate));
+check('a successful retry clears the pause', !is_wp_error($restored) && !isset(Helper::getRuntimeConfig()['error_files'][$fileName]));
+$markerForCurrent = function () use ($fileName, $storage) {
+    $record = Helper::getIndexedConfig(false)['published'][$fileName];
+    return $storage . '/cached/.fluent-quarantine-' . $record['revision'];
+};
+touch($markerForCurrent());
+$GLOBALS['fs_test']['listener']['fluent_snippets/snippet_updated'] = function () use ($markerForCurrent, $fileName) {
+    check('marker-only reactivation keeps a pause in the index during publication', isset(Helper::getIndexedConfig(false)['error_files'][$fileName]));
+    Helper::cacheSnippetIndex();
+    touch($markerForCurrent());
+};
+$reactivate['code'] = '/* another harmless replacement */';
+$replacement = SnippetsController::updateSnippet(new WP_REST_Request($reactivate));
+unset($GLOBALS['fs_test']['listener']['fluent_snippets/snippet_updated']);
+check('a new pause recorded at publication survives reactivation', !is_wp_error($replacement) && isset(Helper::getRuntimeConfig($fileName)['error_files'][$fileName]));
+unlink($markerForCurrent());
+$beforeFiles = glob($storage . '/*.php');
+$GLOBALS['fs_test']['listener']['fluent_snippets/snippet_created'] = function () use ($storage) {
+    rename($storage . '/index.php', $storage . '/prior-index');
+    mkdir($storage . '/index.php');
+};
+$failedCreate = Helper::createSnippet($createData);
+unset($GLOBALS['fs_test']['listener']['fluent_snippets/snippet_created']);
+rmdir($storage . '/index.php');
+rename($storage . '/prior-index', $storage . '/index.php');
+check('failed creation removes its new file', is_wp_error($failedCreate) && glob($storage . '/*.php') === $beforeFiles);
+$retry = Helper::createSnippet($createData);
+check('retry creates a single snippet', !is_wp_error($retry) && count(glob($storage . '/*.php')) === count($beforeFiles) + 1);
+
+$brokenFile = '900-damaged-fixture.php';
+file_put_contents($storage . '/' . $brokenFile, "Incomplete fixture header\n");
+$editError = SnippetsController::updateSnippet(new WP_REST_Request(['file_name' => $brokenFile, 'meta' => ['description' => 'Update']]));
+check('a damaged file is reported as unreadable metadata', errorStatus($editError) === 422, describe($editError));
+$removed = SnippetsController::deleteSnippet(new WP_REST_Request(['fluent_saving_snippet_name' => $brokenFile]));
+check('a damaged snippet can still be removed', !is_wp_error($removed) && !is_file($storage . '/' . $brokenFile), describe($removed));
+
+$deleteFixture = Helper::createSnippet($createData);
+$GLOBALS['fs_test']['listener']['fluent_snippets/snippet_deleted'] = function () use ($storage) {
+    rename($storage . '/index.php', $storage . '/before-delete-index');
+    mkdir($storage . '/index.php');
+};
+$deleteResult = SnippetsController::deleteSnippet(new WP_REST_Request(['fluent_saving_snippet_name' => $deleteFixture]));
+unset($GLOBALS['fs_test']['listener']['fluent_snippets/snippet_deleted']);
+rmdir($storage . '/index.php');
+rename($storage . '/before-delete-index', $storage . '/index.php');
+check('a partial deletion reports the failed index refresh', errorStatus($deleteResult) === 503 && !is_file($storage . '/' . $deleteFixture));
+Helper::cacheSnippetIndex();
+
 $before = readFile_($fileName);
 $broken = SnippetsController::updateSnippet(new WP_REST_Request([
     'file_name' => $fileName,
@@ -321,6 +425,16 @@ echo "\nAn Application Password cannot flip the switch\n";
 
 $GLOBALS['fs_test']['caps']['manage_options'] = true;
 $allSettings = ['auto_disable' => 'yes', 'auto_publish' => 'no', 'remove_on_uninstall' => 'no', 'enable_line_wrap' => 'no'];
+$lockPath = $storage . '/.fluent-snippets-write.lock';
+$markerPath = $storage . '/cached/.fluent-safe-mode';
+touch($markerPath);
+chmod($lockPath, 0400);
+try {
+    $recovery = SettingsController::disableSafeMode(new WP_REST_Request());
+    check('an authorized administrator can clear marker-only Safe Mode with a read-only library lock', !is_wp_error($recovery) && !file_exists($markerPath), describe($recovery));
+} finally {
+    chmod($lockPath, 0600);
+}
 
 setRestAuthoring('no');
 $flip = SettingsController::saveSettings(new WP_REST_Request(['settings' => $allSettings + ['rest_authoring' => 'yes']]));

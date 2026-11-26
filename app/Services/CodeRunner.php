@@ -33,12 +33,17 @@ class CodeRunner
             return '';
         }
 
-        return end(self::$runningSnippets);
+        return end(self::$runningSnippets)['name'];
     }
 
-    public static function pushRunningSnippet($fileName)
+    public static function getRunningFile()
     {
-        self::$runningSnippets[] = $fileName;
+        return self::$runningSnippets ? end(self::$runningSnippets)['file'] : '';
+    }
+
+    public static function pushRunningSnippet($fileName, $file = '')
+    {
+        self::$runningSnippets[] = ['name' => $fileName, 'file' => $file];
     }
 
     public static function popRunningSnippet()
@@ -52,13 +57,16 @@ class CodeRunner
         $this->storageUrl = \FluentSnippets\App\Helpers\Helper::getStorageUrl();
     }
 
-    public function runSnippets()
+    public function runSnippets($config = null)
     {
-        if (!is_file($this->storageDir . '/index.php')) {
-            return;
+        if ($config === null) {
+            if (!is_file($this->storageDir . '/index.php')) {
+                return;
+            }
+            $config = include $this->storageDir . '/index.php';
         }
 
-        $config = include $this->storageDir . '/index.php';
+        $config = SnippetRevision::recoveryConfig($this->storageDir, $config);
 
         if (empty($config) || empty($config['published']) || !is_array($config['published'])) {
             return; // No config or published scripts exist exists
@@ -107,8 +115,8 @@ class CodeRunner
                 continue;
             }
 
-            $file = $storageDir . '/' . sanitize_file_name($fileName);
-            if (!is_file($file)) {
+            $canonical = $storageDir . '/' . sanitize_file_name($fileName);
+            if (!is_file($canonical)) {
                 $hasInvalidFiles = true;
                 continue;
             }
@@ -124,16 +132,12 @@ class CodeRunner
                         $hookName = 'setup_theme';
                     }
 
-                    add_action($hookName, function () use ($file, $fileName, $snippet, $conditionalClass) {
-                        if (!$conditionalClass->evaluate($snippet['condition'])) {
+                    add_action($hookName, function () use ($canonical, $fileName, $snippet, $conditionalClass) {
+                        if ($this->get($snippet, 'run_at') === 'backend' && !is_admin()) {
                             return;
                         }
-
-                        $runAt = $this->get($snippet, 'run_at', 'all');
-                        if ($runAt == 'backend') {
-                            if (is_admin()) {
-                                $this->runSnippetFile($file, $fileName);
-                            }
+                        $file = SnippetRevision::resolve($canonical, $snippet, $legacyBody);
+                        if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                             return;
                         }
 
@@ -149,7 +153,7 @@ class CodeRunner
                         $isFooter = false;
 
                         if ($this->get($snippet, 'load_as_file') == 'yes') {
-                            $cachedFile = str_replace('.php', '.js', $fileName);
+                            $cachedFile = isset($snippet['revision']) ? 'rev-' . $snippet['revision'] . '.js' : str_replace('.php', '.js', $fileName);
                             $loadUrl = $this->getCachedFileUrl($cachedFile);
                             if ($loadUrl) {
                                 $isFooter = ($runAt == 'wp_footer' || $runAt == 'admin_footer');
@@ -157,8 +161,10 @@ class CodeRunner
                             }
                         }
 
-                        add_action($runAt, function () use ($file, $snippet, $conditionalClass, $loadUrl, $isFooter) {
-                            if (!$conditionalClass->evaluate($snippet['condition'])) {
+                        add_action($runAt, function () use ($canonical, $snippet, $conditionalClass, $loadUrl, $isFooter) {
+                            $legacyAsset = $loadUrl ? $this->storageDir . '/cached/' . basename($loadUrl) : '';
+                            $file = SnippetRevision::resolve($canonical, $snippet, $legacyBody, $legacyAsset);
+                            if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                                 return;
                             }
 
@@ -166,7 +172,7 @@ class CodeRunner
                                 $snippetScriptName = str_replace('.php', '', $snippet['file_name']);
                                 wp_enqueue_script('fluent_snippet_' . $snippetScriptName, $loadUrl, [], strtotime($snippet['updated_at']), $isFooter);
                             } else {
-                                $code = $this->parseBlock(file_get_contents($file), true);
+                                $code = $legacyBody ?? $this->parseBlock(file_get_contents($file), true);
                                 ?>
                                 <script><?php echo $this->escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></script>
                                 <?php
@@ -179,8 +185,12 @@ class CodeRunner
 
                     $isBlockStyle = $this->get($snippet, 'load_in_block_editor', '') === 'yes';
                     if ($isBlockStyle) {
-                        add_filter('block_editor_settings_all', function ($settings) use ($snippet, $file) {
-                            $code = $this->parseBlock(file_get_contents($file), true);
+                        add_filter('block_editor_settings_all', function ($settings) use ($snippet, $canonical) {
+                            $file = SnippetRevision::resolve($canonical, $snippet, $legacyBody);
+                            if (!$file || !FluentSnippetCondition::matchesSiteScope($snippet['network_sites'] ?? null)) {
+                                return $settings;
+                            }
+                            $code = $legacyBody ?? $this->parseBlock(file_get_contents($file), true);
                             if ($code) {
                                 $settings['styles'][] = array(
                                     'css'            => $code,
@@ -206,7 +216,7 @@ class CodeRunner
 
                     $loadUrl = '';
                     if ($this->get($snippet, 'load_as_file') == 'yes') {
-                        $cachedFile = str_replace('.php', '.css', $fileName);
+                        $cachedFile = isset($snippet['revision']) ? 'rev-' . $snippet['revision'] . '.css' : str_replace('.php', '.css', $fileName);
                         $loadUrl = $this->getCachedFileUrl($cachedFile);
                         if ($loadUrl) {
                             $runAt = ($runAt == 'admin_head') ? 'admin_enqueue_scripts' : 'wp_enqueue_scripts';
@@ -214,18 +224,21 @@ class CodeRunner
                     }
 
                     if ($isAdminCss) {
-                        add_action('enqueue_block_editor_assets', function () use ($file, $snippet, $conditionalClass, $loadUrl) {
-                            if (!$conditionalClass->evaluate($snippet['condition'])) {
+                        add_action('enqueue_block_editor_assets', function () use ($canonical, $snippet, $conditionalClass, $loadUrl) {
+                            $file = SnippetRevision::resolve($canonical, $snippet, $legacyBody);
+                            if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                                 return;
                             }
 
-                            $code = $this->parseBlock(file_get_contents($file), true);
+                            $code = $legacyBody ?? $this->parseBlock(file_get_contents($file), true);
                             wp_add_inline_style('wp-edit-blocks', $code);
                         });
                     }
 
-                    add_action($runAt, function () use ($file, $snippet, $conditionalClass, $loadUrl) {
-                        if (!$conditionalClass->evaluate($snippet['condition'])) {
+                    add_action($runAt, function () use ($canonical, $snippet, $conditionalClass, $loadUrl) {
+                        $legacyAsset = $loadUrl ? $this->storageDir . '/cached/' . basename($loadUrl) : '';
+                        $file = SnippetRevision::resolve($canonical, $snippet, $legacyBody, $legacyAsset);
+                        if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                             return;
                         }
 
@@ -233,7 +246,7 @@ class CodeRunner
                             $snippetScriptName = str_replace('.php', '', $snippet['file_name']);
                             wp_enqueue_style('fluent_snippet_' . $snippetScriptName, $loadUrl, [], strtotime($snippet['updated_at']));
                         } else {
-                            $code = $this->parseBlock(file_get_contents($file), true);
+                            $code = $legacyBody ?? $this->parseBlock(file_get_contents($file), true);
                             ?>
                             <style><?php echo $this->escCssJs($code); // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?></style>
                             <?php
@@ -245,8 +258,9 @@ class CodeRunner
                 case 'php_content':
                     $runAt = $snippet['run_at'];
                     if (in_array($runAt, ['wp_footer', 'wp_head', 'wp_body_open'])) {
-                        add_action($runAt, function () use ($file, $fileName, $snippet, $conditionalClass) {
-                            if (!$conditionalClass->evaluate($snippet['condition'])) {
+                        add_action($runAt, function () use ($canonical, $fileName, $snippet, $conditionalClass) {
+                            $file = SnippetRevision::resolve($canonical, $snippet, $legacyBody);
+                            if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                                 return;
                             }
                             $this->runSnippetFile($file, $fileName);
@@ -254,14 +268,15 @@ class CodeRunner
                     }
                     if (isset($filterMaps[$runAt])) {
                         $filter = $filterMaps[$runAt];
-                        add_filter($filter['hook'], function ($content) use ($file, $fileName, $snippet, $conditionalClass, $filter) {
+                        add_filter($filter['hook'], function ($content) use ($canonical, $fileName, $snippet, $conditionalClass, $filter) {
                             if (!empty($filter['is_single'])) {
                                 if (!is_singular() || !in_the_loop() || !is_main_query()) {
                                     return $content;
                                 }
                             }
 
-                            if (!$conditionalClass->evaluate($snippet['condition'])) {
+                            $file = SnippetRevision::resolve($canonical, $snippet, $legacyBody);
+                            if (!$file || !$conditionalClass->evaluateSnippet($snippet)) {
                                 return $content;
                             }
 
@@ -308,7 +323,7 @@ class CodeRunner
      */
     private function runSnippetFile($file, $fileName)
     {
-        self::pushRunningSnippet($fileName);
+        self::pushRunningSnippet($fileName, $file);
 
         try {
             require_once $file;
@@ -328,53 +343,7 @@ class CodeRunner
 
     private function parseBlock($fileContent, $codeOnly = false)
     {
-        // get content from // <Internal Doc Start> to // <Internal Doc End>
-        $fileContent = explode('// <Internal Doc Start>', $fileContent);
-
-        if (count($fileContent) < 2) {
-            if ($codeOnly) {
-                return '';
-            }
-            return [null, null];
-        }
-
-        $fileContent = explode('// <Internal Doc End> ?>' . PHP_EOL, $fileContent[1]);
-        $docBlock = $fileContent[0];
-        $code = $fileContent[1];
-
-        if ($codeOnly) {
-            return $code;
-        }
-
-        $docBlock = explode('*', $docBlock);
-        // Explode by : and get the key and value
-        $docBlockArray = [
-            'name'        => '',
-            'status'      => '',
-            'tags'        => '',
-            'description' => '',
-            'type'        => '',
-            'run_at'      => '',
-            'group'       => ''
-        ];
-
-        foreach ($docBlock as $key => $value) {
-            $value = trim($value);
-            $arr = explode(':', $value);
-            if (count($arr) < 2) {
-                continue;
-            }
-
-            // get the first item from the array and remove it from $arr
-            $key = array_shift($arr);
-            $key = trim(str_replace('@', '', $key));
-            if (!$key) {
-                continue;
-            }
-            $docBlockArray[$key] = trim(implode(':', $arr));
-        }
-
-        return [$docBlockArray, $code];
+        return SnippetRevision::parse($fileContent, $codeOnly);
     }
 
 

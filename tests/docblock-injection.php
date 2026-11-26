@@ -47,6 +47,7 @@ define('FLUENT_SNIPPETS_PLUGIN_VERSION', '10.55');
 
 function untrailingslashit($string) { return rtrim($string, '/\\'); }
 function wp_parse_args($args, $defaults = []) { return array_merge($defaults, (array)$args); }
+function is_multisite() { return false; }
 function wp_mkdir_p($dir) { return is_dir($dir) || mkdir($dir, 0777, true); }
 function site_url() { return 'https://example.test'; }
 function content_url($path = '') { return 'https://example.test/wp-content' . $path; }
@@ -68,6 +69,7 @@ class WP_Error
     public function get_error_message() { return $this->message; }
 }
 
+require $base . 'app/Services/SnippetRevision.php';
 require $base . 'app/Helpers/Arr.php';
 require $base . 'app/Helpers/Helper.php';
 require $base . 'app/Model/Snippet.php';

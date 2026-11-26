@@ -138,6 +138,35 @@ Yes. FluentSnippets is the safe way to add custom code without touching your the
 = Where are my code snippets stored? =
 Each snippet is saved as a real PHP file in `wp-content/fluent-snippet-storage`, not in a database table. That means you can read them, back them up with your normal file backups, and move them between sites by copying files. If you need them somewhere else, the `FLUENT_SNIPPETS_STORAGE_DIR` constant in `wp-config.php` will point the plugin at a different directory. Your snippets also survive theme changes and theme updates, because nothing lives in your theme.
 
+= Can each site in a WordPress multisite network have its own snippets? =
+Yes. By default, sites that load FluentSnippets share the snippet files in `wp-content/fluent-snippet-storage`. To give each site a separate library, create `wp-content/mu-plugins/00-fluent-snippets-storage.php` with the following contents. WordPress loads this file before network plugins and the FluentSnippets standalone runner.
+
+```
+<?php
+if (defined('ABSPATH') && is_multisite()) {
+    $uploads = wp_get_upload_dir();
+    define('FLUENT_SNIPPETS_STORAGE_DIR', $uploads['basedir'] . '/fluent-snippet-storage');
+    define('FLUENT_SNIPPETS_STORAGE_URL', $uploads['baseurl'] . '/fluent-snippet-storage');
+}
+```
+
+Use one place to define these constants. Back up the shared library before changing directories. Existing snippets stay in the original directory, so export the snippets each site needs and import them into that site's library. New requests use the library of the site WordPress loaded. A network job that calls `switch_to_blog()` keeps the library selected at the start of that request.
+
+= How do I run a shared snippet on selected sites? =
+On upgrade, a writable installation automatically prepares its published PHP snippets. For a read-only deployment, sync the snippet index on a writable installation first and deploy the whole library, including hidden revision files, before switching versions. WordPress pauses PHP snippets without a readable revision. Keep the published files readable by the account running PHP and the cache directory writable if you rely on Safe Mode and automatic error recovery.
+
+To prepare the library, activate the updated plugin on the writable installation and open its Snippets dashboard. Check that the PHP preparation warning has cleared. For standalone mode, deploy the updated standalone runner together with the prepared library.
+
+New hidden revision files start with owner-only permissions. If WP-CLI and the web server run as different users, grant the web account read access to each new revision as part of deployment. Sync preserves permissions on existing revisions. On hosts with inherited access rules, use a private staging directory accessible only to the publishing account. By default the plugin uses PHP's system temp directory. If it has inherited reader access or is on a different filesystem from the library, set FLUENT_SNIPPETS_REVISION_TEMP_DIR in wp-config.php to a private directory on the same filesystem as the library.
+
+As a network Super Admin, open the snippet editor and find Network sites under Where to Run. Choose Only selected sites or All except selected sites, search by site address or ID, and save the snippet. All sites is the default for existing snippets. The site selection works alongside the snippet's normal run location and conditional rules.
+
+PHP snippets are validated by running their code. Save or import a restricted PHP snippet from one of its included sites so that validation runs in the intended context.
+
+When a network library is published, FluentSnippets keeps the editable PHP files and creates revision files for the published code and cached assets. Each request uses one revision. Keep the whole library together when backing up or restoring it. Retired revisions are eligible for cleanup after seven days on the next successful publication. If WordPress cannot replace the index safely, restore write access to the library directory and sync the snippets.
+
+Site IDs belong to a WordPress installation. Review the selection before publishing an imported snippet on another installation. Disable restricted snippets before reverting to a FluentSnippets version that predates site targeting.
+
 = What happens if a code snippet breaks my site? =
 FluentSnippets watches for fatal errors. If a snippet causes one, the plugin deactivates that specific snippet automatically and reports which snippet and which line was responsible, so your site stays online instead of showing a white screen. If you ever do get locked out of wp-admin, a Safe Mode URL switches every snippet off at once so you can get back in. No FTP access or database editing required.
 
@@ -173,6 +202,9 @@ Quite the opposite. Unlike other code snippets plugins, FluentSnippets does not 
 7. A tour of the editor: pick the snippet type, write the code, choose where it runs, and organize it with groups and tags.
 
 == Changelog ==
+
+= Unreleased =
+- On multisite, Super Admins can choose which sites run a shared snippet.
 
 = 10.58 - Oct 23, 2026 =
 - Fixed a bug where, after moving from one snippet's edit page to another without reloading (by changing the address, or with back/forward), saving wrote the first snippet over the second. The edit page now loads the snippet in the address, and saving always writes back to the snippet that was loaded

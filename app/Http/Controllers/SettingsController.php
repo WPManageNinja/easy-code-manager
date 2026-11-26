@@ -79,6 +79,13 @@ class SettingsController
             return $restricted;
         }
 
+        return Helper::withSnippetWriteLock(function () use ($request) {
+            return self::writeSettings($request);
+        });
+    }
+
+    private static function writeSettings($request)
+    {
         $settings = $request->get_param('settings');
 
         if (!is_array($settings)) {
@@ -134,8 +141,8 @@ class SettingsController
 
         $config = Helper::saveIndexedConfig($config);
 
-        if (is_wp_error($config)) {
-            return $config;
+        if ($config === false) {
+            return Helper::indexSyncError();
         }
 
         return [
@@ -150,15 +157,41 @@ class SettingsController
             return $restricted;
         }
 
+        $result = Helper::withSnippetWriteLock(function () {
+            return self::restoreNormalMode();
+        });
+        if (is_wp_error($result) && $result->get_error_code() === 'storage_unavailable') {
+            $config = Helper::getIndexedConfig(false);
+            if ($config && ($config['meta']['force_disabled'] ?? 'no') !== 'yes') {
+                return self::clearSafeModeMarker();
+            }
+        }
+        return $result;
+    }
+
+    private static function restoreNormalMode()
+    {
         $config = Helper::getIndexedConfig();
 
         if (!$config) {
             return new \WP_Error('invalid_config', 'Config file could not be generated');
         }
 
-        $config['meta']['force_disabled'] = 'no';
+        if (($config['meta']['force_disabled'] ?? 'no') === 'yes') {
+            $config['meta']['force_disabled'] = 'no';
+            if (Helper::saveIndexedConfig($config) === false) {
+                return Helper::indexSyncError();
+            }
+        }
+        return self::clearSafeModeMarker();
+    }
 
-        $config = Helper::saveIndexedConfig($config);
+    private static function clearSafeModeMarker()
+    {
+        $marker = Helper::getStorageDir() . '/cached/.fluent-safe-mode';
+        if (is_file($marker) && !@unlink($marker)) {
+            return Helper::indexSyncError();
+        }
 
         return [
             'message' => __('Safe mode has been disabled', 'easy-code-manager')
@@ -247,6 +280,45 @@ class SettingsController
 
         $optionKey = $request->get_param('rest_key');
         $options = [];
+
+        if ($optionKey === 'network_sites') {
+            if (!is_multisite() || !is_super_admin()) {
+                return new \WP_Error('forbidden', __('Only a network Super Admin can select sites.', 'easy-code-manager'), ['status' => 403]);
+            }
+            $args = ['network_id' => get_current_network_id(), 'number' => 25, 'orderby' => 'id', 'order' => 'ASC'];
+            $search = $request->get_param('search');
+            if ($search !== null && !is_string($search)) {
+                return new \WP_Error('invalid_search', __('Enter a site address or ID.', 'easy-code-manager'), ['status' => 400]);
+            }
+            $search = preg_replace('#^https?://#i', '', sanitize_text_field((string) $search));
+            $selected = $request->get_param('values');
+            $address = null;
+            if (is_array($selected)) {
+                $ids = wp_parse_id_list(array_filter(array_slice($selected, 0, 25), 'is_scalar'));
+                if (!$ids) {
+                    return ['options' => [], 'is_cachable' => false];
+                }
+                $args['site__in'] = $ids;
+            } elseif (ctype_digit($search)) {
+                $args['site__in'] = [(int) $search];
+            } elseif (strpos($search, '/') > 0) {
+                $address = explode('/', $search, 2);
+            } elseif ($search !== '') {
+                $args['search'] = '*' . $search . '*';
+            }
+            global $wpdb;
+            $before = $wpdb->num_queries;
+            $sites = $address === null ? get_sites($args) : self::findSitesByAddress($args, $address);
+            if ($wpdb->num_queries !== $before && $wpdb->last_error !== '') {
+                // Core can cache an empty ID list after a failed query. Let a retry reach the database.
+                wp_cache_set('last_changed', microtime(), 'sites');
+                return new \WP_Error('network_sites_unavailable', __('WordPress could not load the network sites. Try the search again.', 'easy-code-manager'), ['status' => 503]);
+            }
+            foreach ($sites as $site) {
+                $options[] = ['id' => (int) $site->blog_id, 'title' => $site->domain . $site->path];
+            }
+            return ['options' => $options, 'is_cachable' => false];
+        }
 
         if ($optionKey == 'tax_term_groups') {
             // Get public taxonomies
@@ -403,5 +475,39 @@ class SettingsController
             'options' => $options
         ];
 
+    }
+
+    private static function findSitesByAddress($args, $address)
+    {
+        $query = new \WP_Site_Query();
+        // Core includes registered query variables in its cache key.
+        $query->query_var_defaults['fluent_snippets_address'] = null;
+        $args['fluent_snippets_address'] = $address;
+        $networkId = $args['network_id'];
+        $matchAddress = static function ($clauses, $current) use ($query, $networkId) {
+            if ($current !== $query) {
+                return $clauses;
+            }
+            global $wpdb;
+            [$domain, $path] = $current->query_vars['fluent_snippets_address'];
+            $table = $wpdb->blogs;
+            $match = $wpdb->prepare(
+                "$table.site_id = %d AND $table.domain LIKE %s AND $table.path LIKE %s",
+                $networkId, '%' . $wpdb->esc_like($domain) . '%', '/' . $wpdb->esc_like($path) . '%'
+            );
+            // Earlier plugins can omit clauses or supply a top-level OR.
+            $where = trim($clauses['where'] ?? '');
+            $clauses['where'] = $where === '' ? $match : "($where) AND $match";
+            $exact = $wpdb->prepare("($table.domain = %s AND $table.path = %s) DESC", $domain, trailingslashit('/' . $path));
+            $order = trim($clauses['orderby'] ?? '');
+            $clauses['orderby'] = $exact . ', ' . ($order === '' ? "$table.blog_id ASC" : $order);
+            return $clauses;
+        };
+        add_filter('sites_clauses', $matchAddress, 10, 2);
+        try {
+            return $query->query($args);
+        } finally {
+            remove_filter('sites_clauses', $matchAddress);
+        }
     }
 }

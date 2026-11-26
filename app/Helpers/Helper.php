@@ -5,6 +5,7 @@ namespace FluentSnippets\App\Helpers;
 use FluentSnippets\App\Model\Snippet;
 use FluentSnippets\App\Services\PhpValidator;
 use FluentSnippets\App\Services\SnippetErrors;
+use FluentSnippets\App\Services\SnippetRevision;
 
 class Helper
 {
@@ -102,7 +103,9 @@ class Helper
         if (!is_dir($dir)) {
             wp_mkdir_p($dir);
             // add an empty index.php file to that dir
-            file_put_contents($dir.'/index.php', '<?php // silence is golden');
+            if (is_dir($dir)) {
+                self::atomicPut($dir . '/index.php', '<?php // silence is golden', true);
+            }
         }
 
         return $dir;
@@ -163,25 +166,30 @@ class Helper
      * the JSON the editor is waiting for arrives unparseable — turning "the folder is
      * not writable" into "the server sent back an unexpected response".
      */
-    public static function atomicPut($file, $contents)
+    public static function atomicPut($file, $contents, $requireReplacement = false, $privateRevision = false)
     {
         $dir = dirname($file);
 
-        $tmpFile = @tempnam($dir, '.fluent-snippets-tmp');
+        // An executable copy must not inherit a different ACL from the library directory.
+        // The deployer's private temp directory supplies its initial permissions.
+        $stage = $privateRevision
+            ? (defined('FLUENT_SNIPPETS_REVISION_TEMP_DIR') ? FLUENT_SNIPPETS_REVISION_TEMP_DIR : sys_get_temp_dir())
+            : $dir;
+        $tmpFile = @tempnam($stage, '.fluent-snippets-tmp');
 
-        // tempnam() silently falls back to the system temp dir when $dir is not
-        // writable, and a cross-device rename() is not atomic. Only take the atomic
-        // path when the temp file really landed next to the target.
-        if ($tmpFile === false || dirname($tmpFile) !== $dir) {
+        // Reject tempnam's silent fallback and cross-device rename before writing any bytes.
+        $sourceDevice = $tmpFile !== false && $privateRevision ? (@stat($tmpFile)['dev'] ?? null) : null;
+        if ($tmpFile === false || realpath(dirname($tmpFile)) !== realpath($stage) ||
+            ($privateRevision && ($sourceDevice === null || $sourceDevice !== (@stat($dir)['dev'] ?? null) || !@chmod($tmpFile, 0600)))) {
             if ($tmpFile !== false) {
                 @unlink($tmpFile);
             }
-            return @file_put_contents($file, $contents);
+            return $requireReplacement ? false : @file_put_contents($file, $contents);
         }
 
         $bytesWritten = @file_put_contents($tmpFile, $contents);
 
-        if ($bytesWritten === false) {
+        if ($bytesWritten !== strlen($contents)) {
             @unlink($tmpFile);
             return false;
         }
@@ -189,28 +197,33 @@ class Helper
         // tempnam() creates the file as 0600. Keep whatever the target already used so
         // host-specific setups (group-writable files, for instance) survive the swap.
         $perms = is_file($file) ? (@fileperms($file) & 0777) : 0;
-        @chmod($tmpFile, $perms ? $perms : 0644);
+        if (!$privateRevision) {
+            @chmod($tmpFile, $perms ? $perms : 0644);
+        }
 
         // rename() cannot overwrite an existing file on Windows.
-        if (DIRECTORY_SEPARATOR === '\\' && is_file($file)) {
+        if (!$requireReplacement && DIRECTORY_SEPARATOR === '\\' && is_file($file)) {
             @unlink($file);
         }
 
         if (!@rename($tmpFile, $file)) {
             @unlink($tmpFile);
-            return @file_put_contents($file, $contents);
+            return $requireReplacement ? false : @file_put_contents($file, $contents);
         }
 
         return $bytesWritten;
     }
 
-    public static function validateCode($language, $code)
+    public static function validateCode($language, $code, $siteScope = null)
     {
         if (!$code) {
             return true;
         }
 
         if ($language == 'PHP') {
+            if ($siteScope !== null && !\FluentSnippets\App\Services\FluentSnippetCondition::matchesSiteScope($siteScope)) {
+                return new \WP_Error('excluded_validation_site', __('Open FluentSnippets on a site included in this selection to validate and save this PHP snippet.', 'easy-code-manager'), ['status' => 422]);
+            }
             $validator = (new PhpValidator($code));
             $result = $validator->validate();
             if (is_wp_error($result)) {
@@ -327,8 +340,7 @@ class Helper
         $config = self::getIndexedConfig(false);
 
         if (!$config || empty($config['meta'])) {
-            self::cacheSnippetIndex();
-            return true;
+            return self::refreshChangedIndex();
         }
 
         $meta = $config['meta'];
@@ -337,15 +349,24 @@ class Helper
         // different domain means the site was migrated or cloned. Neither shows up
         // in the file signature, so check them separately.
         $isStale = Arr::get($meta, 'cached_version') !== FLUENT_SNIPPETS_PLUGIN_VERSION
+            || ($meta['snippet_revisions'] ?? null) !== 2
             || Arr::get($meta, 'cashed_domain') !== site_url();
 
-        if (!$isStale && Arr::get($meta, 'files_hash') === self::getSnippetFilesHash()) {
+        if (!$isStale && Arr::get($meta, 'files_hash') === self::getSnippetFilesHash() && !self::hasUnpreparedPhp($config)) {
             return false;
         }
 
-        self::cacheSnippetIndex();
+        return self::refreshChangedIndex();
+    }
 
-        return true;
+    private static function refreshChangedIndex()
+    {
+        return self::withSnippetWriteLock(function () {
+            if (self::writeSnippetIndex() === false) {
+                return self::indexSyncError();
+            }
+            return true;
+        });
     }
 
     /**
@@ -357,6 +378,15 @@ class Helper
      * user-defined function, so anything still calling the old signature keeps working.
      */
     public static function cacheSnippetIndex()
+    {
+        $result = self::withSnippetWriteLock(function () {
+            return self::writeSnippetIndex();
+        });
+        self::$lastIndexWrite = is_wp_error($result) ? false : $result;
+        return self::$lastIndexWrite;
+    }
+
+    private static function writeSnippetIndex()
     {
         $data = [
             'published' => [],
@@ -401,6 +431,7 @@ class Helper
             'force_disabled'      => Arr::get($previousConfig['meta'], 'force_disabled', 'no'),
             'cached_at'           => date('Y-m-d H:i:s'),
             'cached_version'      => FLUENT_SNIPPETS_PLUGIN_VERSION,
+            'snippet_revisions'   => 2,
             'cashed_domain'       => site_url(),
             'files_hash'          => $filesHash,
             'legacy_status'       => Arr::get($previousConfig['meta'], 'legacy_status'),
@@ -428,11 +459,12 @@ class Helper
             'priority',
             'group',
             'condition',
+            'network_sites',
             'load_as_file',
             'load_in_block_editor'
         ];
 
-        $snippets = (new \FluentSnippets\App\Model\Snippet())->get();
+        $snippets = (new \FluentSnippets\App\Model\Snippet())->get(['include_source' => true]);
 
         if ($snippets) {
             usort($snippets, function ($a, $b) {
@@ -460,6 +492,13 @@ class Helper
             $meta['status'] = $snippet['status'];
 
             if ($meta['status'] == 'published') {
+                if (is_multisite() || isset($meta['network_sites']) || in_array($meta['type'], ['PHP', 'php_content'], true)) {
+                    $revision = self::publishRevision($snippet);
+                    if ($revision === false) {
+                        return false;
+                    }
+                    $meta['revision'] = $revision;
+                }
                 $runningHook = self::getRunAtHook($meta);
                 if (empty($data['hooks'][$runningHook])) {
                     $data['hooks'][$runningHook] = [];
@@ -484,7 +523,64 @@ class Helper
          */
         $data['error_files'] = array_intersect_key($errorFiles, $data['published'] + $data['draft']);
 
-        return self::saveIndexedConfig($data);
+        $written = self::saveIndexedConfig($data);
+        if ($written !== false) {
+            self::pruneSnippetRevisions($data['published'], $previousConfig['published'] ?? []);
+        }
+        return $written;
+    }
+
+    private static function publishRevision($snippet)
+    {
+        $source = $snippet['source'];
+        $canonical = $snippet['file'];
+        $revision = hash('sha256', basename($canonical) . "\0" . $source);
+        $path = SnippetRevision::path($canonical, $revision);
+        $type = $snippet['meta']['type'];
+        $bytes = in_array($type, ['PHP', 'php_content'], true) ? SnippetRevision::executable($source, $canonical) : $source;
+        if (!self::writeRevisionFile($path, $bytes, true)) {
+            return false;
+        }
+        // Emergency recovery can still write here if deployments later make the library parent read-only.
+        $cacheDir = self::getCachedDir();
+        if (!is_dir($cacheDir)) {
+            return false;
+        }
+        if (in_array($type, ['css', 'js'], true) && $snippet['meta']['load_as_file'] === 'yes') {
+            $asset = $cacheDir . '/rev-' . $revision . '.' . $type;
+            if (!self::writeRevisionFile($asset, $snippet['code'])) {
+                return false;
+            }
+        }
+        return $revision;
+    }
+
+    private static function writeRevisionFile($path, $bytes, $privateRevision = false)
+    {
+        if (is_file($path)) {
+            // An explicitly provisioned copy retains the deployer's access controls.
+            return is_readable($path) && hash_file('sha256', $path) === hash('sha256', $bytes);
+        }
+        return self::atomicPut($path, $bytes, true, $privateRevision) === strlen($bytes);
+    }
+
+    private static function pruneSnippetRevisions($published, $previous)
+    {
+        $live = array_flip(array_column($published, 'revision'));
+        $retired = array_diff_key(array_flip(array_column($previous, 'revision')), $live);
+        $dir = self::getStorageDir();
+        $files = array_merge(glob($dir . '/.fluent-rev-*.php') ?: [], glob($dir . '/cached/rev-*') ?: [], glob($dir . '/cached/.fluent-quarantine-*') ?: []);
+        $cutoff = time() - 7 * 86400;
+        foreach ($files as $file) {
+            if (!preg_match('/^(?:\.fluent-rev-|rev-|\.fluent-quarantine-)([a-f0-9]{64})(?:\.(?:php|css|js))?$/D', basename($file), $match) || isset($live[$match[1]])) {
+                continue;
+            }
+            if (isset($retired[$match[1]])) {
+                touch($file);
+            } elseif (filemtime($file) < $cutoff) {
+                @unlink($file);
+            }
+        }
     }
 
     public static function getRunAtHook($meta)
@@ -521,14 +617,14 @@ PHP;
 
         $code .= 'return ' . var_export($data, true) . ';';
 
-        $bytesWritten = self::atomicPut($cacheFile, $code);
+        $bytesWritten = self::atomicPut($cacheFile, $code, true);
 
         self::invalidateOpcache($cacheFile);
 
         // The in-memory copy is now behind the file.
         self::flushIndexedConfigCache();
 
-        return $bytesWritten;
+        return $bytesWritten === strlen($code) ? $bytesWritten : false;
     }
 
     private static $indexedConfig = null;
@@ -602,13 +698,41 @@ PHP;
 
     public static function getErrorFiles()
     {
+        $config = self::getRuntimeConfig();
+        return $config['error_files'] ?? [];
+    }
+
+    public static function prepareRuntime()
+    {
         $config = self::getIndexedConfig();
-
-        if (!$config || empty($config['error_files'])) {
-            return [];
+        if (($config['meta']['snippet_revisions'] ?? null) === 2 || !wp_is_file_mod_allowed('fluent_snippets') ||
+            !is_writable(self::getStorageDir()) || (!$config && !glob(self::getStorageDir() . '/*.php'))) {
+            return $config;
         }
+        $retryKey = 'fluent_snippets_prepare_' . md5(self::getStorageDir());
+        if (get_site_transient($retryKey)) {
+            return $config;
+        }
+        if (is_wp_error(self::syncSnippetIndex())) {
+            set_site_transient($retryKey, true, 60);
+        }
+        return self::getIndexedConfig();
+    }
 
-        return $config['error_files'];
+    public static function hasUnpreparedPhp($config)
+    {
+        foreach ($config['published'] ?? [] as $name => $record) {
+            if (in_array($record['type'] ?? '', ['PHP', 'php_content'], true) &&
+                !SnippetRevision::resolve(self::getStorageDir() . '/' . $name, $record)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static function getRuntimeConfig($fileName = null)
+    {
+        return SnippetRevision::recoveryConfig(self::getStorageDir(), self::getIndexedConfig(), $fileName);
     }
 
     public static function getSecretKey()
@@ -649,6 +773,13 @@ PHP;
      */
     public static function regenerateSecretKey()
     {
+        return self::withSnippetWriteLock(function () {
+            return self::rotateSecretKey();
+        });
+    }
+
+    private static function rotateSecretKey()
+    {
         $config = self::getIndexedConfig();
 
         if (!$config || empty($config['meta'])) {
@@ -661,8 +792,8 @@ PHP;
 
         $saved = self::saveIndexedConfig($config);
 
-        if (is_wp_error($saved)) {
-            return $saved;
+        if ($saved === false) {
+            return self::indexSyncError();
         }
 
         return self::getSafeModeUrl($secret);
@@ -670,7 +801,7 @@ PHP;
 
     public static function enableStandAlone($isForced = false)
     {
-        if (defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION') && FLUENT_SNIPPETS_RUNNING_MU_VERSION == FLUENT_SNIPPETS_PLUGIN_VERSION && !$isForced) {
+        if (self::standaloneIsCurrent() && !$isForced) {
             return true;
         }
 
@@ -693,12 +824,31 @@ PHP;
         // that the installed runner is stale and refresh it. See maybeUpdateStandAlone().
         $stub = str_replace('{{FLUENT_SNIPPETS_VERSION}}', FLUENT_SNIPPETS_PLUGIN_VERSION, $stub);
 
-        self::atomicPut($muDir . '/fluent-snippets-mu.php', $stub);
-
-        if (!is_file($muDir . '/fluent-snippets-mu.php')) {
+        $file = $muDir . '/fluent-snippets-mu.php';
+        if (self::atomicPut($file, $stub, true) !== strlen($stub)) {
             return new \WP_Error('failed', 'file could not be moved to mu-plugins directory');
         }
+        self::invalidateOpcache($file);
+        return true;
+    }
 
+    private static function standaloneIsCurrent()
+    {
+        return defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION')
+            && FLUENT_SNIPPETS_RUNNING_MU_VERSION === FLUENT_SNIPPETS_PLUGIN_VERSION
+            && class_exists('FluentSnippets\\Mu\\SnippetRevision', false)
+            && method_exists('FluentSnippets\\Mu\\SnippetRevision', 'recoveryConfig');
+    }
+
+    public static function ensureSiteAwareStandAlone()
+    {
+        if (!defined('FLUENT_SNIPPETS_RUNNING_MU') || self::standaloneIsCurrent()) {
+            return true;
+        }
+        $updated = self::enableStandAlone(true);
+        if (is_wp_error($updated)) {
+            return new \WP_Error('standalone_update_required', __('Update the installed FluentSnippets standalone runner before saving a site selection.', 'easy-code-manager'), ['status' => 503]);
+        }
         return true;
     }
 
@@ -723,7 +873,7 @@ PHP;
 
         // A runner predating the version constant has no FLUENT_SNIPPETS_RUNNING_MU_VERSION
         // at all, so an undefined constant also means "stale".
-        if (defined('FLUENT_SNIPPETS_RUNNING_MU_VERSION') && FLUENT_SNIPPETS_RUNNING_MU_VERSION === FLUENT_SNIPPETS_PLUGIN_VERSION) {
+        if (self::standaloneIsCurrent()) {
             return;
         }
 
@@ -877,13 +1027,79 @@ PHP;
         ]);
     }
 
+    private static $writingSnippets = false;
+    private static $lastIndexWrite;
+
+    public static function enableSafeMode($token)
+    {
+        $valid = function ($config) use ($token) {
+            return is_string($token) && isset($config['meta']['secret_key']) && hash_equals($config['meta']['secret_key'], $token);
+        };
+        $result = self::withSnippetWriteLock(function () use ($valid) {
+            $config = self::getIndexedConfig(false);
+            if (!$valid($config)) {
+                return false;
+            }
+            $config['meta']['force_disabled'] = 'yes';
+            return self::saveIndexedConfig($config) === false ? self::indexSyncError() : true;
+        });
+        if (is_wp_error($result) && $valid(self::getIndexedConfig(false)) && @touch(self::getStorageDir() . '/cached/.fluent-safe-mode')) {
+            return true;
+        }
+        return $result;
+    }
+
+    public static function withSnippetWriteLock(callable $operation)
+    {
+        if (self::$writingSnippets) {
+            return $operation();
+        }
+        $dir = self::getStorageDir();
+        if (!is_dir($dir)) {
+            wp_mkdir_p($dir);
+        }
+        // Keep the lock file in place so concurrent writers open the same inode.
+        $handle = @fopen($dir . '/.fluent-snippets-write.lock', 'c');
+        if (!$handle) {
+            return new \WP_Error('storage_unavailable', __('WordPress could not open the snippet library for writing. Check its file permissions and retry.', 'easy-code-manager'), ['status' => 503]);
+        }
+        try {
+            if (!flock($handle, LOCK_EX | LOCK_NB)) {
+                return new \WP_Error('library_busy', __('Another snippet save is in progress. Retry after it finishes.', 'easy-code-manager'), ['status' => 409]);
+            }
+            self::$writingSnippets = true;
+            self::flushIndexedConfigCache();
+            return $operation();
+        } finally {
+            self::$writingSnippets = false;
+            fclose($handle);
+        }
+    }
+
     public static function updateSnippet($data)
+    {
+        return self::withSnippetWriteLock(function () use ($data) {
+            return self::saveSnippetUpdate($data);
+        });
+    }
+
+    private static function saveSnippetUpdate($data)
     {
         $meta = Arr::get($data, 'meta');
         $code = $data['code'];
         $fileName = $data['file_name'];
         $reactivate = $data['reactivate'];
 
+        $snippetModel = new Snippet();
+        if (is_array($meta) && !array_key_exists('network_sites', $meta)) {
+            $existing = $snippetModel->findByFileName($fileName);
+            if (is_wp_error($existing)) {
+                return $existing;
+            }
+            if (isset($existing['meta']['network_sites'])) {
+                $meta['network_sites'] = $existing['meta']['network_sites'];
+            }
+        }
         $metaValidated = self::validateMeta($meta);
 
         if (is_wp_error($metaValidated)) {
@@ -897,27 +1113,61 @@ PHP;
         }
 
         // check if the $code which is a php snippet is valid or not
-        $snippetModel = new Snippet();
         $snippet = $snippetModel->updateSnippet($fileName, $code, $meta);
 
         if (is_wp_error($snippet)) {
             return $snippet;
         }
 
-        if ($reactivate) {
-            $config = Helper::getIndexedConfig();
-            if (isset($config['error_files'][$fileName])) {
-                unset($config['error_files'][$fileName]);
-            }
-            self::saveIndexedConfig($config);
+        if ($reactivate && !self::retainPauseDuringPublication($fileName)) {
+            return self::indexSyncError();
+        }
+        $published = self::publishSnippetWrite($snippet, 'fluent_snippets/snippet_updated');
+        if (!$reactivate || is_wp_error($published)) {
+            return $published;
         }
 
-        do_action('fluent_snippets/snippet_updated', $snippet);
+        // Keep the old revision paused until the replacement is visible to readers.
+        $config = self::getIndexedConfig(false);
+        if (isset($config['error_files'][$fileName])) {
+            unset($config['error_files'][$fileName]);
+            if (self::saveIndexedConfig($config) === false) {
+                return self::indexSyncError();
+            }
+        }
+        return $published;
+    }
 
-        return $snippet;
+    private static function retainPauseDuringPublication($fileName)
+    {
+        $config = self::getIndexedConfig(false);
+        $revision = $config['published'][$fileName]['revision'] ?? '';
+        if (!preg_match('/^[a-f0-9]{64}$/D', $revision)) {
+            return true;
+        }
+        $marker = self::getStorageDir() . '/cached/.fluent-quarantine-' . $revision;
+        if (!is_file($marker)) {
+            return true;
+        }
+        // Keep the pause in the index before acknowledging the old revision's marker.
+        // Once publication starts, any new marker belongs to a subsequent failure.
+        if (!isset($config['error_files'][$fileName])) {
+            $config['error_files'][$fileName] = __('Snippet paused after a PHP error.', 'easy-code-manager');
+            if (self::saveIndexedConfig($config) === false) {
+                return false;
+            }
+        }
+        return @unlink($marker);
     }
 
     public static function createSnippet($data)
+    {
+        return self::withSnippetWriteLock(function () use ($data) {
+            return self::saveNewSnippet($data);
+        });
+    }
+
+    private static function saveNewSnippet($data)
     {
 
         $meta = Arr::get($data, 'meta', []);
@@ -951,9 +1201,44 @@ PHP;
             return $snippet;
         }
 
-        do_action('fluent_snippets/snippet_created', $snippet);
+        $published = self::publishSnippetWrite($snippet, 'fluent_snippets/snippet_created');
+        if (is_wp_error($published)) {
+            $deleted = $snippetModel->deleteSnippet($snippet);
+            if (is_wp_error($deleted)) {
+                /* translators: %s is the editable snippet filename. */
+                return new \WP_Error('create_incomplete', sprintf(__('The snippet file %s exists, but publication failed. Recover that file before creating another snippet.', 'easy-code-manager'), $snippet), ['file_name' => $snippet, 'status' => 503]);
+            }
+            return self::indexSyncError();
+        }
+        return $published;
+    }
 
-        return $snippet;
+    public static function publishSnippetWrite($file, $action)
+    {
+        if (is_wp_error($file)) {
+            return $file;
+        }
+        // The existing action listener rebuilds the index. Observe its result without
+        // changing the hook arguments or performing a second rebuild.
+        self::$lastIndexWrite = null;
+        do_action($action, $file);
+        if (self::$lastIndexWrite === null) {
+            self::cacheSnippetIndex();
+        }
+        if (self::$lastIndexWrite === false) {
+            return $action === 'fluent_snippets/snippet_deleted' ? self::indexSyncError() : self::indexWriteError();
+        }
+        return $file;
+    }
+
+    public static function indexWriteError()
+    {
+        return new \WP_Error('index_write_failed', __('The snippet file was saved, but WordPress could not update the library index. Check its write permissions and sync the snippets before continuing.', 'easy-code-manager'), ['status' => 503]);
+    }
+
+    public static function indexSyncError()
+    {
+        return new \WP_Error('index_sync_failed', __('WordPress could not sync the snippet index. Check the library permissions and retry.', 'easy-code-manager'), ['status' => 503]);
     }
 
     /**
@@ -995,7 +1280,7 @@ PHP;
             }
         }
 
-        $validated = self::validateCode($type, $code);
+        $validated = self::validateCode($type, $code, $meta['network_sites'] ?? null);
 
         if (is_wp_error($validated)) {
             return SnippetErrors::fromValidator($validated);
@@ -1006,6 +1291,19 @@ PHP;
 
     public static function validateMeta($meta)
     {
+        if (is_array($meta) && array_key_exists('network_sites', $meta) && is_multisite() && !is_super_admin()) {
+            return new \WP_Error('forbidden', __('Only a network Super Admin can select sites.', 'easy-code-manager'), ['status' => 403]);
+        }
+        if (isset($meta['network_sites']) && !\FluentSnippets\App\Services\FluentSnippetCondition::validSiteScope($meta['network_sites'])) {
+            return new \WP_Error('invalid_network_sites', __('Select at least one valid network site.', 'easy-code-manager'), ['status' => 422]);
+        }
+        if (isset($meta['network_sites'])) {
+            $updated = self::ensureSiteAwareStandAlone();
+            if (is_wp_error($updated)) {
+                return $updated;
+            }
+        }
+
         $labels = [
             'name'   => __('Snippet Name', 'easy-code-manager'),
             'status' => __('Status', 'easy-code-manager'),

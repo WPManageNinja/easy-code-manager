@@ -184,6 +184,8 @@ async function main() {
         check('the code editor renders', editorShown);
 
         if (editorShown) {
+            const sites = page.getByRole('combobox', {name: 'Network sites', exact: true});
+            check('network targeting is available to the network Super Admin', (await sites.isVisible()) === auth.networkAdmin);
             const typed = "add_action('init', function () { return 'smoke'; });";
             await editor.click();
             await page.keyboard.type(typed);
