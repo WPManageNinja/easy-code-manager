@@ -188,6 +188,19 @@ test('empty groups, keyboard moves, drag/drop and rename persist', async () => {
         await narrowDialog.getByRole('button',{name:'Cancel',exact:true}).click();
         await narrowDialog.waitFor({state:'hidden'});
         assert.notEqual(await page.evaluate(()=>document.activeElement.tagName),'BODY','dialog restores keyboard focus');
+        // Inject the controller's read-error shape with no snippets/groups at bootstrap.
+        // This checks UI error handling without corrupting the fixture's saved registry.
+        await page.addInitScript(() => {
+            Object.defineProperty(window,'fluentSnippetAdmin',{configurable:true,set(data){
+                data.groups=[];
+                Object.defineProperty(window,'fluentSnippetAdmin',{value:data,writable:true,configurable:true});
+            }});
+        });
+        await context.route(/\/fluent-snippets\/snippets(?:\?|$)/, route => route.fulfill({json:{snippets:{data:[],total:0,page:1,per_page:200,last_page:0},groups:[],tags:[]}}));
+        await context.route(groupGet, route => route.fulfill({status:500,json:{code:'snippet_groups',message:'WPMN group registry read failed',data:{status:500}}}));
+        await page.reload();
+        await page.getByText('Thanks for installing FluentSnippets',{exact:true}).waitFor();
+        await page.getByRole('alert').filter({hasText:'WPMN group registry read failed'}).waitFor({timeout:5000});
         assert.deepEqual(errors, []);
     } catch (error) {
         if (page && process.env.FSNIP_GROUPS_SCREENSHOT) await page.screenshot({path: process.env.FSNIP_GROUPS_SCREENSHOT, fullPage: true});

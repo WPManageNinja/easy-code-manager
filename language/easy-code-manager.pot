@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-26T16:15:28+00:00\n"
+"POT-Creation-Date: 2026-11-26T16:58:38+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: easy-code-manager\n"
@@ -819,93 +819,94 @@ msgid "Copy your code somewhere safe, go back to the snippet list and create it 
 msgstr ""
 
 #: app/Services/SnippetGroups.php:26
-msgid "The saved group list cannot be read. Restore the group metadata file from a backup before changing groups."
-msgstr ""
-
-#: app/Services/SnippetGroups.php:30
-msgid "The saved group list is invalid. Restore the group metadata file from a backup before changing groups."
-msgstr ""
-
-#: app/Services/SnippetGroups.php:45
+#: app/Services/SnippetGroups.php:48
 msgid "The group list could not be opened. Check the snippet storage permissions."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:58
+#: app/Services/SnippetGroups.php:29
+msgid "The saved group list cannot be read. Restore the group metadata file from a backup before changing groups."
+msgstr ""
+
+#: app/Services/SnippetGroups.php:33
+msgid "The saved group list is invalid. Restore the group metadata file from a backup before changing groups."
+msgstr ""
+
+#: app/Services/SnippetGroups.php:61
 msgid "Enter a group name as plain text."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:62
+#: app/Services/SnippetGroups.php:65
 msgid "Use a nonempty group name without markup, asterisks or line breaks."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:81
+#: app/Services/SnippetGroups.php:84
 msgid "Another group change is already in progress."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:84
-#: app/Services/SnippetGroups.php:90
-#: app/Services/SnippetGroups.php:94
-#: app/Services/SnippetGroups.php:99
-#: app/Services/SnippetGroups.php:130
-#: app/Services/SnippetGroups.php:176
-#: app/Services/SnippetGroups.php:195
+#: app/Services/SnippetGroups.php:87
+#: app/Services/SnippetGroups.php:93
+#: app/Services/SnippetGroups.php:97
+#: app/Services/SnippetGroups.php:102
+#: app/Services/SnippetGroups.php:133
+#: app/Services/SnippetGroups.php:179
+#: app/Services/SnippetGroups.php:198
 msgid "The group list could not be saved. Check the snippet storage permissions."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:128
-#: app/Services/SnippetGroups.php:193
+#: app/Services/SnippetGroups.php:131
+#: app/Services/SnippetGroups.php:196
 msgid "A group with this name already exists."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:130
+#: app/Services/SnippetGroups.php:133
 msgid "Group created."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:167
+#: app/Services/SnippetGroups.php:170
 msgid "The current group is required. Reload the snippet list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:170
+#: app/Services/SnippetGroups.php:173
 msgid "The snippet file could not be read. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:171
+#: app/Services/SnippetGroups.php:174
 msgid "This snippet has changed groups. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:173
+#: app/Services/SnippetGroups.php:176
 msgid "The destination group no longer exists. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:174
-#: app/Services/SnippetGroups.php:179
+#: app/Services/SnippetGroups.php:177
+#: app/Services/SnippetGroups.php:182
 msgid "Snippet moved."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:177
+#: app/Services/SnippetGroups.php:180
 msgid "The snippet could not be moved. Check permissions, reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:178
+#: app/Services/SnippetGroups.php:181
 msgid "The snippet file changed, but its index could not be updated. Reload the list and retry the index sync."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:191
+#: app/Services/SnippetGroups.php:194
 msgid "The source group no longer exists. Reload the list and try again."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:192
-#: app/Services/SnippetGroups.php:218
+#: app/Services/SnippetGroups.php:195
+#: app/Services/SnippetGroups.php:221
 msgid "Group renamed."
 msgstr ""
 
 #. translators: 1: changed snippet count, 2: failed snippet count
-#: app/Services/SnippetGroups.php:213
+#: app/Services/SnippetGroups.php:216
 #, php-format
 msgid "Group rename is incomplete: %1$d snippets changed, %2$d failed. Both group names were kept. Check storage permissions, reload the list and retry the rename."
 msgstr ""
 
-#: app/Services/SnippetGroups.php:217
+#: app/Services/SnippetGroups.php:220
 msgid "The snippets were renamed, but the old group could not be removed. Reload and retry the rename."
 msgstr ""
 

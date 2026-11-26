@@ -48,6 +48,9 @@
                     <el-button @click="showImportExport = true;">{{$t('Export/Import')}}</el-button>
                 </div>
             </div>
+            <div v-if="groupError" class="box_body">
+                <p class="fsnip_error_text" role="alert">{{ groupError }}</p>
+            </div>
             <div v-if="loadingFirst" class="box_body">
                 <el-skeleton :rows="10" animated animation="wave"/>
             </div>
@@ -145,7 +148,6 @@
                     </div>
                 </div>
 
-                <p v-if="groupError" class="fsnip_error_text" role="alert">{{ groupError }}</p>
                 <p v-if="groupNotice" role="status">{{ groupNotice }}</p>
                 <div v-if="!loading">
                     <!--

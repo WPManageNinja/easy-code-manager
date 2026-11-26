@@ -22,7 +22,10 @@ class SnippetGroups
 
     private static function decode($raw)
     {
-        if (!is_string($raw) || strpos($raw, self::HEADER) !== 0) {
+        if (!is_string($raw)) {
+            return self::error(__('The group list could not be opened. Check the snippet storage permissions.', 'easy-code-manager'), 500);
+        }
+        if (strpos($raw, self::HEADER) !== 0) {
             return self::error(__('The saved group list cannot be read. Restore the group metadata file from a backup before changing groups.', 'easy-code-manager'), 500);
         }
         $names = json_decode(substr($raw, strlen(self::HEADER)), true);
