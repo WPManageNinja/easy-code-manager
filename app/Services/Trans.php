@@ -13,6 +13,7 @@ class Trans
             '(opens in a new tab)' => __('(opens in a new tab)', 'easy-code-manager'),
             '* Because conditional logic is on, this snippet runs on the init hook.' => __('* Because conditional logic is on, this snippet runs on the init hook.', 'easy-code-manager'),
             'A fatal cannot lock you out' => __('A fatal cannot lock you out', 'easy-code-manager'),
+            'A group with this name already exists.' => __('A group with this name already exists.', 'easy-code-manager'),
             'A line too long for the editor folds onto the next one instead of scrolling sideways.' => __('A line too long for the editor folds onto the next one instead of scrolling sideways.', 'easy-code-manager'),
             'About' => __('About', 'easy-code-manager'),
             'About block editor styles' => __('About block editor styles', 'easy-code-manager'),

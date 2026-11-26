@@ -688,6 +688,13 @@ export default {
         },
         async submitGroup() {
             if (this.groupBusy) return;
+            const name = this.groupName.trim();
+            const duplicate = (this.appVars.groups || []).includes(name);
+            if (duplicate && (this.groupMode === 'create' ||
+                (this.groupMode === 'rename' && name !== this.groupSource && !this.groupRetry))) {
+                this.groupDialogError = this.$t('A group with this name already exists.');
+                return;
+            }
             let route = 'groups/create';
             let data = {name: this.groupName};
             if (this.groupMode === 'rename') {

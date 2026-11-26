@@ -90,6 +90,23 @@ test('empty groups, keyboard moves, drag/drop and rename persist', async () => {
         await target.locator('a.group_file_name[href$="/' + file + '"]').waitFor();
         assert.equal(read().meta.group, second);
         assert.equal(read().code, before.code);
+        // A known duplicate is a local validation error, without a rejected request.
+        const renameRequests = [];
+        const trackRename = request => {
+            if (request.method() === 'POST' && request.url().includes('/groups/rename')) renameRequests.push(request);
+        };
+        page.on('request', trackRename);
+        const renamedGroup = page.locator('.fsnip_group').filter({has: page.getByRole('button', {name: unique + ' renamed', exact: true})});
+        await renamedGroup.getByRole('button', {name: 'Rename group', exact: true}).click();
+        dialog = page.getByRole('dialog');
+        await dialog.getByRole('textbox', {name: 'Group name', exact: true}).fill(' ' + second + ' ');
+        await dialog.getByRole('button', {name: 'Rename group', exact: true}).click();
+        await dialog.getByRole('alert').filter({hasText: 'A group with this name already exists.'}).waitFor();
+        assert.equal(await dialog.getByRole('textbox', {name: 'Group name', exact: true}).inputValue(), ' ' + second + ' ');
+        assert.equal(renameRequests.length, 0, 'known duplicate rename is refused before POST');
+        assert.equal(read().meta.group, second);
+        await dialog.getByRole('button', {name: 'Cancel', exact: true}).click();
+        page.off('request', trackRename);
         const protectedResponse = await page.evaluate(async () => { const response = await fetch('/wp-content/fluent-snippet-storage/groups/index.php'); return {status:response.status,body:await response.text()}; });
         assert.equal(protectedResponse.status,200);
         assert.equal(protectedResponse.body, '', 'group metadata is not disclosed by direct web reads');
