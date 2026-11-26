@@ -5,13 +5,15 @@ const {test} = require('node:test');
 const {openAdminSession} = require('./lib/session');
 
 const sample = 'const sample = "blue"; // note';
+const prefix = 'JSON.stringify("blue"); // prefix';
 const php = [
     '$a = <<<JS', sample, 'JS;',
     '$b = <<<"JS"', '  ' + sample, '  JS;',
     "$c = <<<'JS'", sample, 'const greeting = `Hi ${name}`;', 'JS;',
     '$d = <<<TEXT', sample, 'TEXT;',
     '$e = <<<JS', 'const value = "$name";', 'JS;',
-    '$after = 42;'
+    '$after = 42;',
+    '$json = <<<JS', prefix, sample, 'JS;', '$tail = 42;'
 ].join('\n');
 
 async function color(line, token) {
@@ -40,7 +42,7 @@ test('edit screen language highlighting', async t => {
         async function open(type, code) {
             draft = {code, meta: {name: 'Highlighting example', type, status: 'draft', condition: {}}};
             const file = 'highlight-' + type + '.php';
-            await page.goto(auth.adminUrl + 'admin.php?page=fluent-snippets#/snippets/' + file);
+            await page.goto(auth.adminUrl + 'admin.php?page=fluent-snippets#/snippets/' + file, {waitUntil: 'commit', timeout: 90000});
             await page.waitForFunction(expected =>
                 Array.from(document.querySelectorAll('.cm-content .cm-line'), line => line.textContent).join('\n') === expected,
                 code
@@ -49,11 +51,15 @@ test('edit screen language highlighting', async t => {
         }
         const tokens = ['const', '"blue"', '// note'];
         const colors = line => Promise.all(tokens.map(token => color(line, token)));
-        const reference = await colors((await open('js', sample)).first());
+        const jsLines = await open('js', sample + '\n' + prefix);
+        const reference = await colors(jsLines.first());
+        const prefixColors = line => Promise.all(['JSON', 'stringify', '"blue"', '// prefix'].map(token => color(line, token)));
+        const prefixReference = await prefixColors(jsLines.last());
         assert.equal(new Set(reference).size, 3, 'reference tokens must be distinguishable');
 
         const bodies = [];
         const controls = [];
+        const prefixes = [];
         for (const type of ['PHP', 'php_content']) {
             const mixed = type === 'php_content';
             const offset = mixed ? 1 : 0;
@@ -64,9 +70,10 @@ test('edit screen language highlighting', async t => {
                 ordinary,
                 interpolated: await color(lines.nth(offset + 14), 'const'),
                 followingNumber: await color(lines.nth(offset + 16), '42'),
-                script: mixed ? await colors(lines.nth(offset + 18)) : null
+                script: mixed ? await colors(lines.filter({hasText: /^<script>/})) : null
             });
             for (const index of [1, 4, 7]) bodies.push(await colors(lines.nth(offset + index)));
+            prefixes.push([await prefixColors(lines.nth(offset + 18)), await colors(lines.nth(offset + 19))]);
         }
         await t.test('ordinary PHP and inline scripts keep their colors', () => {
             for (const {ordinary, interpolated, followingNumber, script} of controls) {
@@ -79,6 +86,12 @@ test('edit screen language highlighting', async t => {
         await t.test('JS-labeled bodies use JavaScript token colors', () => {
             for (const actual of bodies) {
                 assert.deepEqual(actual, reference, 'JS-labeled body must match JavaScript keyword, string and comment colors');
+            }
+        });
+        await t.test('a longer identifier does not close the heredoc', () => {
+            for (const [identifier, next] of prefixes) {
+                assert.deepEqual(identifier, prefixReference, 'JSON.stringify must retain JavaScript colors');
+                assert.deepEqual(next, reference, 'the line after JSON.stringify is still JavaScript');
             }
         });
     } finally {
