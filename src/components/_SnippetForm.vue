@@ -190,6 +190,9 @@ export default {
         this.$get('groups').then(response => { if (request === this.groupLoadId) this.appVars.groups = response.groups; })
             .catch(error => { if (request === this.groupLoadId) this.groupError = error.message || this.$t('The group list could not be loaded.'); });
     },
+    beforeUnmount() {
+        ++this.groupLoadId;
+    },
     props: ['snippet', 'is_new', 'errors']
 }
 </script>

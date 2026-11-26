@@ -650,7 +650,8 @@ export default {
             moveTarget: '',
             dragFile: null,
             dropGroup: null,
-            listRequest: 0
+            listRequest: 0,
+            listActive: true
         }
     },
     components: {
@@ -795,6 +796,7 @@ export default {
                 });
         },
         getSnippets() {
+            if (!this.listActive) return Promise.resolve();
             const request = ++this.listRequest;
             this.showingPop = false;
             this.loading = true;
@@ -820,7 +822,7 @@ export default {
                     }).catch(error => { if (request === this.listRequest) this.groupError = error.message || this.$t('The group list could not be loaded.'); });
                 })
                 .catch((errors) => {
-                    this.$handleError(errors);
+                    if (request === this.listRequest) this.$handleError(errors);
                 })
                 .finally(() => {
                     if (request !== this.listRequest) return;
@@ -1026,6 +1028,10 @@ export default {
     },
     watch: {
         groupName() { this.groupRetry = false; }
+    },
+    beforeUnmount() {
+        this.listActive = false;
+        ++this.listRequest;
     },
     created() {
         this.viewType = this.$getLocalData('view_type', 'grouped');

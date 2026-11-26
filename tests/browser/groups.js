@@ -121,6 +121,63 @@ test('empty groups, keyboard moves, drag/drop and rename persist', async () => {
         await page.getByPlaceholder('Create new group',{exact:true}).waitFor({state:'hidden'});
         await page.goto(url.origin + '/wp-admin/admin.php?page=fluent-snippets#/');
         await page.getByRole('button',{name:unique + ' editor',exact:true}).waitFor();
+        const beforeRouteChange = await page.evaluate(async () => (await fetch('/wp-json/fluent-snippets/groups', {headers:{'X-WP-Nonce':window.fluentSnippetAdmin.rest.nonce}})).json());
+        let editorHeld = false;
+        let editorReady;
+        let releaseEditor;
+        const editorPending = new Promise(resolve => { editorReady = resolve; });
+        const editorRelease = new Promise(resolve => { releaseEditor = resolve; });
+        await context.route(groupGet, async route => {
+            if (editorHeld || route.request().method() !== 'GET') return route.continue();
+            editorHeld = true;
+            editorReady();
+            await editorRelease;
+            await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(beforeRouteChange)});
+        });
+        try {
+            // Client-side route changes leave an old component's request alive.
+            await page.evaluate(() => { window.location.hash='#/create-new'; });
+            await editorPending;
+            await page.evaluate(() => { window.location.hash='#/'; });
+            await createGroup(unique + ' after route change');
+            await page.getByRole('button',{name:unique + ' after route change',exact:true}).waitFor();
+        } finally {
+            releaseEditor();
+        }
+        await page.waitForLoadState('networkidle');
+        await page.getByRole('radio',{name:'Table',exact:true}).locator('xpath=ancestor::label').click();
+        await page.getByRole('radio',{name:'Grouped',exact:true}).locator('xpath=ancestor::label').click();
+        assert.equal(await page.getByRole('button',{name:unique + ' after route change',exact:true}).count(),1,'unmounted editor response cannot erase a newly created group');
+        await context.unroute(groupGet);
+        const oldDashboardGroups = await page.evaluate(async () => (await fetch('/wp-json/fluent-snippets/groups', {headers:{'X-WP-Nonce':window.fluentSnippetAdmin.rest.nonce}})).json());
+        let dashboardHeld = false;
+        let dashboardReady;
+        let releaseDashboard;
+        const dashboardPending = new Promise(resolve => { dashboardReady = resolve; });
+        const dashboardRelease = new Promise(resolve => { releaseDashboard = resolve; });
+        await context.route(groupGet, async route => {
+            if (dashboardHeld || route.request().method() !== 'GET') return route.continue();
+            dashboardHeld = true;
+            dashboardReady();
+            await dashboardRelease;
+            await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(oldDashboardGroups)});
+        });
+        try {
+            await page.reload();
+            await dashboardPending;
+            await page.evaluate(() => { window.location.hash='#/create-new'; });
+            await page.getByRole('button',{name:'Create new group',exact:true}).click();
+            await page.getByPlaceholder('Create new group',{exact:true}).fill(unique + ' after dashboard leave');
+            await page.getByRole('button',{name:'Add',exact:true}).click();
+            await page.getByPlaceholder('Create new group',{exact:true}).waitFor({state:'hidden'});
+            await page.evaluate(() => { window.location.hash='#/'; });
+            await page.getByRole('button',{name:unique + ' after dashboard leave',exact:true}).waitFor();
+        } finally { releaseDashboard(); }
+        await page.waitForLoadState('networkidle');
+        await page.getByRole('radio',{name:'Table',exact:true}).locator('xpath=ancestor::label').click();
+        await page.getByRole('radio',{name:'Grouped',exact:true}).locator('xpath=ancestor::label').click();
+        assert.equal(await page.getByRole('button',{name:unique + ' after dashboard leave',exact:true}).count(),1,'unmounted dashboard response cannot erase an editor-created group');
+        await context.unroute(groupGet);
         await page.setViewportSize({width:390,height:844});
         await page.evaluate(() => { document.body.classList.add('fluent_theme_dark'); document.documentElement.dir='rtl'; });
         await page.getByRole('button', {name:'Create group',exact:true}).click();
